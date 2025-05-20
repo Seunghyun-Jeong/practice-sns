@@ -9,4 +9,9 @@ public class ViewController {
     public String signupPage() {
         return "signup";
     }
+
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login";
+    }
 }
