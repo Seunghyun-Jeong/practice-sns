@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>회원가입</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}" />
+</head>
+<body>
+<h2>회원가입</h2>
+
+<form id="signupForm">
+    <label>ID :</label><br>
+    <input type="text" name="username" id="username"><br><br>
+
+    <label>비밀번호 :</label><br>
+    <input type="password" name="password" id="password"><br><br>
+
+    <label>비밀번호 확인 :</label><br>
+    <input type="password" id="passwordConfirm"><br><br>
+
+    <button type="submit">가입하기</button>
+</form>
+
+<script>
+    function validateForm() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const passwordConfirm = document.getElementById("passwordConfirm").value;
+
+        const usernameRegex = /^(?![0-9]+$)(?!.*[_.]{2})[a-z0-9._]{4,10}$/;
+        if (!usernameRegex.test(username)) {
+            alert("아이디는 4 이상 10 이하, 소문자와 숫자만 포함되며, 숫자만 사용하거나 .과 _를 제외한 특수문자 사용은 불가능합니다.");
+            return false;
+        }
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+]).{8,15}$/;
+        if (!passwordRegex.test(password)) {
+            alert("비밀번호에 알파벳 대문자, 소문자, 숫자, 특수문자를 반드시 포함해야 합니다.");
+            return false;
+        }
+
+        if (password !== passwordConfirm) {
+            alert("비밀번호가 일치하지 않습니다.");
+            return false;
+        }
+
+        return true;
+    }
+
+    document.getElementById("signupForm").addEventListener("submit", function (e) {
+        e.preventDefault(); // 기본 제출 방지
+
+        if (!validateForm()) return;
+
+        const formData = new FormData(document.getElementById("signupForm"));
+
+        fetch("/api/users/signup", {
+            method: "POST",
+            body: formData
+        })
+            .then(async response => {
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(data.message);
+                    if (data.redirectUrl) {
+                        window.location.href = data.redirectUrl;
+                    }
+                } else {
+                    alert(data.message || "회원가입에 실패했습니다.");
+                }
+            })
+            .catch(error => {
+                console.error("회원가입 요청 실패:", error);
+                alert("서버 오류로 회원가입에 실패했습니다.");
+            });
+    });
+</script>
+
+</body>
+</html>
