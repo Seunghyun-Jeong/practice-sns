@@ -14,4 +14,9 @@ public class ViewController {
     public String loginPage() {
         return "login";
     }
+
+    @GetMapping("/post")
+    public String postPage() {
+        return "post";
+    }
 }
