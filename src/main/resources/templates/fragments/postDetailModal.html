@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="modalContent">
+<div class="modal-overlay"></div>
+<div class="modal">
+    <div class="modal-content">
+        <div class="post-detail-left">
+            <h2 th:text="${post.title}">게시글 제목</h2>
+            <p><b>작성자:</b> <span th:text="${post.author}">작성자명</span></p>
+            <p><b>작성일:</b> <span th:text="${post.createdAt}">2023-01-01</span></p>
+            <div th:text="${post.content}">내용</div>
+        </div>
+        <div class="post-detail-right">
+            <div class="post-stats">
+                좋아요 <span th:text="${post.likeCount}">0</span> · 댓글 <span th:text="${post.commentCount}">0</span>
+            </div>
+            <div class="comment-list">
+                <div th:each="comment : ${post.comments}" class="comment">
+                    <div class="comment-author" th:text="${comment.author}">댓글 작성자</div>
+                    <div class="comment-text" th:text="${comment.text}">댓글 내용</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</html>

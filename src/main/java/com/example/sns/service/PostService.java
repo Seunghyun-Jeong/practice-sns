@@ -1,7 +1,10 @@
 package com.example.sns.service;
 
+import com.example.sns.dto.CommentDto;
+import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostRequest;
 import com.example.sns.dto.PostResponse;
+import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
 import com.example.sns.repository.PostRepository;
@@ -47,5 +50,40 @@ public class PostService {
                         post.getCreatedAt()
                 ))
                 .collect(Collectors.toList());
+    }
+
+    public List<PostSummaryDto> getPostsummaries() {
+        return postRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(post -> new PostSummaryDto(
+                        post.getId(),
+                        post.getTitle(),
+                        post.getAuthor().getUsername(),
+                        post.getCreatedAt().toString(),
+                        post.getContent()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    public PostDetailDto getPostDetail(Long id) {
+        Post post = postRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("게시글 없음"));
+        List<CommentDto> commentDtos = post.getComments().stream()
+                .map(comment -> new CommentDto(
+                        comment.getId(),
+                        comment.getAuthor().getUsername(),
+                        comment.getContent(),
+                        comment.getCreatedAt().toString()
+                ))
+                .collect(Collectors.toList());
+
+        return new PostDetailDto(
+                post.getId(),
+                post.getTitle(),
+                post.getContent(),
+                post.getAuthor().getUsername(),
+                post.getCreatedAt().toString(),
+                post.getLikes().size(),
+                commentDtos.size(),
+                commentDtos
+        );
     }
 }
