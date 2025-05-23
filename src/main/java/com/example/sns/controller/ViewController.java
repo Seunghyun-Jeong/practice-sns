@@ -45,7 +45,6 @@ public class ViewController {
 
         model.addAttribute("username", currentUsername);
         model.addAttribute("posts", posts);
-        System.out.println("--------------------------------- userDetails = " + userDetails + " ---------------------------------");
 
         return "main";
     }

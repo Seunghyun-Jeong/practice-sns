@@ -6,6 +6,8 @@ import com.example.sns.entity.User;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.service.UserService;
 import com.example.sns.util.JwtUtil;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +47,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody UserLoginRequest request) {
+    public ResponseEntity<Map<String, String>> login(@RequestBody UserLoginRequest request, HttpServletResponse response) {
         Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
 
         if (userOpt.isEmpty() || !passwordEncoder.matches(request.getPassword(), userOpt.get().getPassword())) {
@@ -55,9 +57,16 @@ public class UserController {
 
         String token = jwtUtil.generateToken(userOpt.get().getUsername());
 
+        Cookie cookie = new Cookie("JWT_TOKEN", token);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);
+        cookie.setPath("/");
+        cookie.setMaxAge(60 * 60 * 24);
+
+        response.addCookie(cookie);
+
         return ResponseEntity.ok(Map.of(
-                "message", "로그인 성공",
-                "token", token
+                "message", "로그인 성공"
         ));
     }
 }
