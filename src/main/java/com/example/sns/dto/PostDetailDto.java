@@ -11,6 +11,7 @@ public class PostDetailDto {
     private String title;
     private String content;
     private String author;
+    private Long authorId;
     private String createdAt;
     private int likeCount;
     private int commentCount;

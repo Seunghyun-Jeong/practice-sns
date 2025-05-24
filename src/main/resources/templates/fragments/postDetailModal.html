@@ -1,15 +1,25 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:fragment="modalContent">
 <div class="modal-overlay"></div>
-<div class="modal">
-    <div class="modal-content">
-        <div class="post-detail-left">
+<div class="modal" id="postDetailModal">
+    <div class="modal-content" style="display: flex; flex-direction: row;">
+        <div class="post-detail-left" style="width: 66.6%; padding: 20px; position: relative;">
             <h2 th:text="${post.title}">게시글 제목</h2>
             <p><b>작성자:</b> <span th:text="${post.author}">작성자명</span></p>
             <p><b>작성일:</b> <span th:text="${post.createdAt}">2023-01-01</span></p>
             <div th:text="${post.content}">내용</div>
+
+            <div th:if="${post.authorId == currentUserId}"
+                 style="position: absolute; bottom: 20px; left: 20px;">
+                <button class="delete-post-btn"
+                        style="color: red; border: none; background: none; font-weight: bold; cursor: pointer;"
+                        th:attr="data-post-id=${post.id}">
+                    삭제
+                </button>
+            </div>
         </div>
-        <div class="post-detail-right">
+
+        <div class="post-detail-right" style="width: 33.3%; padding: 20px;">
             <div class="post-stats">
                 좋아요 <span th:text="${post.likeCount}">0</span> · 댓글 <span th:text="${post.commentCount}">0</span>
             </div>

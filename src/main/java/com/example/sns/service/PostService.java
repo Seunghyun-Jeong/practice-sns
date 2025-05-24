@@ -13,6 +13,7 @@ import com.example.sns.util.JwtUtil;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PostService {
@@ -80,10 +81,23 @@ public class PostService {
                 post.getTitle(),
                 post.getContent(),
                 post.getAuthor().getUsername(),
+                post.getAuthor().getId(),
                 post.getCreatedAt().toString(),
                 post.getLikes().size(),
                 commentDtos.size(),
                 commentDtos
         );
+    }
+
+    @Transactional
+    public void deletePost(Long postId, String username) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        if (!post.getAuthor().getUsername().equals(username)) {
+            throw new SecurityException("게시글 삭제 권한이 없습니다.");
+        }
+
+        postRepository.delete(post);
     }
 }

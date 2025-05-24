@@ -1,12 +1,16 @@
 package com.example.sns.controller;
 
+import com.example.sns.dto.PostDetailDto;
+import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.service.PostService;
+import com.example.sns.util.JwtUtil;
 import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -14,9 +18,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class ViewController {
 
     private final PostService postService;
+    private final JwtUtil jwtUtil;
 
-    public ViewController(PostService postService) {
+    public ViewController(PostService postService, JwtUtil jwtUtil) {
         this.postService = postService;
+        this.jwtUtil = jwtUtil;
     }
 
     @GetMapping("/signup")
@@ -51,13 +57,30 @@ public class ViewController {
 
     @GetMapping("/posts/{id}")
     public String postDetail(@PathVariable Long id, Model model) {
-        model.addAttribute("post", postService.getPostDetail(id));
+        PostDetailDto post = postService.getPostDetail(id);
+        model.addAttribute("post", post);
         return "postDetail";
     }
 
     @GetMapping("/posts/{id}/modal")
-    public String postDetailModal(@PathVariable Long id, Model model) {
-        model.addAttribute("post", postService.getPostDetail(id));
+    public String postDetailModal(@PathVariable Long id, Model model,
+                                  @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+        PostDetailDto post = postService.getPostDetail(id);
+        Long currentUserId = null;
+        if (token != null && jwtUtil.validateToken(token)) {
+            currentUserId = jwtUtil.getUserIdFromToken(token);
+        }
+
+        model.addAttribute("post", post);
+        model.addAttribute("currentUserId", currentUserId);
+
         return "fragments/postDetailModal :: modalContent";
+    }
+
+    @GetMapping("/posts")
+    public String allPostsPage(Model model) {
+        List<PostResponse> posts = postService.getAllPosts();
+        model.addAttribute("posts", posts);
+        return "posts";
     }
 }

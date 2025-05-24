@@ -54,8 +54,8 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "아이디 또는 비밀전호가 잘못되었습니다."));
         }
-
-        String token = jwtUtil.generateToken(userOpt.get().getUsername());
+        User user = userOpt.get();
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername());
 
         Cookie cookie = new Cookie("JWT_TOKEN", token);
         cookie.setHttpOnly(true);

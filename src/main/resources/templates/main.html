@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
-  <title>피드 목록</title>
+  <title>SNS</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
 <body>
@@ -32,7 +32,9 @@
 <script>
   async function openPostModal(postId) {
     try {
-      const response = await fetch('/posts/' + postId + '/modal');
+      const response = await fetch('/posts/' + postId + '/modal', {
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error('Failed to fetch post detail');
 
       const html = await response.text();
@@ -41,10 +43,59 @@
       document.getElementById('postDetailModal').style.display = 'flex';
       document.getElementById('modalCloseBtn').style.display = 'block';
       document.body.style.overflow = 'hidden';
+
+      initDeleteButton();
     } catch (error) {
       alert('게시글 상세 정보를 불러오는데 실패했습니다.');
       console.error(error);
     }
+  }
+
+  function initDeleteButton() {
+    const deleteBtn = document.querySelector('#modalContent .delete-post-btn');
+    if (deleteBtn) {
+      deleteBtn.onclick = async function () {
+        const postId = this.getAttribute('data-post-id');
+        console.log("삭제 버튼 클릭됨, postId:", postId);
+
+        if (!confirm('정말로 삭제하시겠습니까?')) return;
+
+        try {
+          const response = await fetch('/api/posts/' + postId, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+            }
+          });
+
+          if (response.ok) {
+            alert('게시글이 삭제되었습니다.');
+            document.getElementById('postDetailModal').style.display = 'none';
+            document.getElementById('modalCloseBtn').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            location.reload();
+          } else {
+            const error = await response.text();
+            alert('삭제 실패: ' + error);
+          }
+        } catch (e) {
+          console.error(e);
+          alert('삭제 중 오류 발생');
+        }
+      };
+    }
+  }
+
+  function getCookie(name) {
+    const cookieStr = document.cookie;
+    const cookies = cookieStr.split(';').map(c => c.trim());
+    for (const cookie of cookies) {
+      if (cookie.startsWith(name + '=')) {
+        return decodeURIComponent(cookie.split('=')[1]);
+      }
+    }
+    return null;
   }
 
   document.getElementById('modalCloseBtn').addEventListener('click', function () {

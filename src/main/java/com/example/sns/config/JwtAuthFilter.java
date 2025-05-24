@@ -1,8 +1,6 @@
 package com.example.sns.config;
 
-import com.example.sns.entity.User;
 import com.example.sns.service.MyUserDetailService;
-import com.example.sns.service.UserService;
 import com.example.sns.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
