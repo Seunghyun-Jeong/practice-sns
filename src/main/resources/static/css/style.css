@@ -173,6 +173,22 @@ button:hover {
     overflow-y: auto;
 }
 
+.delete-post-btn {
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(255, 0, 0, 0.5);
+    transition: background-color 0.3s ease;
+}
+
+.delete-post-btn:hover {
+    background-color: #cc0000;
+}
+
 .close-btn {
     position: fixed;
     bottom: 30px;

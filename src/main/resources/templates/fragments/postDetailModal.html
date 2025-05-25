@@ -11,9 +11,7 @@
 
             <div th:if="${post.authorId == currentUserId}"
                  style="position: absolute; bottom: 20px; left: 20px;">
-                <button class="delete-post-btn"
-                        style="color: red; border: none; background: none; font-weight: bold; cursor: pointer;"
-                        th:attr="data-post-id=${post.id}">
+                <button class="delete-post-btn" th:attr="data-post-id=${post.id}">
                     삭제
                 </button>
             </div>
