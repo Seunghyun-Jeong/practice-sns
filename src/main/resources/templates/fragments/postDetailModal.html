@@ -4,16 +4,24 @@
 <div class="modal" id="postDetailModal">
     <div class="modal-content" style="display: flex; flex-direction: row;">
         <div class="post-detail-left" style="width: 66.6%; padding: 20px; position: relative;">
-            <h2 th:text="${post.title}">게시글 제목</h2>
-            <p><b>작성자:</b> <span th:text="${post.author}">작성자명</span></p>
-            <p><b>작성일:</b> <span th:text="${post.createdAt}">2023-01-01</span></p>
-            <div th:text="${post.content}">내용</div>
+            <h2 class="post-title" th:text="${post.title}">게시글 제목</h2>
+            <input type="text" class="edit-title-input" th:value="${post.title}" style="display:none; width: 100%; font-size: 1.5em; padding: 4px; margin-bottom: 10px;"/>
+
+            <p><b>작성자:</b> <span th:text="${post.author}">작성자</span></p>
+            <p>
+                <b>작성일:</b>
+                <span th:if="${post.updatedAt == null}" th:text="${post.createdAt}">2023-01-01</span>
+                <span th:if="${post.updatedAt != null}" th:text="${post.updatedAt}">2023-01-02</span>
+                <span th:if="${post.updatedAt != null}">(수정됨)</span>
+            </p>
+            <div class="post-content" th:text="${post.content}">내용</div>
+            <textarea class="edit-content-input" style="display:none; width: 100%; height: 150px; padding: 8px; margin-top: 10px;">[[${post.content}]]</textarea>
 
             <div th:if="${post.authorId == currentUserId}"
-                 style="position: absolute; bottom: 20px; left: 20px;">
-                <button class="delete-post-btn" th:attr="data-post-id=${post.id}">
-                    삭제
-                </button>
+                 style="position: absolute; bottom: 20px; left: 20px; display: flex; gap: 10px;">
+                <button class="edit-post-btn" th:attr="data-post-id=${post.id}">수정</button>
+                <button class="save-post-btn" th:attr="data-post-id=${post.id}" style="display:none;">저장</button>
+                <button class="delete-post-btn" th:attr="data-post-id=${post.id}">삭제</button>
             </div>
         </div>
 

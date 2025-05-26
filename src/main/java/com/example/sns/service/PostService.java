@@ -5,11 +5,14 @@ import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostRequest;
 import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
+import com.example.sns.dto.PostUpdateRequest;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.util.JwtUtil;
+import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -60,7 +63,7 @@ public class PostService {
                         post.getTitle(),
                         post.getAuthor().getUsername(),
                         post.getCreatedAt().toString(),
-                        post.getContent()
+                        post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,                        post.getContent()
                 ))
                 .collect(Collectors.toList());
     }
@@ -83,6 +86,7 @@ public class PostService {
                 post.getAuthor().getUsername(),
                 post.getAuthor().getId(),
                 post.getCreatedAt().toString(),
+                post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                 post.getLikes().size(),
                 commentDtos.size(),
                 commentDtos
@@ -99,5 +103,19 @@ public class PostService {
         }
 
         postRepository.delete(post);
+    }
+
+    @Transactional
+    public void updatePost(Long postId, PostUpdateRequest request, String username) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        if (!post.getAuthor().getUsername().equals(username)) {
+            throw new SecurityException("게시글 수정 권한이 없습니다.");
+        }
+
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        post.setUpdatedAt(LocalDateTime.now());
     }
 }

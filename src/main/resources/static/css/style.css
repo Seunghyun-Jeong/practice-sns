@@ -177,12 +177,12 @@ button:hover {
     background-color: red;
     color: white;
     border: none;
-    padding: 6px 20px;
+    padding: 8px 15px;
     border-radius: 20px;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(255, 0, 0, 0.5);
-    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 0, 0, 0.5);
+    transition: background-color 0.2s ease;
 }
 
 .delete-post-btn:hover {
@@ -204,4 +204,20 @@ button:hover {
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     z-index: 2100;
     user-select: none;
+}
+
+.edit-post-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: background-color 0.2s ease;
+}
+
+.edit-post-btn:hover {
+    background-color: #0056b3;
 }

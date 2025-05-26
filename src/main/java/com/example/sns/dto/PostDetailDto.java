@@ -13,6 +13,7 @@ public class PostDetailDto {
     private String author;
     private Long authorId;
     private String createdAt;
+    private String updatedAt;
     private int likeCount;
     private int commentCount;
     private List<CommentDto> comments;

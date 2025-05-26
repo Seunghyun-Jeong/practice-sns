@@ -14,10 +14,21 @@
 </div>
 
 <div class="feed-container">
-  <div th:each="post : ${posts}" class="post-summary" th:onclick="'openPostModal(' + ${post.id} + ')'" style="cursor:pointer;">
+  <div th:each="post : ${posts}" class="post-summary"
+       th:onclick="'openPostModal(' + ${post.id} + ')'"
+       style="cursor:pointer;">
+
     <h3 th:text="${post.title}"></h3>
     <p th:text="'작성자: ' + ${post.author}"></p>
-    <p th:text="'작성일: ' + ${post.createdAt}"></p>
+
+    <p>
+      <span th:if="${post.updatedAt == null}" th:text="'작성일: ' + ${post.createdAt}"></span>
+      <span th:if="${post.updatedAt != null}">
+        수정일: <span th:text="${post.updatedAt}"></span>
+        <span style="color: #888888;">(수정됨)</span>
+      </span>
+    </p>
+
     <div class="post-excerpt" th:text="${post.content}"></div>
   </div>
 </div>
@@ -45,6 +56,7 @@
       document.body.style.overflow = 'hidden';
 
       initDeleteButton();
+      initEditButton();
     } catch (error) {
       alert('게시글 상세 정보를 불러오는데 실패했습니다.');
       console.error(error);
@@ -85,6 +97,64 @@
         }
       };
     }
+  }
+
+  function initEditButton() {
+    const editBtn = document.querySelector('#modalContent .edit-post-btn');
+    const saveBtn = document.querySelector('#modalContent .save-post-btn');
+    const titleEl = document.querySelector('#modalContent .post-title');
+    const titleInput = document.querySelector('#modalContent .edit-title-input');
+    const contentEl = document.querySelector('#modalContent .post-content');
+    const contentInput = document.querySelector('#modalContent .edit-content-input');
+
+    if (!editBtn || !saveBtn || !titleEl || !titleInput || !contentEl || !contentInput) return;
+
+    editBtn.onclick = function () {
+      titleEl.style.display = 'none';
+      contentEl.style.display = 'none';
+      titleInput.style.display = 'block';
+      contentInput.style.display = 'block';
+      editBtn.style.display = 'none';
+      saveBtn.style.display = 'inline-block';
+    };
+
+    saveBtn.onclick = async function () {
+      const postId = this.getAttribute('data-post-id');
+      const updatedTitle = titleInput.value;
+      const updatedContent = contentInput.value;
+
+      try {
+        const response = await fetch('/api/posts/' + postId, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+          },
+          body: JSON.stringify({ title: updatedTitle, content: updatedContent })
+        });
+
+        if (response.ok) {
+          alert('게시글이 수정되었습니다.');
+
+          titleEl.textContent = updatedTitle;
+          contentEl.textContent = updatedContent;
+
+          titleEl.style.display = 'block';
+          contentEl.style.display = 'block';
+          titleInput.style.display = 'none';
+          contentInput.style.display = 'none';
+          editBtn.style.display = 'inline-block';
+          saveBtn.style.display = 'none';
+        } else {
+          const error = await response.text();
+          alert('수정 실패: ' + error);
+        }
+      } catch (e) {
+        console.error(e);
+        alert('수정 중 오류 발생');
+      }
+    };
   }
 
   function getCookie(name) {

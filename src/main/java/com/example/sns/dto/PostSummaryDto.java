@@ -10,5 +10,6 @@ public class PostSummaryDto {
     private String title;
     private String author;
     private String createdAt;
+    private String updatedAt;
     private String content;
 }
