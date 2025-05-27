@@ -183,6 +183,45 @@
       document.body.style.overflow = 'auto';
     }
   });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const modalContent = document.getElementById('modalContent');
+
+    modalContent.addEventListener('click', async function (e) {
+      if (e.target && e.target.id === 'submitCommentBtn') {
+        const postId = e.target.getAttribute('data-post-id');
+        const content = document.getElementById('commentInput').value.trim();
+
+        if (!content) {
+          alert('댓글을 입력해주세요.');
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/posts/${postId}/comments`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+            },
+            body: JSON.stringify({ content })
+          });
+
+          if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error);
+          }
+
+          alert('댓글이 등록되었습니다.');
+          openPostModal(postId);
+        } catch (error) {
+          console.error(error);
+          alert('댓글 등록 실패: ' + error.message);
+        }
+      }
+    });
+  });
 </script>
 </body>
 </html>

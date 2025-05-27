@@ -25,14 +25,33 @@
             </div>
         </div>
 
-        <div class="post-detail-right" style="width: 33.3%; padding: 20px;">
+        <div class="post-detail-right">
             <div class="post-stats">
                 좋아요 <span th:text="${post.likeCount}">0</span> · 댓글 <span th:text="${post.commentCount}">0</span>
             </div>
-            <div class="comment-list">
+
+            <div class="comment-list" style="flex: 1; overflow-y: auto; margin: 10px 0;">
                 <div th:each="comment : ${post.comments}" class="comment">
                     <div class="comment-author" th:text="${comment.author}">댓글 작성자</div>
-                    <div class="comment-text" th:text="${comment.text}">댓글 내용</div>
+                    <div class="comment-text" th:text="${comment.content}">댓글 내용</div>
+                    <div class="comment-date" style="font-size: 0.8em;" th:text="${comment.createdAt}">작성일</div>
+                </div>
+            </div>
+
+            <div class="comment-form">
+                <div class="comment-input-wrapper">
+                    <input
+                            type="text"
+                            id="commentInput"
+                            placeholder="댓글을 입력하세요"
+                    />
+                    <button
+                            id="submitCommentBtn"
+                            class="comment-submit-button"
+                            th:attr="data-post-id=${post.id}"
+                    >
+                        등록
+                    </button>
                 </div>
             </div>
         </div>
