@@ -74,6 +74,7 @@ public class PostService {
                 .map(comment -> new CommentDto(
                         comment.getId(),
                         comment.getAuthor().getUsername(),
+                        comment.getAuthor().getId(),
                         comment.getContent(),
                         comment.getCreatedAt().toString()
                 ))

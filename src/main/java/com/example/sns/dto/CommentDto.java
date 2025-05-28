@@ -10,6 +10,7 @@ import lombok.Setter;
 public class CommentDto {
     private Long id;
     private String author;
+    private Long authorId;
     private String content;
     private String createdAt;
 }

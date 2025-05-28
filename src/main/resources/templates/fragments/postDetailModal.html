@@ -2,7 +2,9 @@
 <html xmlns:th="http://www.thymeleaf.org" th:fragment="modalContent">
 <div class="modal-overlay"></div>
 <div class="modal" id="postDetailModal">
-    <div class="modal-content" style="display: flex; flex-direction: row;">
+    <input type="hidden" id="currentUsername" th:value="${currentUsername}" />
+
+    <div id="modalContent" class="modal-content" th:attr="data-post-id=${post.id}" style="display: flex; flex-direction: row;">
         <div class="post-detail-left" style="width: 66.6%; padding: 20px; position: relative;">
             <h2 class="post-title" th:text="${post.title}">게시글 제목</h2>
             <input type="text" class="edit-title-input" th:value="${post.title}" style="display:none; width: 100%; font-size: 1.5em; padding: 4px; margin-bottom: 10px;"/>
@@ -31,10 +33,26 @@
             </div>
 
             <div class="comment-list" style="flex: 1; overflow-y: auto; margin: 10px 0;">
-                <div th:each="comment : ${post.comments}" class="comment">
+                <div th:each="comment : ${post.comments}"
+                     class="comment"
+                     th:attr="data-comment-id=${comment.id}, data-author=${comment.author}">
+
                     <div class="comment-author" th:text="${comment.author}">댓글 작성자</div>
-                    <div class="comment-text" th:text="${comment.content}">댓글 내용</div>
+
+                    <div class="comment-text" th:text="${comment.content}" style="display: block;"></div>
+
+                    <div class="edit-comment-form" style="display: none;">
+                        <input type="text" class="edit-comment-input" th:value="${comment.content}" />
+                        <button class="save-comment-btn" th:attr="data-post-id=${post.id}">저장</button>
+                        <button class="cancel-edit-btn">취소</button>
+                    </div>
+
                     <div class="comment-date" style="font-size: 0.8em;" th:text="${comment.createdAt}">작성일</div>
+
+                    <button class="edit-comment-btn"
+                            th:if="${comment.authorId == currentUserId}"
+                            style="display: inline-block;">수정
+                    </button>
                 </div>
             </div>
 

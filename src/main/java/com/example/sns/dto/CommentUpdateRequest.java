@@ -5,6 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class CommentRequest {
+public class CommentUpdateRequest {
     private String content;
 }

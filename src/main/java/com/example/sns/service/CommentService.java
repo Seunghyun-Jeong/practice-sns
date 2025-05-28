@@ -1,12 +1,14 @@
 package com.example.sns.service;
 
 import com.example.sns.dto.CommentDto;
+import com.example.sns.dto.CommentUpdateRequest;
 import com.example.sns.entity.Comment;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
 import com.example.sns.repository.CommentRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,18 @@ public class CommentService {
         comment.setContent(dto.getContent());
         comment.setCreatedAt(LocalDateTime.now());
 
+        commentRepository.save(comment);
+    }
+
+    public void updateComment(Long commentId, CommentUpdateRequest request, String username) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+
+        if (!comment.getAuthor().getUsername().equals(username)) {
+            throw new AccessDeniedException("본인이 작성한 댓글만 수정할 수 있습니다.");
+        }
+
+        comment.setContent(request.getContent());
         commentRepository.save(comment);
     }
 }
