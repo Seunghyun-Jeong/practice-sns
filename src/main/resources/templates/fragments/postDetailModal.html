@@ -43,16 +43,14 @@
 
                     <div class="edit-comment-form" style="display: none;">
                         <input type="text" class="edit-comment-input" th:value="${comment.content}" />
-                        <button class="save-comment-btn" th:attr="data-post-id=${post.id}">저장</button>
-                        <button class="cancel-edit-btn">취소</button>
+                        <button class="save-comment-btn" th:attr="data-post-id=${post.id}" style="display:none;">저장</button>
+                        <button class="cancel-edit-btn" style="display:none;">취소</button>
                     </div>
 
                     <div class="comment-date" style="font-size: 0.8em;" th:text="${comment.createdAt}">작성일</div>
 
-                    <button class="edit-comment-btn"
-                            th:if="${comment.authorId == currentUserId}"
-                            style="display: inline-block;">수정
-                    </button>
+                    <button class="edit-comment-btn" th:if="${comment.authorId == currentUserId}">수정</button>
+
                 </div>
             </div>
 

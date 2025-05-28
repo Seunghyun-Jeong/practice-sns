@@ -230,23 +230,48 @@
     document.querySelectorAll(".comment").forEach(commentEl => {
       const author = commentEl.dataset.author;
       const editBtn = commentEl.querySelector(".edit-comment-btn");
+      const saveBtn = commentEl.querySelector(".save-comment-btn");
+      const cancelBtn = commentEl.querySelector(".cancel-edit-btn");
       const commentTextEl = commentEl.querySelector(".comment-text");
       const editFormEl = commentEl.querySelector(".edit-comment-form");
       const inputEl = commentEl.querySelector(".edit-comment-input");
 
       if (currentUsername === author) {
-        editBtn.style.display = "inline";
+        editBtn.style.display = "inline-block";
       }
 
       editBtn.addEventListener("click", () => {
+        // 버튼, 입력폼, 텍스트 토글
+        editBtn.style.display = "none";
+        saveBtn.style.display = "inline-block";
+        cancelBtn.style.display = "inline-block";
+
         commentTextEl.style.display = "none";
         editFormEl.style.display = "block";
+
+        // 기존 텍스트를 입력창에 세팅
+        inputEl.value = commentTextEl.textContent.trim();
+        inputEl.focus();
       });
 
-      commentEl.querySelector(".save-comment-btn").addEventListener("click", async (e) => {
+      cancelBtn.addEventListener("click", () => {
+        editBtn.style.display = "inline-block";
+        saveBtn.style.display = "none";
+        cancelBtn.style.display = "none";
+
+        commentTextEl.style.display = "block";
+        editFormEl.style.display = "none";
+      });
+
+      saveBtn.addEventListener("click", async (e) => {
         const commentId = commentEl.dataset.commentId;
-        const newContent = inputEl.value;
+        const newContent = inputEl.value.trim();
         const postId = e.target.getAttribute("data-post-id");
+
+        if (newContent === "") {
+          alert("댓글 내용을 입력하세요.");
+          return;
+        }
 
         const response = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
           method: "PUT",
@@ -261,17 +286,22 @@
           commentTextEl.textContent = newContent;
           commentTextEl.style.display = "block";
           editFormEl.style.display = "none";
+
+          saveBtn.style.display = "none";
+          cancelBtn.style.display = "none";
+          editBtn.style.display = "inline-block";
         } else {
           alert("댓글 수정 실패");
         }
       });
-
-      commentEl.querySelector(".cancel-edit-btn").addEventListener("click", () => {
-        editFormEl.style.display = "none";
-        commentTextEl.style.display = "block";
-      });
     });
   }
+
+  // 페이지 로드 후 실행 필요
+  document.addEventListener("DOMContentLoaded", () => {
+    initEditCommentButtons();
+  });
+
 
 </script>
 </body>
