@@ -47,4 +47,15 @@ public class CommentService {
         comment.setContent(request.getContent());
         commentRepository.save(comment);
     }
+
+    public void deleteComment(Long commentId, String username) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 삭제할 수 없습니다."));
+
+        if (!comment.getAuthor().getUsername().equals(username)) {
+            throw new AccessDeniedException("본인이 작성한 댓글만 삭제할 수 있습니다.");
+        }
+
+        commentRepository.delete(comment);
+    }
 }

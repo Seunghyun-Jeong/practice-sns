@@ -50,6 +50,7 @@
                     <div class="comment-date" style="font-size: 0.8em;" th:text="${comment.createdAt}">작성일</div>
 
                     <button class="edit-comment-btn" th:if="${comment.authorId == currentUserId}">수정</button>
+                    <button class="delete-comment-btn" th:if="${comment.authorId == currentUserId}" th:attr="data-post-id=${post.id}">삭제</button>
 
                 </div>
             </div>

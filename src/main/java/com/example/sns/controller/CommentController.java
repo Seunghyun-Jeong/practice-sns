@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -42,5 +43,13 @@ public class CommentController {
         commentService.updateComment(id, request, username);
 
         return ResponseEntity.ok("댓글이 수정되었습니다.");
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteComment(@PathVariable Long id, @CookieValue(name = "JWT_TOKEN", required = false) String token) {
+        String username = jwtUtil.getUsernameFromToken(token);
+        commentService.deleteComment(id, username);
+
+        return ResponseEntity.ok("댓글이 삭제되었습니다.");
     }
 }

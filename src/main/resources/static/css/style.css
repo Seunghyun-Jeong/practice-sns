@@ -374,3 +374,27 @@ button:hover {
     border-radius: 8px;
     box-sizing: border-box;
 }
+
+.delete-comment-btn {
+    position: absolute;
+    top: 38px;
+    right: 10px;
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    user-select: none;
+    width: auto;
+    min-width: unset;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.delete-comment-btn:hover {
+    background-color: #cc0000;
+}

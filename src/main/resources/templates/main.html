@@ -58,6 +58,7 @@
       initDeleteButton();
       initEditButton();
       initEditCommentButtons();
+      initDeleteCommentButtons();
     } catch (error) {
       alert('게시글 상세 정보를 불러오는데 실패했습니다.');
       console.error(error);
@@ -230,6 +231,7 @@
     document.querySelectorAll(".comment").forEach(commentEl => {
       const author = commentEl.dataset.author;
       const editBtn = commentEl.querySelector(".edit-comment-btn");
+      const deleteBtn = commentEl.querySelector(".delete-comment-btn");
       const saveBtn = commentEl.querySelector(".save-comment-btn");
       const cancelBtn = commentEl.querySelector(".cancel-edit-btn");
       const commentTextEl = commentEl.querySelector(".comment-text");
@@ -238,24 +240,25 @@
 
       if (currentUsername === author) {
         editBtn.style.display = "inline-block";
+        deleteBtn.style.display = "inline-block";
       }
 
       editBtn.addEventListener("click", () => {
-        // 버튼, 입력폼, 텍스트 토글
         editBtn.style.display = "none";
+        deleteBtn.style.display = "none";
         saveBtn.style.display = "inline-block";
         cancelBtn.style.display = "inline-block";
 
         commentTextEl.style.display = "none";
         editFormEl.style.display = "block";
 
-        // 기존 텍스트를 입력창에 세팅
         inputEl.value = commentTextEl.textContent.trim();
         inputEl.focus();
       });
 
       cancelBtn.addEventListener("click", () => {
         editBtn.style.display = "inline-block";
+        deleteBtn.style.display = "inline-block";
         saveBtn.style.display = "none";
         cancelBtn.style.display = "none";
 
@@ -290,6 +293,7 @@
           saveBtn.style.display = "none";
           cancelBtn.style.display = "none";
           editBtn.style.display = "inline-block";
+          deleteBtn.style.display = "inline-block";
         } else {
           alert("댓글 수정 실패");
         }
@@ -297,12 +301,60 @@
     });
   }
 
-  // 페이지 로드 후 실행 필요
   document.addEventListener("DOMContentLoaded", () => {
     initEditCommentButtons();
   });
 
+  function initDeleteCommentButtons() {
+    document.querySelectorAll('.comment').forEach(commentEl => {
+      const deleteBtn = commentEl.querySelector('.delete-comment-btn');
+      if (!deleteBtn) return;
 
+      deleteBtn.addEventListener('click', async (e) => {
+        if (!confirm("댓글을 삭제하시겠습니까?")) return;
+
+        const commentId = commentEl.dataset.commentId;
+        const postId = e.target.getAttribute("data-post-id");
+
+        if (!postId) {
+          alert("postId 정보를 찾을 수 없습니다.");
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+            }
+          });
+
+          if (response.ok) {
+            commentEl.remove();
+
+            const commentCountSpan = document.querySelector('#modalContent .post-stats span:nth-of-type(2)');
+            if (commentCountSpan) {
+              const currentCount = parseInt(commentCountSpan.textContent.trim());
+              if (!isNaN(currentCount) && currentCount > 0) {
+                commentCountSpan.textContent = currentCount - 1;
+              }
+            }
+
+          } else {
+            const errMsg = await response.text();
+            alert("댓글 삭제 실패: " + errMsg);
+          }
+        } catch (error) {
+          console.error(error);
+          alert("댓글 삭제 중 오류가 발생했습니다.");
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initDeleteCommentButtons();
+  });
 </script>
 </body>
 </html>
