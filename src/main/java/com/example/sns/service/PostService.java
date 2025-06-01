@@ -8,10 +8,10 @@ import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.PostUpdateRequest;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
+import com.example.sns.repository.PostLikeRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.util.JwtUtil;
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,11 +23,13 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final PostLikeRepository postLikeRepository;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil) {
+    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
+        this.postLikeRepository = postLikeRepository;
     }
 
     public PostResponse createPost(PostRequest postRequest, String token) {
@@ -63,13 +65,20 @@ public class PostService {
                         post.getTitle(),
                         post.getAuthor().getUsername(),
                         post.getCreatedAt().toString(),
-                        post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,                        post.getContent()
+                        post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
+                        post.getContent(),
+                        postLikeRepository.countByPost(post),
+                        post.getComments().size()
                 ))
                 .collect(Collectors.toList());
     }
 
-    public PostDetailDto getPostDetail(Long id) {
-        Post post = postRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("게시글 없음"));
+    public PostDetailDto getPostDetail(Long postId, Long currentUserId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글 없음"));
+
+        long likeCount = postLikeRepository.countByPost(post);
+
         List<CommentDto> commentDtos = post.getComments().stream()
                 .map(comment -> new CommentDto(
                         comment.getId(),
@@ -80,6 +89,16 @@ public class PostService {
                 ))
                 .collect(Collectors.toList());
 
+        boolean likedByCurrentUser = false;
+
+        if (currentUserId != null) {
+            User currentUser = userRepository.findById(currentUserId)
+                    .orElse(null);
+            if (currentUser != null) {
+                likedByCurrentUser = postLikeRepository.existsByPostAndUser(post, currentUser);
+            }
+        }
+
         return new PostDetailDto(
                 post.getId(),
                 post.getTitle(),
@@ -88,9 +107,10 @@ public class PostService {
                 post.getAuthor().getId(),
                 post.getCreatedAt().toString(),
                 post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
-                post.getLikes().size(),
+                likeCount,
                 commentDtos.size(),
-                commentDtos
+                commentDtos,
+                likedByCurrentUser
         );
     }
 

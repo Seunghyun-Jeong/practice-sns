@@ -14,7 +14,8 @@ public class PostDetailDto {
     private Long authorId;
     private String createdAt;
     private String updatedAt;
-    private int likeCount;
+    private long likeCount;
     private int commentCount;
     private List<CommentDto> comments;
+    private boolean likedByCurrentUser;
 }

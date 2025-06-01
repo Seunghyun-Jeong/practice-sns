@@ -30,6 +30,11 @@
     </p>
 
     <div class="post-excerpt" th:text="${post.content}"></div>
+
+    <p>
+      좋아요 <span th:text="${post.likeCount}">0</span> · 댓글 <span th:text="${post.commentCount}">0</span>
+    </p>
+
   </div>
 </div>
 
@@ -59,6 +64,7 @@
       initEditButton();
       initEditCommentButtons();
       initDeleteCommentButtons();
+      initLikeButtons();
     } catch (error) {
       alert('게시글 상세 정보를 불러오는데 실패했습니다.');
       console.error(error);
@@ -301,10 +307,6 @@
     });
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    initEditCommentButtons();
-  });
-
   function initDeleteCommentButtons() {
     document.querySelectorAll('.comment').forEach(commentEl => {
       const deleteBtn = commentEl.querySelector('.delete-comment-btn');
@@ -352,9 +354,57 @@
     });
   }
 
+  function initLikeButtons() {
+    document.querySelectorAll('.like-btn').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+
+        const postId = btn.getAttribute('data-post-id');
+        const countEl = btn.closest('.post-stats').querySelector('.like-count');
+
+        try {
+          const response = await fetch(`/api/posts/${postId}/like`, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+            },
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+
+            if (countEl) {
+              let count = parseInt(countEl.textContent) || 0;
+
+              if (result.liked) {
+                countEl.textContent = count + 1;
+                btn.classList.add('liked');
+                btn.textContent = '❤️';
+              } else {
+                countEl.textContent = count - 1 >= 0 ? count - 1 : 0;
+                btn.classList.remove('liked');
+                btn.textContent = '🤍';
+              }
+            }
+          } else {
+            const error = await response.text();
+            alert('좋아요 실패: ' + error);
+          }
+        } catch (error) {
+          console.error(error);
+          alert('좋아요 처리 중 오류 발생');
+        }
+      };
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    initEditCommentButtons();
     initDeleteCommentButtons();
+    initLikeButtons();
   });
+
 </script>
 </body>
 </html>

@@ -29,7 +29,17 @@
 
         <div class="post-detail-right">
             <div class="post-stats">
-                좋아요 <span th:text="${post.likeCount}">0</span> · 댓글 <span th:text="${post.commentCount}">0</span>
+<span
+        id="likeIcon"
+        class="like-icon like-btn [[${post.likedByCurrentUser} ? 'liked' : '']]"
+        th:attr="data-post-id=${post.id}"
+        th:text="${post.likedByCurrentUser} ? '❤️' : '🤍'">
+  🤍
+</span>
+                <span>좋아요 <span class="like-count" th:text="${post.likeCount}">0</span></span>
+
+                <span class="comment-icon">💬</span>
+                <span>댓글 <span th:text="${post.commentCount}">0</span></span>
             </div>
 
             <div class="comment-list" style="flex: 1; overflow-y: auto; margin: 10px 0;">

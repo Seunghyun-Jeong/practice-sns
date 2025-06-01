@@ -57,7 +57,7 @@ public class ViewController {
 
     @GetMapping("/posts/{id}")
     public String postDetail(@PathVariable Long id, Model model) {
-        PostDetailDto post = postService.getPostDetail(id);
+        PostDetailDto post = postService.getPostDetail(id, null);
         model.addAttribute("post", post);
         return "postDetail";
     }
@@ -65,12 +65,12 @@ public class ViewController {
     @GetMapping("/posts/{id}/modal")
     public String postDetailModal(@PathVariable Long id, Model model,
                                   @CookieValue(value = "JWT_TOKEN", required = false) String token) {
-        PostDetailDto post = postService.getPostDetail(id);
         Long currentUserId = null;
         if (token != null && jwtUtil.validateToken(token)) {
             currentUserId = jwtUtil.getUserIdFromToken(token);
         }
 
+        PostDetailDto post = postService.getPostDetail(id, currentUserId);
         model.addAttribute("post", post);
         model.addAttribute("currentUserId", currentUserId);
 

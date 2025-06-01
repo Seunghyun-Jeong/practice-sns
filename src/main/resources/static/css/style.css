@@ -398,3 +398,29 @@ button:hover {
 .delete-comment-btn:hover {
     background-color: #cc0000;
 }
+
+.post-stats {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 16px;
+    color: #333;
+    margin-top: 10px;
+}
+
+.post-stats .like-icon,
+.post-stats .comment-icon {
+    cursor: pointer;
+    font-size: 22px;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.post-stats .like-icon.liked {
+    color: #ed4956;
+    transform: scale(1.2);
+}
+
+.post-stats .like-icon:hover,
+.post-stats .comment-icon:hover {
+    transform: scale(1.1);
+}

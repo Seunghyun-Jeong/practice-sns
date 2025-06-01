@@ -36,7 +36,7 @@ public class PostController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PostDetailDto> getPostDetail(@PathVariable Long id) {
-        PostDetailDto post = postService.getPostDetail(id);
+        PostDetailDto post = postService.getPostDetail(id, null);
         if (post != null) {
             return ResponseEntity.ok(post);
         } else {
