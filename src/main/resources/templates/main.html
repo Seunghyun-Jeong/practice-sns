@@ -244,6 +244,8 @@
       const editFormEl = commentEl.querySelector(".edit-comment-form");
       const inputEl = commentEl.querySelector(".edit-comment-input");
 
+      if (!editBtn || !deleteBtn || !saveBtn || !cancelBtn || !commentTextEl || !editFormEl || !inputEl) return;
+
       if (currentUsername === author) {
         editBtn.style.display = "inline-block";
         deleteBtn.style.display = "inline-block";
