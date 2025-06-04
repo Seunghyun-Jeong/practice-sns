@@ -1,6 +1,15 @@
 <div th:fragment="header" class="header-bar">
-  <div class="logo">SNS</div>
-  <div class="user-info" th:if="${username != null}">
-    현재 사용자: <b th:text="${username}"></b>
+  <div class="logo">
+    <a href="/" class="logo-link">SNS</a>
+  </div>
+
+  <div class="user-info">
+    <span th:if="${username != null}">
+      <a href="#" id="usernameLink" class="username" th:text="${username}"></a>
+      <button id="logoutBtn" class="btn logout-btn">로그아웃</button>
+    </span>
+    <span th:if="${username == null}">
+      <a href="/login"><button class="btn login-btn">로그인</button></a>
+    </span>
   </div>
 </div>

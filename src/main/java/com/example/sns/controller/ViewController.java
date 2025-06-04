@@ -42,7 +42,7 @@ public class ViewController {
 
     @GetMapping("/")
     public String mainPage(Model model, @AuthenticationPrincipal UserDetails userDetails) {
-        String currentUsername = "게스트";
+        String currentUsername = null;
         if (userDetails != null && userDetails.getUsername() != null) {
             currentUsername = userDetails.getUsername();
         }

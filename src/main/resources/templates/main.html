@@ -401,12 +401,25 @@
     });
   }
 
+  function logout() {
+    fetch("/api/users/logout", {
+      method: "POST",
+      credentials: "include",
+    }).then(() => {
+      window.location.href = "/";
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     initEditCommentButtons();
     initDeleteCommentButtons();
     initLikeButtons();
-  });
 
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', logout);
+    }
+  });
 </script>
 </body>
 </html>
