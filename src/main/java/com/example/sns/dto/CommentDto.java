@@ -13,4 +13,6 @@ public class CommentDto {
     private Long authorId;
     private String content;
     private String createdAt;
+    private long likeCount;
+    private boolean likedByCurrentUser;
 }

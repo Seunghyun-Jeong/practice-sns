@@ -11,7 +11,6 @@ import java.util.Date;
 
 @Component
 public class JwtUtil {
-
     private final Key secretKey;
     private final long expirationMillis = 1000 * 60 * 60;
 

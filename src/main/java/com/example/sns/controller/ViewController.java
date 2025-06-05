@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 public class ViewController {
-
     private final PostService postService;
     private final JwtUtil jwtUtil;
 

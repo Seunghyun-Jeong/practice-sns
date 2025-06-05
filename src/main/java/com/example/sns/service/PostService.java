@@ -8,6 +8,7 @@ import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.PostUpdateRequest;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
+import com.example.sns.repository.CommentLikeRepository;
 import com.example.sns.repository.PostLikeRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
@@ -24,12 +25,14 @@ public class PostService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PostLikeRepository postLikeRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository) {
+    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.postLikeRepository = postLikeRepository;
+        this.commentLikeRepository = commentLikeRepository;
     }
 
     public PostResponse createPost(PostRequest postRequest, String token) {
@@ -79,24 +82,31 @@ public class PostService {
 
         long likeCount = postLikeRepository.countByPost(post);
 
+        // currentUser를 effectively final 변수로 복사
+        final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
+
         List<CommentDto> commentDtos = post.getComments().stream()
-                .map(comment -> new CommentDto(
-                        comment.getId(),
-                        comment.getAuthor().getUsername(),
-                        comment.getAuthor().getId(),
-                        comment.getContent(),
-                        comment.getCreatedAt().toString()
-                ))
+                .map(comment -> {
+                    long commentLikeCount = commentLikeRepository.countByComment(comment);
+                    boolean commentLikedByCurrentUser = false;
+                    if (currentUser != null) {
+                        commentLikedByCurrentUser = commentLikeRepository.existsByCommentAndUser(comment, currentUser);
+                    }
+                    return new CommentDto(
+                            comment.getId(),
+                            comment.getAuthor().getUsername(),
+                            comment.getAuthor().getId(),
+                            comment.getContent(),
+                            comment.getCreatedAt().toString(),
+                            commentLikeCount,
+                            commentLikedByCurrentUser
+                    );
+                })
                 .collect(Collectors.toList());
 
-        boolean likedByCurrentUser = false;
-
-        if (currentUserId != null) {
-            User currentUser = userRepository.findById(currentUserId)
-                    .orElse(null);
-            if (currentUser != null) {
-                likedByCurrentUser = postLikeRepository.existsByPostAndUser(post, currentUser);
-            }
+        boolean postLikedByCurrentUser = false;
+        if (currentUser != null) {
+            postLikedByCurrentUser = postLikeRepository.existsByPostAndUser(post, currentUser);
         }
 
         return new PostDetailDto(
@@ -110,7 +120,7 @@ public class PostService {
                 likeCount,
                 commentDtos.size(),
                 commentDtos,
-                likedByCurrentUser
+                postLikedByCurrentUser
         );
     }
 

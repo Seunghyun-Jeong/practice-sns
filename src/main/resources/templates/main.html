@@ -65,6 +65,8 @@
       initEditCommentButtons();
       initDeleteCommentButtons();
       initLikeButtons();
+      initCommentLikeButtons();
+
     } catch (error) {
       alert('게시글 상세 정보를 불러오는데 실패했습니다.');
       console.error(error);
@@ -410,10 +412,56 @@
     });
   }
 
+  function initCommentLikeButtons() {
+    document.querySelectorAll('.comment-like-btn').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+
+        const commentId = btn.getAttribute('data-comment-id');
+        const postId = btn.getAttribute('data-post-id');
+        const countEl = btn.parentElement.querySelector('.comment-like-count');
+
+        try {
+          const response = await fetch(`/api/posts/${postId}/comments/${commentId}/like`, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+            },
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            let count = parseInt(countEl.textContent) || 0;
+
+            if (result.liked) {
+              count += 1;
+              btn.classList.add('liked');
+              btn.textContent = '❤️';
+            } else {
+              count = Math.max(0, count - 1);
+              btn.classList.remove('liked');
+              btn.textContent = '🤍';
+            }
+
+            countEl.textContent = count;
+          } else {
+            const error = await response.text();
+            alert('댓글 좋아요 실패: ' + error);
+          }
+        } catch (err) {
+          console.error(err);
+          alert('댓글 좋아요 처리 중 오류 발생');
+        }
+      };
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     initEditCommentButtons();
     initDeleteCommentButtons();
     initLikeButtons();
+    initCommentLikeButtons();
 
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
