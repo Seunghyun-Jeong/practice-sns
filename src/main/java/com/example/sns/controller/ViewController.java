@@ -54,13 +54,6 @@ public class ViewController {
         return "main";
     }
 
-    @GetMapping("/posts/{id}")
-    public String postDetail(@PathVariable Long id, Model model) {
-        PostDetailDto post = postService.getPostDetail(id, null);
-        model.addAttribute("post", post);
-        return "postDetail";
-    }
-
     @GetMapping("/posts/{id}/modal")
     public String postDetailModal(@PathVariable Long id, Model model,
                                   @CookieValue(value = "JWT_TOKEN", required = false) String token) {
@@ -74,12 +67,5 @@ public class ViewController {
         model.addAttribute("currentUserId", currentUserId);
 
         return "fragments/postDetailModal :: modalContent";
-    }
-
-    @GetMapping("/posts")
-    public String allPostsPage(Model model) {
-        List<PostResponse> posts = postService.getAllPosts();
-        model.addAttribute("posts", posts);
-        return "posts";
     }
 }
