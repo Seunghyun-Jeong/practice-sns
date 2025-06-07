@@ -82,7 +82,6 @@ public class PostService {
 
         long likeCount = postLikeRepository.countByPost(post);
 
-        // currentUser를 effectively final 변수로 복사
         final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
 
         List<CommentDto> commentDtos = post.getComments().stream()
@@ -98,6 +97,7 @@ public class PostService {
                             comment.getAuthor().getId(),
                             comment.getContent(),
                             comment.getCreatedAt().toString(),
+                            comment.getUpdatedAt() != null ? comment.getUpdatedAt().toString() : null,
                             commentLikeCount,
                             commentLikedByCurrentUser
                     );

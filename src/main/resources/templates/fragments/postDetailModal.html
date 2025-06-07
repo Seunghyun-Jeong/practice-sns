@@ -67,7 +67,11 @@
                         <span class="comment-like-count" th:text="${comment.likeCount}">0</span>
                     </div>
 
-                    <div class="comment-date" style="font-size: 0.8em;" th:text="${comment.createdAt}">작성일</div>
+                    <div class="comment-date" style="font-size: 0.8em;">
+                        <span th:if="${comment.updatedAt == null}" th:text="${comment.createdAt}">작성일</span>
+                        <span th:if="${comment.updatedAt != null}" th:text="${comment.updatedAt}">수정일</span>
+                        <span th:if="${comment.updatedAt != null}">(수정됨)</span>
+                    </div>
 
                     <button class="edit-comment-btn" th:if="${comment.authorId == currentUserId}">수정</button>
                     <button class="delete-comment-btn" th:if="${comment.authorId == currentUserId}" th:attr="data-post-id=${post.id}">삭제</button>

@@ -34,4 +34,5 @@ public class Comment {
     private Post post;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt;
 }
