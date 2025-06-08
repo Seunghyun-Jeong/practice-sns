@@ -7,7 +7,15 @@
     <span th:if="${username != null}">
       <a href="#" id="usernameLink" class="username" th:text="${username}"></a>
       <button id="logoutBtn" class="btn logout-btn">로그아웃</button>
+
+      <div class="hamburger-menu">
+        <button id="hamburgerBtn">☰</button>
+        <div id="dropdownMenu" class="dropdown-content" style="display: none;">
+          <button id="deleteAccountBtn" class="btn delete-btn">회원탈퇴</button>
+        </div>
+      </div>
     </span>
+
     <span th:if="${username == null}">
       <a href="/login"><button class="btn login-btn">로그인</button></a>
     </span>

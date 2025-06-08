@@ -468,6 +468,39 @@
       logoutBtn.addEventListener('click', logout);
     }
   });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+
+    hamburgerBtn?.addEventListener('click', () => {
+      dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    deleteAccountBtn?.addEventListener('click', async () => {
+      const confirmDelete = confirm("정말로 회원 탈퇴하시겠습니까?");
+      if (!confirmDelete) return;
+
+      try {
+        const response = await fetch('/api/users/me', {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          alert("회원 탈퇴가 완료되었습니다.");
+          window.location.href = "/login";
+        } else {
+          const data = await response.json();
+          alert(data.message || "회원 탈퇴에 실패했습니다.");
+        }
+      } catch (err) {
+        alert("에러가 발생했습니다.");
+      }
+    });
+  });
+
 </script>
 </body>
 </html>

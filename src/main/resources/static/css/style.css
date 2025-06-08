@@ -490,3 +490,32 @@ button {
 .comment-like-btn.liked {
     color: red;
 }
+
+.hamburger-menu {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    position: absolute;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    z-index: 999;
+    min-width: 120px;
+    padding: 8px 0;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.dropdown-content .btn {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 10px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dropdown-content .btn:hover {
+    background-color: #f1f1f1;
+}

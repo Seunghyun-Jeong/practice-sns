@@ -17,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -82,5 +84,28 @@ public class UserController {
         response.addHeader("Set-Cookie", cookie.toString());
 
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Map<String, String>> deleteCurrentUser(@CookieValue(value = "JWT_TOKEN", required = false) String token, HttpServletResponse response) {
+        Map<String, String> res = new HashMap<>();
+
+        if (token == null || !jwtUtil.validateToken(token)) {
+            res.put("message", "유효하지 않은 토큰입니다");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
+        }
+
+        String username = jwtUtil.getUsernameFromToken(token);
+        userService.deleteUser(username);
+
+        ResponseCookie expiredCookie = ResponseCookie.from("JWT_TOKEN", "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0)
+                .build();
+        response.addHeader("Set-Cookie", expiredCookie.toString());
+
+        res.put("message", "회원 탈퇴가 완료되었습니다.");
+        return ResponseEntity.ok(res);
     }
 }
