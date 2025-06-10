@@ -66,6 +66,7 @@
       initDeleteCommentButtons();
       initLikeButtons();
       initCommentLikeButtons();
+      initAuthorSuspendMenu();
 
     } catch (error) {
       alert('게시글 상세 정보를 불러오는데 실패했습니다.');
@@ -501,6 +502,56 @@
     });
   });
 
+  function initAuthorSuspendMenu() {
+    const currentUserRole = document.getElementById("currentUserRole")?.value || 'USER';
+    const authorMenu = document.getElementById("authorMenu");
+
+    if (!authorMenu || currentUserRole !== 'ADMIN') return;
+
+    document.querySelectorAll(".author-name").forEach(authorEl => {
+      authorEl.addEventListener("click", function (e) {
+        const authorId = authorEl.getAttribute("data-author-id");
+        authorMenu.style.display = "block";
+        authorMenu.style.top = `${e.clientY}px`;
+        authorMenu.style.left = `${e.clientX}px`;
+        authorMenu.setAttribute("data-target-user-id", authorId);
+        e.stopPropagation();
+      });
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!authorMenu.contains(e.target) && !e.target.classList.contains("author-name")) {
+        authorMenu.style.display = "none";
+      }
+    });
+
+    const suspendBtn = document.getElementById("suspendUserBtn");
+    const durationSelect = document.getElementById("suspendDuration");
+
+    if (suspendBtn && durationSelect) {
+      suspendBtn.addEventListener("click", async function () {
+        const userId = authorMenu.getAttribute("data-target-user-id");
+        const duration = durationSelect.value;
+
+        try {
+          const response = await fetch(`/api/users/suspend/${userId}?duration=${duration}`, {
+            method: "PATCH",
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          });
+
+          const data = await response.json();
+          alert(data.message);
+          authorMenu.style.display = "none";
+        } catch (err) {
+          console.error(err);
+          alert("이용 정지 실패");
+        }
+      });
+    }
+  }
 </script>
 </body>
 </html>

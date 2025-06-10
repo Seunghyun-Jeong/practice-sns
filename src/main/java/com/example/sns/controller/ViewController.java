@@ -3,6 +3,7 @@ package com.example.sns.controller;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
+import com.example.sns.repository.UserRepository;
 import com.example.sns.service.PostService;
 import com.example.sns.util.JwtUtil;
 import java.util.List;
@@ -58,13 +59,21 @@ public class ViewController {
     public String postDetailModal(@PathVariable Long id, Model model,
                                   @CookieValue(value = "JWT_TOKEN", required = false) String token) {
         Long currentUserId = null;
+        String currentUserRole = "USER";
+
         if (token != null && jwtUtil.validateToken(token)) {
             currentUserId = jwtUtil.getUserIdFromToken(token);
+
+            String roleFromToken = jwtUtil.getUserRoleFromToken(token);
+            if (roleFromToken != null) {
+                currentUserRole = roleFromToken;
+            }
         }
 
         PostDetailDto post = postService.getPostDetail(id, currentUserId);
         model.addAttribute("post", post);
         model.addAttribute("currentUserId", currentUserId);
+        model.addAttribute("currentUserRole", currentUserRole);  // 여기에 추가!
 
         return "fragments/postDetailModal :: modalContent";
     }

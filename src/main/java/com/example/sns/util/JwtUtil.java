@@ -18,13 +18,14 @@ public class JwtUtil {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(Long userId, String username) {
+    public String generateToken(Long userId, String username, String role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMillis);
 
         return Jwts.builder()
                 .setSubject(username)
                 .claim("userId", userId)
+                .claim("role", role)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(secretKey)
@@ -65,5 +66,20 @@ public class JwtUtil {
             return null;
         }
         return Long.valueOf(userIdObj.toString());
+    }
+
+    public String getUserRoleFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        Object roleObj = claims.get("role");
+        if (roleObj == null) {
+            System.out.println("Warning: role claim is missing in token");
+            return null;
+        }
+        return roleObj.toString();
     }
 }

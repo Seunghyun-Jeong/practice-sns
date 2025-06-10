@@ -3,13 +3,39 @@
 <div class="modal-overlay"></div>
 <div class="modal" id="postDetailModal">
     <input type="hidden" id="currentUsername" th:value="${currentUsername}" />
+    <input type="hidden" id="currentUserRole" th:value="${currentUserRole}" />
 
     <div id="modalContent" class="modal-content" th:attr="data-post-id=${post.id}" style="display: flex; flex-direction: row;">
         <div class="post-detail-left" style="width: 66.6%; padding: 20px; position: relative;">
             <h2 class="post-title" th:text="${post.title}">게시글 제목</h2>
             <input type="text" class="edit-title-input" th:value="${post.title}" style="display:none; width: 100%; font-size: 1.5em; padding: 4px; margin-bottom: 10px;"/>
 
-            <p><b>작성자:</b> <span th:text="${post.author}">작성자</span></p>
+            <p><b>작성자:</b>
+                <span
+                        th:text="${post.author}"
+                        class="author-name"
+                        th:attr="data-author-id=${post.authorId}"
+                        style="cursor: pointer; color: blue; text-decoration: underline;">
+                    작성자
+                </span>
+            </p>
+
+            <div class="author-menu" style="display: none; position: absolute; background: #fff; border: 1px solid #ccc; z-index: 100;"
+                 id="authorMenu">
+                <div style="padding: 10px;">
+                    <label for="suspendDuration">이용정지 기간:</label>
+                    <select id="suspendDuration">
+                        <option value="1d">1일</option>
+                        <option value="3d">3일</option>
+                        <option value="7d">7일</option>
+                        <option value="30d">30일</option>
+                        <option value="90d">90일</option>
+                        <option value="forever">영구정지</option>
+                    </select>
+                    <button id="suspendUserBtn">정지</button>
+                </div>
+            </div>
+
             <p>
                 <b>작성일:</b>
                 <span th:if="${post.updatedAt == null}" th:text="${post.createdAt}">2023-01-01</span>
