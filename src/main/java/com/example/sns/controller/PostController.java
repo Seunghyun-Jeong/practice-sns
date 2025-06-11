@@ -67,9 +67,10 @@ public class PostController {
         }
 
         String username = jwtUtil.getUsernameFromToken(token);
+        String role = jwtUtil.getUserRoleFromToken(token);
 
         try {
-            postService.deletePost(id, username);
+            postService.deletePost(id, username, role);
             return ResponseEntity.ok("삭제 완료");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
