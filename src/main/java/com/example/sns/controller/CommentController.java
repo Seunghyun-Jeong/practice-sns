@@ -47,9 +47,20 @@ public class CommentController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteComment(@PathVariable Long id, @CookieValue(name = "JWT_TOKEN", required = false) String token) {
-        String username = jwtUtil.getUsernameFromToken(token);
-        commentService.deleteComment(id, username);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+        }
 
-        return ResponseEntity.ok("댓글이 삭제되었습니다.");
+        String username = jwtUtil.getUsernameFromToken(token);
+        String role = jwtUtil.getUserRoleFromToken(token);
+
+        try {
+            commentService.deleteComment(id, username, role);
+            return ResponseEntity.ok("댓글이 삭제외었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        }
     }
 }

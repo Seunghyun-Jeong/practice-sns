@@ -48,12 +48,12 @@ public class CommentService {
         commentRepository.save(comment);
     }
 
-    public void deleteComment(Long commentId, String username) {
+    public void deleteComment(Long commentId, String username, String role) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 삭제할 수 없습니다."));
 
-        if (!comment.getAuthor().getUsername().equals(username)) {
-            throw new AccessDeniedException("본인이 작성한 댓글만 삭제할 수 있습니다.");
+        if (!comment.getAuthor().equals(username) && !"ADMIN".equals(role)) {
+            throw new SecurityException("댓글 삭제 권한이 없습니다.");
         }
 
         commentRepository.delete(comment);

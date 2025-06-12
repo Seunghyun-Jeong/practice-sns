@@ -100,7 +100,11 @@
                     </div>
 
                     <button class="edit-comment-btn" th:if="${comment.authorId == currentUserId}">수정</button>
-                    <button class="delete-comment-btn" th:if="${comment.authorId == currentUserId}" th:attr="data-post-id=${post.id}">삭제</button>
+                    <button class="delete-comment-btn"
+                            th:if="${comment.authorId == currentUserId or currentUserRole == 'ADMIN'}"
+                            th:attr="data-post-id=${post.id}, data-comment-id=${comment.id}">
+                        삭제
+                    </button>
 
                 </div>
             </div>
