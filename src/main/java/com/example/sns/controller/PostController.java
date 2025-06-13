@@ -8,6 +8,7 @@ import com.example.sns.service.PostService;
 import com.example.sns.util.JwtUtil;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,14 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/posts")
+@RequiredArgsConstructor
 public class PostController {
     private final PostService postService;
     private final JwtUtil jwtUtil;
-
-    public PostController(PostService postService, JwtUtil jwtUtil) {
-        this.postService = postService;
-        this.jwtUtil = jwtUtil;
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<PostDetailDto> getPostDetail(@PathVariable Long id) {

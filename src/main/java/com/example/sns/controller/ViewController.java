@@ -7,6 +7,7 @@ import com.example.sns.repository.UserRepository;
 import com.example.sns.service.PostService;
 import com.example.sns.util.JwtUtil;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -16,14 +17,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
+@RequiredArgsConstructor
 public class ViewController {
     private final PostService postService;
     private final JwtUtil jwtUtil;
-
-    public ViewController(PostService postService, JwtUtil jwtUtil) {
-        this.postService = postService;
-        this.jwtUtil = jwtUtil;
-    }
 
     @GetMapping("/signup")
     public String signupPage() {
