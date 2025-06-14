@@ -1,5 +1,6 @@
 package com.example.sns.service;
 
+import com.example.sns.dto.UserProfileDto;
 import com.example.sns.dto.UserSignUpRequest;
 import com.example.sns.entity.User;
 import com.example.sns.entity.User.Role;
@@ -80,5 +81,15 @@ public class UserService {
         commentLikeRepository.deleteAll(user.getCommentLikes());
 
         userRepository.save(user);
+    }
+
+    public UserProfileDto getProfile(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
+
+        return new UserProfileDto(
+                user.getUsername(),
+                user.getProfileImageUrl()
+        );
     }
 }

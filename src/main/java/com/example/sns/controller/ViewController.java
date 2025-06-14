@@ -3,8 +3,10 @@ package com.example.sns.controller;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
+import com.example.sns.dto.UserProfileDto;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.service.PostService;
+import com.example.sns.service.UserService;
 import com.example.sns.util.JwtUtil;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class ViewController {
     private final PostService postService;
     private final JwtUtil jwtUtil;
+    private final UserService userService;
 
     @GetMapping("/signup")
     public String signupPage() {
@@ -73,5 +76,22 @@ public class ViewController {
         model.addAttribute("currentUserRole", currentUserRole);  // 여기에 추가!
 
         return "fragments/postDetailModal :: modalContent";
+    }
+
+    @GetMapping("/profile/{username}")
+    public String getProfilePage(@PathVariable String username, Model model, @CookieValue("JWT_TOKEN") String token) {
+        UserProfileDto profile = userService.getProfile(username);
+        List<PostResponse> posts = postService.getPostsByUsername(username);
+
+        model.addAttribute("profileUsername", profile.getUsername());
+        model.addAttribute("profileImageUrl", profile.getProfileImageUrl());
+        model.addAttribute("myPosts", posts);
+
+        if (token != null && jwtUtil.validateToken(token)) {
+            String currentUsername = jwtUtil.getUsernameFromToken(token);
+            model.addAttribute("currentUsername", currentUsername);
+        }
+
+        return "profile";
     }
 }

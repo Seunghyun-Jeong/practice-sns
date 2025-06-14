@@ -149,4 +149,16 @@ public class PostService {
         post.setContent(request.getContent());
         post.setUpdatedAt(LocalDateTime.now());
     }
+
+    public List<PostResponse> getPostsByUsername(String username) {
+        return postRepository.findAllByAuthor_UsernameOrderByCreatedAtDesc(username).stream()
+                .map(post -> new PostResponse(
+                        post.getId(),
+                        post.getTitle(),
+                        post.getContent(),
+                        post.getAuthor().getUsername(),
+                        post.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
+    }
 }

@@ -5,7 +5,7 @@
 
   <div class="user-info">
     <span th:if="${username != null}">
-      <a href="#" id="usernameLink" class="username" th:text="${username}"></a>
+      <a th:href="@{'/profile/' + ${username}}" class="username" th:text="${username}"></a>
       <button id="logoutBtn" class="btn logout-btn">로그아웃</button>
 
       <div class="hamburger-menu">
