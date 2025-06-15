@@ -1,8 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>프로필 페이지</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
 <div class="profile-container">
     <div class="profile-header">
         <img th:src="@{${profileImageUrl}}" alt="프로필 이미지" class="profile-img" />
         <div class="profile-info">
-            <h2 th:text="${username}">username</h2>
+            <h2 th:text="${profileUsername}">username</h2>
             <input type="text" id="editUsernameInput" style="display:none;" />
             <button id="editUsernameBtn">닉네임 수정</button>
             <button id="saveUsernameBtn" style="display:none;">저장</button>
@@ -22,3 +31,6 @@
         </div>
     </div>
 </div>
+
+</body>
+</html>
