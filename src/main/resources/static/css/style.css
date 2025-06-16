@@ -544,39 +544,21 @@ button {
     border: 1px solid #ccc;
 }
 
-.profile-info {
-    flex-grow: 1;
-}
-
 .profile-info h2 {
     font-size: 28px;
     font-weight: 300;
     margin-bottom: 10px;
 }
 
-.profile-info input[type="text"] {
-    padding: 5px;
-    font-size: 16px;
-    margin-bottom: 10px;
-}
-
 .profile-info button {
     padding: 6px 12px;
     font-size: 14px;
-    margin-right: 10px;
+    margin-top: 5px;
     background-color: #0095f6;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-}
-
-.profile-info button:hover {
-    background-color: #0077cc;
-}
-
-#profileImageInput {
-    margin-top: 10px;
 }
 
 .profile-posts {

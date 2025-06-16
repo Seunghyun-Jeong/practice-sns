@@ -150,14 +150,17 @@ public class PostService {
         post.setUpdatedAt(LocalDateTime.now());
     }
 
-    public List<PostResponse> getPostsByUsername(String username) {
+    public List<PostSummaryDto> getPostsByUsernameWithExtras(String username) {
         return postRepository.findAllByAuthor_UsernameOrderByCreatedAtDesc(username).stream()
-                .map(post -> new PostResponse(
+                .map(post -> new PostSummaryDto(
                         post.getId(),
                         post.getTitle(),
-                        post.getContent(),
                         post.getAuthor().getUsername(),
-                        post.getCreatedAt()
+                        post.getCreatedAt() != null ? post.getCreatedAt().toString() : "",
+                        post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
+                        post.getContent(),
+                        postLikeRepository.countByPost(post),
+                        post.getComments().size()
                 ))
                 .collect(Collectors.toList());
     }

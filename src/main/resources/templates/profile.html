@@ -11,23 +11,35 @@
     <div class="profile-header">
         <img th:src="@{${profileImageUrl}}" alt="프로필 이미지" class="profile-img" />
         <div class="profile-info">
-            <h2 th:text="${profileUsername}">username</h2>
+            <h2 th:text="${profileUsername}" id="usernameDisplay">username</h2>
             <input type="text" id="editUsernameInput" style="display:none;" />
-            <button id="editUsernameBtn">닉네임 수정</button>
+            <button id="editUsernameBtn" th:if="${profileUsername == currentUsername}">닉네임 수정</button>
             <button id="saveUsernameBtn" style="display:none;">저장</button>
 
-            <form id="profileImageForm" enctype="multipart/form-data">
+            <form id="profileImageForm" enctype="multipart/form-data" th:if="${profileUsername == currentUsername}">
                 <input type="file" name="profileImage" id="profileImageInput" />
                 <button type="submit">이미지 변경</button>
             </form>
         </div>
     </div>
 
-    <div class="profile-posts">
-        <div th:each="post : ${myPosts}" class="post-thumbnail">
-            <a th:href="@{'/posts/' + ${post.id}}">
-                <img th:src="@{${post.thumbnailUrl}}" alt="게시글 썸네일" />
-            </a>
+    <div class="profile-posts feed-container">
+        <div th:each="post : ${myPosts}" class="post-summary"
+             th:onclick="'openPostModal(' + ${post.id} + ')'"
+             style="cursor:pointer;">
+            <h3 th:text="${post.title}"></h3>
+            <p th:text="'작성자: ' + ${post.author}"></p>
+            <p>
+                <span th:if="${post.updatedAt == null}" th:text="'작성일: ' + ${post.createdAt}"></span>
+                <span th:if="${post.updatedAt != null}">
+        수정일: <span th:text="${post.updatedAt}"></span>
+        <span style="color: #888888;">(수정됨)</span>
+      </span>
+            </p>
+            <div class="post-excerpt" th:text="${post.content}"></div>
+            <p>
+                좋아요 <span th:text="${post.likeCount}">0</span> · 댓글 <span th:text="${post.commentCount}">0</span>
+            </p>
         </div>
     </div>
 </div>

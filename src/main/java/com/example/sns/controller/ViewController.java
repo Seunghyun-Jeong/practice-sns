@@ -81,7 +81,7 @@ public class ViewController {
     @GetMapping("/profile/{username}")
     public String getProfilePage(@PathVariable String username, Model model, @CookieValue("JWT_TOKEN") String token) {
         UserProfileDto profile = userService.getProfile(username);
-        List<PostResponse> posts = postService.getPostsByUsername(username);
+        List<PostSummaryDto> posts = postService.getPostsByUsernameWithExtras(username);
 
         model.addAttribute("profileUsername", profile.getUsername());
         model.addAttribute("profileImageUrl", profile.getProfileImageUrl());
