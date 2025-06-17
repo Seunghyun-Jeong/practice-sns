@@ -7,6 +7,8 @@
 </head>
 <body>
 
+<div th:replace="~{fragments/header :: header}"></div>
+
 <div class="profile-container">
     <div class="profile-header">
         <img th:src="@{${profileImageUrl}}" alt="프로필 이미지" class="profile-img" />
@@ -44,5 +46,521 @@
     </div>
 </div>
 
+<div id="postDetailModal" class="modal" style="display:none;">
+    <div id="modalContent" class="modal-content">
+    </div>
+</div>
+
+<div id="modalCloseBtn" class="close-btn" style="display:none;">닫기 X</div>
+
 </body>
+
+<script>
+    async function openPostModal(postId) {
+        try {
+            const response = await fetch('/posts/' + postId + '/modal', {
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error('Failed to fetch post detail');
+
+            const html = await response.text();
+            document.getElementById('modalContent').innerHTML = html;
+
+            document.getElementById('postDetailModal').style.display = 'flex';
+            document.getElementById('modalCloseBtn').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            initDeleteButton();
+            initEditButton();
+            initEditCommentButtons();
+            initDeleteCommentButtons();
+            initLikeButtons();
+            initCommentLikeButtons();
+            initAuthorSuspendMenu();
+
+        } catch (error) {
+            alert('게시글 상세 정보를 불러오는데 실패했습니다.');
+            console.error(error);
+        }
+    }
+
+    function initDeleteButton() {
+        const deleteBtn = document.querySelector('#modalContent .delete-post-btn');
+        if (deleteBtn) {
+            deleteBtn.onclick = async function () {
+                const postId = this.getAttribute('data-post-id');
+                console.log("삭제 버튼 클릭됨, postId:", postId);
+
+                if (!confirm('정말로 삭제하시겠습니까?')) return;
+
+                try {
+                    const response = await fetch('/api/posts/' + postId, {
+                        method: 'DELETE',
+                        credentials: 'include',
+                        headers: {
+                            'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+                        }
+                    });
+
+                    if (response.ok) {
+                        alert('게시글이 삭제되었습니다.');
+                        document.getElementById('postDetailModal').style.display = 'none';
+                        document.getElementById('modalCloseBtn').style.display = 'none';
+                        document.body.style.overflow = 'auto';
+                        location.reload();
+                    } else {
+                        const error = await response.text();
+                        alert('삭제 실패: ' + error);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('삭제 중 오류 발생');
+                }
+            };
+        }
+    }
+
+    function initEditButton() {
+        const editBtn = document.querySelector('#modalContent .edit-post-btn');
+        const saveBtn = document.querySelector('#modalContent .save-post-btn');
+        const titleEl = document.querySelector('#modalContent .post-title');
+        const titleInput = document.querySelector('#modalContent .edit-title-input');
+        const contentEl = document.querySelector('#modalContent .post-content');
+        const contentInput = document.querySelector('#modalContent .edit-content-input');
+
+        if (!editBtn || !saveBtn || !titleEl || !titleInput || !contentEl || !contentInput) return;
+
+        editBtn.onclick = function () {
+            titleEl.style.display = 'none';
+            contentEl.style.display = 'none';
+            titleInput.style.display = 'block';
+            contentInput.style.display = 'block';
+            editBtn.style.display = 'none';
+            saveBtn.style.display = 'inline-block';
+        };
+
+        saveBtn.onclick = async function () {
+            const postId = this.getAttribute('data-post-id');
+            const updatedTitle = titleInput.value;
+            const updatedContent = contentInput.value;
+
+            try {
+                const response = await fetch('/api/posts/' + postId, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+                    },
+                    body: JSON.stringify({ title: updatedTitle, content: updatedContent })
+                });
+
+                if (response.ok) {
+                    alert('게시글이 수정되었습니다.');
+
+                    titleEl.textContent = updatedTitle;
+                    contentEl.textContent = updatedContent;
+
+                    titleEl.style.display = 'block';
+                    contentEl.style.display = 'block';
+                    titleInput.style.display = 'none';
+                    contentInput.style.display = 'none';
+                    editBtn.style.display = 'inline-block';
+                    saveBtn.style.display = 'none';
+                } else {
+                    const error = await response.text();
+                    alert('수정 실패: ' + error);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('수정 중 오류 발생');
+            }
+        };
+    }
+
+    function getCookie(name) {
+        const cookieStr = document.cookie;
+        const cookies = cookieStr.split(';').map(c => c.trim());
+        for (const cookie of cookies) {
+            if (cookie.startsWith(name + '=')) {
+                return decodeURIComponent(cookie.split('=')[1]);
+            }
+        }
+        return null;
+    }
+
+    document.getElementById('modalCloseBtn').addEventListener('click', function () {
+        document.getElementById('postDetailModal').style.display = 'none';
+        this.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    });
+
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('postDetailModal');
+        const closeBtn = document.getElementById('modalCloseBtn');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            closeBtn.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalContent = document.getElementById('modalContent');
+
+        modalContent.addEventListener('click', async function (e) {
+            if (e.target && e.target.id === 'submitCommentBtn') {
+                const postId = e.target.getAttribute('data-post-id');
+                const content = document.getElementById('commentInput').value.trim();
+
+                if (!content) {
+                    alert('댓글을 입력해주세요.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/posts/${postId}/comments`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+                        },
+                        body: JSON.stringify({ content })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error);
+                    }
+
+                    alert('댓글이 등록되었습니다.');
+                    openPostModal(postId);
+                } catch (error) {
+                    console.error(error);
+                    alert('댓글 등록 실패: ' + error.message);
+                }
+            }
+        });
+    });
+
+    function initEditCommentButtons() {
+        const currentUsername = document.getElementById("currentUsername")?.value;
+
+        document.querySelectorAll(".comment").forEach(commentEl => {
+            const author = commentEl.dataset.author;
+            const editBtn = commentEl.querySelector(".edit-comment-btn");
+            const deleteBtn = commentEl.querySelector(".delete-comment-btn");
+            const saveBtn = commentEl.querySelector(".save-comment-btn");
+            const cancelBtn = commentEl.querySelector(".cancel-edit-btn");
+            const commentTextEl = commentEl.querySelector(".comment-text");
+            const editFormEl = commentEl.querySelector(".edit-comment-form");
+            const inputEl = commentEl.querySelector(".edit-comment-input");
+
+            if (!editBtn || !deleteBtn || !saveBtn || !cancelBtn || !commentTextEl || !editFormEl || !inputEl) return;
+
+            if (currentUsername === author) {
+                editBtn.style.display = "inline-block";
+                deleteBtn.style.display = "inline-block";
+            }
+
+            editBtn.addEventListener("click", () => {
+                editBtn.style.display = "none";
+                deleteBtn.style.display = "none";
+                saveBtn.style.display = "inline-block";
+                cancelBtn.style.display = "inline-block";
+
+                commentTextEl.style.display = "none";
+                editFormEl.style.display = "block";
+
+                inputEl.value = commentTextEl.textContent.trim();
+                inputEl.focus();
+            });
+
+            cancelBtn.addEventListener("click", () => {
+                editBtn.style.display = "inline-block";
+                deleteBtn.style.display = "inline-block";
+                saveBtn.style.display = "none";
+                cancelBtn.style.display = "none";
+
+                commentTextEl.style.display = "block";
+                editFormEl.style.display = "none";
+            });
+
+            saveBtn.addEventListener("click", async (e) => {
+                const commentId = commentEl.dataset.commentId;
+                const newContent = inputEl.value.trim();
+                const postId = e.target.getAttribute("data-post-id");
+
+                if (newContent === "") {
+                    alert("댓글 내용을 입력하세요.");
+                    return;
+                }
+
+                const response = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + getCookie("JWT_TOKEN")
+                    },
+                    body: JSON.stringify({ content: newContent })
+                });
+
+                if (response.ok) {
+                    commentTextEl.textContent = newContent;
+                    commentTextEl.style.display = "block";
+                    editFormEl.style.display = "none";
+
+                    saveBtn.style.display = "none";
+                    cancelBtn.style.display = "none";
+                    editBtn.style.display = "inline-block";
+                    deleteBtn.style.display = "inline-block";
+                } else {
+                    alert("댓글 수정 실패");
+                }
+            });
+        });
+    }
+
+    function initDeleteCommentButtons() {
+        document.querySelectorAll('.comment').forEach(commentEl => {
+            const deleteBtn = commentEl.querySelector('.delete-comment-btn');
+            if (!deleteBtn) return;
+
+            deleteBtn.addEventListener('click', async (e) => {
+                if (!confirm("댓글을 삭제하시겠습니까?")) return;
+
+                const commentId = commentEl.dataset.commentId;
+                const postId = e.target.getAttribute("data-post-id");
+
+                if (!postId) {
+                    alert("postId 정보를 찾을 수 없습니다.");
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+                        }
+                    });
+
+                    if (response.ok) {
+                        commentEl.remove();
+
+                        const commentCountSpan = document.querySelector('#modalContent .comment-count');
+                        if (commentCountSpan) {
+                            const currentCount = parseInt(commentCountSpan.textContent.trim());
+                            if (!isNaN(currentCount) && currentCount > 0) {
+                                commentCountSpan.textContent = currentCount - 1;
+                            }
+                        }
+
+                    } else {
+                        const errMsg = await response.text();
+                        alert("댓글 삭제 실패: " + errMsg);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert("댓글 삭제 중 오류가 발생했습니다.");
+                }
+            });
+        });
+    }
+
+    function initLikeButtons() {
+        document.querySelectorAll('.like-btn').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+
+                const postId = btn.getAttribute('data-post-id');
+                const countEl = btn.closest('.post-stats').querySelector('.like-count');
+
+                try {
+                    const response = await fetch(`/api/posts/${postId}/like`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+                        },
+                        credentials: 'include'
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+
+                        if (countEl) {
+                            let count = parseInt(countEl.textContent) || 0;
+
+                            if (result.liked) {
+                                countEl.textContent = count + 1;
+                                btn.classList.add('liked');
+                                btn.textContent = '❤️';
+                            } else {
+                                countEl.textContent = count - 1 >= 0 ? count - 1 : 0;
+                                btn.classList.remove('liked');
+                                btn.textContent = '🤍';
+                            }
+                        }
+                    } else {
+                        const error = await response.text();
+                        alert('좋아요 실패: ' + error);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert('좋아요 처리 중 오류 발생');
+                }
+            };
+        });
+    }
+
+    function logout() {
+        fetch("/api/users/logout", {
+            method: "POST",
+            credentials: "include",
+        }).then(() => {
+            window.location.href = "/";
+        });
+    }
+
+    function initCommentLikeButtons() {
+        document.querySelectorAll('.comment-like-btn').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+
+                const commentId = btn.getAttribute('data-comment-id');
+                const postId = btn.getAttribute('data-post-id');
+                const countEl = btn.parentElement.querySelector('.comment-like-count');
+
+                try {
+                    const response = await fetch(`/api/posts/${postId}/comments/${commentId}/like`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+                        },
+                        credentials: 'include'
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        let count = parseInt(countEl.textContent) || 0;
+
+                        if (result.liked) {
+                            count += 1;
+                            btn.classList.add('liked');
+                            btn.textContent = '❤️';
+                        } else {
+                            count = Math.max(0, count - 1);
+                            btn.classList.remove('liked');
+                            btn.textContent = '🤍';
+                        }
+
+                        countEl.textContent = count;
+                    } else {
+                        const error = await response.text();
+                        alert('댓글 좋아요 실패: ' + error);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('댓글 좋아요 처리 중 오류 발생');
+                }
+            };
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initEditCommentButtons();
+        initDeleteCommentButtons();
+        initLikeButtons();
+        initCommentLikeButtons();
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', logout);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+
+        hamburgerBtn?.addEventListener('click', () => {
+            dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        deleteAccountBtn?.addEventListener('click', async () => {
+            const confirmDelete = confirm("정말로 회원 탈퇴하시겠습니까?");
+            if (!confirmDelete) return;
+
+            try {
+                const response = await fetch('/api/users/me', {
+                    method: 'DELETE',
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    alert("회원 탈퇴가 완료되었습니다.");
+                    window.location.href = "/login";
+                } else {
+                    const data = await response.json();
+                    alert(data.message || "회원 탈퇴에 실패했습니다.");
+                }
+            } catch (err) {
+                alert("에러가 발생했습니다.");
+            }
+        });
+    });
+
+    function initAuthorSuspendMenu() {
+        const currentUserRole = document.getElementById("currentUserRole")?.value || 'USER';
+        const authorMenu = document.getElementById("authorMenu");
+
+        if (!authorMenu || currentUserRole !== 'ADMIN') return;
+
+        document.querySelectorAll(".author-name").forEach(authorEl => {
+            authorEl.addEventListener("click", function (e) {
+                const authorId = authorEl.getAttribute("data-author-id");
+                authorMenu.style.display = "block";
+                authorMenu.style.top = `${e.clientY}px`;
+                authorMenu.style.left = `${e.clientX}px`;
+                authorMenu.setAttribute("data-target-user-id", authorId);
+                e.stopPropagation();
+            });
+        });
+
+        document.addEventListener("click", function (e) {
+            if (!authorMenu.contains(e.target) && !e.target.classList.contains("author-name")) {
+                authorMenu.style.display = "none";
+            }
+        });
+
+        const suspendBtn = document.getElementById("suspendUserBtn");
+        const durationSelect = document.getElementById("suspendDuration");
+
+        if (suspendBtn && durationSelect) {
+            suspendBtn.addEventListener("click", async function () {
+                const userId = authorMenu.getAttribute("data-target-user-id");
+                const duration = durationSelect.value;
+
+                try {
+                    const response = await fetch(`/api/users/suspend/${userId}?duration=${duration}`, {
+                        method: "PATCH",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+
+                    const data = await response.json();
+                    alert(data.message);
+                    authorMenu.style.display = "none";
+                } catch (err) {
+                    console.error(err);
+                    alert("이용 정지 실패");
+                }
+            });
+        }
+    }
+</script>
 </html>
