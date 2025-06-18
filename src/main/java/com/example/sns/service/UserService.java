@@ -39,10 +39,6 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username).orElse(null);
-    }
-
     @Transactional
     public void deleteUser(String username) {
         User user = userRepository.findByUsername(username)
@@ -91,5 +87,17 @@ public class UserService {
                 user.getUsername(),
                 user.getProfileImageUrl()
         );
+    }
+
+    @Transactional
+    public void updateUsername(Long userId, String newUsername) {
+        if (userRepository.existsByUsername(newUsername)) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        user.updateUsername(newUsername);
     }
 }

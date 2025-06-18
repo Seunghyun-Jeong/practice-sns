@@ -8,15 +8,24 @@
 <body>
 
 <div th:replace="~{fragments/header :: header}"></div>
-
+<input type="hidden" id="currentUsername" th:value="${currentUsername}">
 <div class="profile-container">
     <div class="profile-header">
         <img th:src="@{${profileImageUrl}}" alt="프로필 이미지" class="profile-img" />
         <div class="profile-info">
-            <h2 th:text="${profileUsername}" id="usernameDisplay">username</h2>
-            <input type="text" id="editUsernameInput" style="display:none;" />
-            <button id="editUsernameBtn" th:if="${profileUsername == currentUsername}">닉네임 수정</button>
-            <button id="saveUsernameBtn" style="display:none;">저장</button>
+
+            <div id="nicknameDisplay" style="display: inline-block;">
+                <h2 id="nicknameText" th:text="${profileUsername}">username</h2>
+                <button id="editNicknameBtn">닉네임 수정</button>
+            </div>
+
+            <div id="nicknameEditForm" style="display: none;">
+                <input type="text" id="nicknameInput" th:value="${profileUsername}">
+                <button id="saveNicknameBtn">저장</button>
+                <button id="cancelNicknameBtn">취소</button>
+            </div>
+
+        </div>
 
             <form id="profileImageForm" enctype="multipart/form-data" th:if="${profileUsername == currentUsername}">
                 <input type="file" name="profileImage" id="profileImageInput" />
@@ -562,5 +571,62 @@
             });
         }
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const editNicknameBtn = document.getElementById('editNicknameBtn');
+        const saveNicknameBtn = document.getElementById('saveNicknameBtn');
+        const cancelNicknameBtn = document.getElementById('cancelNicknameBtn');
+        const nicknameDisplay = document.getElementById('nicknameDisplay');
+        const nicknameEditForm = document.getElementById('nicknameEditForm');
+        const nicknameInput = document.getElementById('nicknameInput');
+        const nicknameText = document.getElementById('nicknameText');
+
+        if (!editNicknameBtn || !saveNicknameBtn || !cancelNicknameBtn || !nicknameDisplay || !nicknameEditForm || !nicknameInput) return;
+
+        editNicknameBtn.addEventListener('click', () => {
+            nicknameDisplay.style.display = 'none';
+            nicknameEditForm.style.display = 'inline-block';
+            nicknameInput.value = nicknameText.textContent.trim();
+            nicknameInput.focus();
+        });
+
+        cancelNicknameBtn.addEventListener('click', () => {
+            nicknameEditForm.style.display = 'none';
+            nicknameDisplay.style.display = 'inline-block';
+        });
+
+        saveNicknameBtn.addEventListener('click', async () => {
+            const newNickname = nicknameInput.value.trim();
+            if (!newNickname) {
+                alert("닉네임을 입력하세요.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users/username', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username: newNickname })
+                });
+
+                if (response.ok) {
+                    nicknameText.textContent = newNickname;
+                    nicknameEditForm.style.display = 'none';
+                    nicknameDisplay.style.display = 'inline-block';
+                    alert("닉네임이 수정되었습니다.");
+                } else {
+                    const error = await response.json();
+                    alert("닉네임 수정 실패: " + (error.message || JSON.stringify(error)));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("닉네임 수정 중 오류가 발생했습니다.");
+            }
+        });
+    });
 </script>
 </html>

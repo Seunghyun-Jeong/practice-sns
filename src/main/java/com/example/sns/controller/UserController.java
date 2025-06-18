@@ -2,6 +2,7 @@ package com.example.sns.controller;
 
 import com.example.sns.dto.UserLoginRequest;
 import com.example.sns.dto.UserSignUpRequest;
+import com.example.sns.dto.UserUpdateRequestDto;
 import com.example.sns.entity.User;
 import com.example.sns.entity.User.Role;
 import com.example.sns.repository.UserRepository;
@@ -15,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import javax.swing.text.html.Option;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -142,6 +145,40 @@ public class UserController {
         try {
             userService.suspendUser(userId, duration);
             res.put("message", "사용자가 이용 정지가 되었습니다.");
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            res.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(res);
+        }
+    }
+
+    @PutMapping("/username")
+    public ResponseEntity<Map<String, String>> updateUsername(@RequestBody UserUpdateRequestDto requestDto, @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+        Map<String, String> res = new HashMap<>();
+
+        if (token == null || !jwtUtil.validateToken(token)) {
+            res.put("message", "유효하지 않은 토큰입니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
+        }
+
+        String username = jwtUtil.getUsernameFromToken(token);
+        Optional<User> userOpt = userRepository.findByUsername(username);
+
+        if (userOpt.isEmpty()) {
+            res.put("message", "사용자를 찾을 수 없습니다.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
+        }
+
+        String newUsername = requestDto.getUsername();
+
+        if (newUsername == null || newUsername.trim().isEmpty()) {
+            res.put("message", "새 닉네임을 입력해주세요.");
+            return ResponseEntity.badRequest().body(res);
+        }
+
+        try {
+            userService.updateUsername(userOpt.get().getId(), newUsername);
+            res.put("message", "닉네임이 수정되었습니다.");
             return ResponseEntity.ok(res);
         } catch (IllegalArgumentException e) {
             res.put("message", e.getMessage());
