@@ -153,7 +153,7 @@ public class UserController {
     }
 
     @PutMapping("/username")
-    public ResponseEntity<Map<String, String>> updateUsername(@RequestBody UserUpdateRequestDto requestDto, @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+    public ResponseEntity<Map<String, String>> updateUsername(@RequestBody UserUpdateRequestDto requestDto, @CookieValue(value = "JWT_TOKEN", required = false) String token, HttpServletResponse response) {
         Map<String, String> res = new HashMap<>();
 
         if (token == null || !jwtUtil.validateToken(token)) {
@@ -178,6 +178,17 @@ public class UserController {
 
         try {
             userService.updateUsername(userOpt.get().getId(), newUsername);
+
+            String newToken = jwtUtil.generateToken(userOpt.get().getId(), newUsername, userOpt.get().getRole().name());
+
+            Cookie cookie = new Cookie("JWT_TOKEN", newToken);
+            cookie.setHttpOnly(true);
+            cookie.setSecure(false);
+            cookie.setPath("/");
+            cookie.setMaxAge(60 * 60 * 24);
+
+            response.addCookie(cookie);
+
             res.put("message", "닉네임이 수정되었습니다.");
             return ResponseEntity.ok(res);
         } catch (IllegalArgumentException e) {
