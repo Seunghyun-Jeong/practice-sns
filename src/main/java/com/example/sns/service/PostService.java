@@ -150,8 +150,8 @@ public class PostService {
         post.setUpdatedAt(LocalDateTime.now());
     }
 
-    public List<PostSummaryDto> getPostsByUsernameWithExtras(String username) {
-        return postRepository.findAllByAuthor_UsernameOrderByCreatedAtDesc(username).stream()
+    public List<PostSummaryDto> getPostsByUserIdWithExtras(Long userId) {
+        return postRepository.findAllByAuthor_IdOrderByCreatedAtDesc(userId).stream()
                 .map(post -> new PostSummaryDto(
                         post.getId(),
                         post.getTitle(),

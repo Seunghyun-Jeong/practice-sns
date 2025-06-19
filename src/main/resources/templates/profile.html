@@ -614,10 +614,8 @@
                 });
 
                 if (response.ok) {
-                    nicknameText.textContent = newNickname;
-                    nicknameEditForm.style.display = 'none';
-                    nicknameDisplay.style.display = 'inline-block';
                     alert("닉네임이 수정되었습니다.");
+                    location.reload();
                 } else {
                     const error = await response.json();
                     alert("닉네임 수정 실패: " + (error.message || JSON.stringify(error)));

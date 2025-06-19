@@ -79,8 +79,8 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public UserProfileDto getProfile(String username) {
-        User user = userRepository.findByUsername(username)
+    public UserProfileDto getProfileById(Long userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
 
         return new UserProfileDto(

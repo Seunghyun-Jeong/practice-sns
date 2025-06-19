@@ -41,17 +41,9 @@ public class ViewController {
     }
 
     @GetMapping("/")
-    public String mainPage(Model model, @AuthenticationPrincipal UserDetails userDetails) {
-        String currentUsername = null;
-        if (userDetails != null && userDetails.getUsername() != null) {
-            currentUsername = userDetails.getUsername();
-        }
-
+    public String mainPage(Model model) {
         List<PostSummaryDto> posts = postService.getPostsummaries();
-
-        model.addAttribute("username", currentUsername);
         model.addAttribute("posts", posts);
-
         return "main";
     }
 
@@ -63,7 +55,6 @@ public class ViewController {
 
         if (token != null && jwtUtil.validateToken(token)) {
             currentUserId = jwtUtil.getUserIdFromToken(token);
-
             String roleFromToken = jwtUtil.getUserRoleFromToken(token);
             if (roleFromToken != null) {
                 currentUserRole = roleFromToken;
@@ -73,24 +64,19 @@ public class ViewController {
         PostDetailDto post = postService.getPostDetail(id, currentUserId);
         model.addAttribute("post", post);
         model.addAttribute("currentUserId", currentUserId);
-        model.addAttribute("currentUserRole", currentUserRole);  // 여기에 추가!
+        model.addAttribute("currentUserRole", currentUserRole);
 
         return "fragments/postDetailModal :: modalContent";
     }
 
-    @GetMapping("/profile/{username}")
-    public String getProfilePage(@PathVariable String username, Model model, @CookieValue("JWT_TOKEN") String token) {
-        UserProfileDto profile = userService.getProfile(username);
-        List<PostSummaryDto> posts = postService.getPostsByUsernameWithExtras(username);
+    @GetMapping("/profile/{userId}")
+    public String getProfilePage(@PathVariable Long userId, Model model) {
+        UserProfileDto profile = userService.getProfileById(userId);
+        List<PostSummaryDto> posts = postService.getPostsByUserIdWithExtras(userId);
 
         model.addAttribute("profileUsername", profile.getUsername());
         model.addAttribute("profileImageUrl", profile.getProfileImageUrl());
         model.addAttribute("myPosts", posts);
-
-        if (token != null && jwtUtil.validateToken(token)) {
-            String currentUsername = jwtUtil.getUsernameFromToken(token);
-            model.addAttribute("currentUsername", currentUsername);
-        }
 
         return "profile";
     }
