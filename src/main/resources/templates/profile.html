@@ -597,8 +597,20 @@
 
         saveNicknameBtn.addEventListener('click', async () => {
             const newNickname = nicknameInput.value.trim();
+
             if (!newNickname) {
                 alert("닉네임을 입력하세요.");
+                return;
+            }
+
+            if (newNickname.length < 4 || newNickname.length > 10) {
+                alert("닉네임은 4자 이상 10자 이하이어야 합니다.");
+                return;
+            }
+
+            const usernamePattern = /^(?![0-9]+$)(?!.*[.]{2})(?!^\.)[a-zA-Z0-9._]{1,30}(?<!\.)$/;
+            if (!usernamePattern.test(newNickname)) {
+                alert("닉네임은 1~30자의 영문자(대소문자), 숫자, '.', '_'만 사용 가능하며,\n숫자만으로 이루어질 수 없고,\n'.'는 연속으로 사용할 수 없으며 맨 앞이나 맨 뒤에 올 수 없습니다.");
                 return;
             }
 

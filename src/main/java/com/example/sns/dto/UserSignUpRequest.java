@@ -10,8 +10,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class UserSignUpRequest {
-    @Size(min = 4, max = 10)
-    @Pattern(regexp = "^(?![0-9]+$)(?!.*[_.]{2})[a-z0-9._]{4,10}$")
+    @Size(min = 1, max = 30)
+    @Pattern(regexp = "^(?![0-9]+$)(?!.*[.]{2})(?!^\\.)(?!.*\\.$)[a-zA-Z0-9._]{1,30}$")
     private String username;
 
     @Size(min = 8, max = 15)

@@ -153,7 +153,7 @@ public class UserController {
     }
 
     @PutMapping("/username")
-    public ResponseEntity<Map<String, String>> updateUsername(@RequestBody UserUpdateRequestDto requestDto, @CookieValue(value = "JWT_TOKEN", required = false) String token, HttpServletResponse response) {
+    public ResponseEntity<Map<String, String>> updateUsername(@Valid @RequestBody UserUpdateRequestDto requestDto, @CookieValue(value = "JWT_TOKEN", required = false) String token, HttpServletResponse response) {
         Map<String, String> res = new HashMap<>();
 
         if (token == null || !jwtUtil.validateToken(token)) {
