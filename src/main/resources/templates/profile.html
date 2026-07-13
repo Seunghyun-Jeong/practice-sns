@@ -34,7 +34,12 @@
         </div>
     </div>
 
-    <div class="profile-posts feed-container">
+    <div th:if="${profileSuspended}" class="profile-suspended-notice"
+         style="padding: 60px 20px; text-align: center; color: #888; font-size: 1.2em;">
+        이용이 정지된 유저입니다.
+    </div>
+
+    <div th:unless="${profileSuspended}" class="profile-posts feed-container">
         <div th:each="post : ${myPosts}" class="post-summary"
              th:onclick="'openPostModal(' + ${post.id} + ')'"
              style="cursor:pointer;">
