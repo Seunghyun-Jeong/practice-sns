@@ -16,10 +16,10 @@
 
             <div id="nicknameDisplay" style="display: inline-block;">
                 <h2 id="nicknameText" th:text="${profileUsername}">username</h2>
-                <button id="editNicknameBtn">닉네임 수정</button>
+                <button id="editNicknameBtn" th:if="${profileUsername == currentUsername}">닉네임 수정</button>
             </div>
 
-            <div id="nicknameEditForm" style="display: none;">
+            <div id="nicknameEditForm" style="display: none;" th:if="${profileUsername == currentUsername}">
                 <input type="text" id="nicknameInput" th:value="${profileUsername}">
                 <button id="saveNicknameBtn">저장</button>
                 <button id="cancelNicknameBtn">취소</button>
