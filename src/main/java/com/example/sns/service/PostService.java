@@ -51,6 +51,7 @@ public class PostService {
 
     public List<PostResponse> getAllPosts() {
         return postRepository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(post -> !post.getAuthor().isSuspended())
                 .map(post -> new PostResponse(
                         post.getId(),
                         post.getTitle(),
@@ -63,6 +64,7 @@ public class PostService {
 
     public List<PostSummaryDto> getPostsummaries() {
         return postRepository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(post -> !post.getAuthor().isSuspended())
                 .map(post -> new PostSummaryDto(
                         post.getId(),
                         post.getTitle(),
@@ -71,7 +73,8 @@ public class PostService {
                         post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                         post.getContent(),
                         postLikeRepository.countByPost(post),
-                        post.getComments().size()
+                        post.getComments().size(),
+                        false
                 ))
                 .collect(Collectors.toList());
     }
@@ -91,15 +94,17 @@ public class PostService {
                     if (currentUser != null) {
                         commentLikedByCurrentUser = commentLikeRepository.existsByCommentAndUser(comment, currentUser);
                     }
+                    boolean commentAuthorSuspended = comment.getAuthor().isSuspended();
                     return new CommentDto(
                             comment.getId(),
-                            comment.getAuthor().getUsername(),
-                            comment.getAuthor().getId(),
-                            comment.getContent(),
+                            commentAuthorSuspended ? null : comment.getAuthor().getUsername(),
+                            commentAuthorSuspended ? null : comment.getAuthor().getId(),
+                            commentAuthorSuspended ? null : comment.getContent(),
                             comment.getCreatedAt().toString(),
                             comment.getUpdatedAt() != null ? comment.getUpdatedAt().toString() : null,
                             commentLikeCount,
-                            commentLikedByCurrentUser
+                            commentLikedByCurrentUser,
+                            commentAuthorSuspended
                     );
                 })
                 .collect(Collectors.toList());
@@ -109,18 +114,21 @@ public class PostService {
             postLikedByCurrentUser = postLikeRepository.existsByPostAndUser(post, currentUser);
         }
 
+        boolean postAuthorSuspended = post.getAuthor().isSuspended();
+
         return new PostDetailDto(
                 post.getId(),
-                post.getTitle(),
-                post.getContent(),
-                post.getAuthor().getUsername(),
-                post.getAuthor().getId(),
+                postAuthorSuspended ? null : post.getTitle(),
+                postAuthorSuspended ? null : post.getContent(),
+                postAuthorSuspended ? null : post.getAuthor().getUsername(),
+                postAuthorSuspended ? null : post.getAuthor().getId(),
                 post.getCreatedAt().toString(),
                 post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                 likeCount,
                 commentDtos.size(),
                 commentDtos,
-                postLikedByCurrentUser
+                postLikedByCurrentUser,
+                postAuthorSuspended
         );
     }
 
@@ -160,7 +168,8 @@ public class PostService {
                         post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                         post.getContent(),
                         postLikeRepository.countByPost(post),
-                        post.getComments().size()
+                        post.getComments().size(),
+                        post.getAuthor().isSuspended()
                 ))
                 .collect(Collectors.toList());
     }

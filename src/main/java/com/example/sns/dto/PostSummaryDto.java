@@ -14,4 +14,5 @@ public class PostSummaryDto {
     private String content;
     private long likeCount;
     private int commentCount;
+    private boolean suspended;
 }

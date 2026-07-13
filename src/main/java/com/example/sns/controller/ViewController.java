@@ -77,6 +77,7 @@ public class ViewController {
         model.addAttribute("profileUsername", profile.getUsername());
         model.addAttribute("profileImageUrl", profile.getProfileImageUrl());
         model.addAttribute("myPosts", posts);
+        model.addAttribute("profileSuspended", profile.isSuspended());
 
         return "profile";
     }

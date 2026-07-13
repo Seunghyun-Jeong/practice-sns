@@ -4,10 +4,6 @@ import com.example.sns.dto.UserProfileDto;
 import com.example.sns.dto.UserSignUpRequest;
 import com.example.sns.entity.User;
 import com.example.sns.entity.User.Role;
-import com.example.sns.repository.CommentLikeRepository;
-import com.example.sns.repository.CommentRepository;
-import com.example.sns.repository.PostLikeRepository;
-import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final PostRepository postRepository;
-    private final CommentRepository commentRepository;
-    private final PostLikeRepository postLikeRepository;
-    private final CommentLikeRepository commentLikeRepository;
 
     public void signup(UserSignUpRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -71,11 +63,6 @@ public class UserService {
 
         user.setSuspendedUntil(until);
 
-        postRepository.deleteAll(user.getPosts());
-        commentRepository.deleteAll(user.getComments());
-        postLikeRepository.deleteAll(user.getPostLikes());
-        commentLikeRepository.deleteAll(user.getCommentLikes());
-
         userRepository.save(user);
     }
 
@@ -85,7 +72,8 @@ public class UserService {
 
         return new UserProfileDto(
                 user.getUsername(),
-                user.getProfileImageUrl()
+                user.getProfileImageUrl(),
+                user.isSuspended()
         );
     }
 

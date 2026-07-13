@@ -18,4 +18,5 @@ public class PostDetailDto {
     private int commentCount;
     private List<CommentDto> comments;
     private boolean likedByCurrentUser;
+    private boolean suspended;
 }

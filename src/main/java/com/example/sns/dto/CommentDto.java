@@ -16,4 +16,5 @@ public class CommentDto {
     private String updatedAt;
     private long likeCount;
     private boolean likedByCurrentUser;
+    private boolean suspended;
 }

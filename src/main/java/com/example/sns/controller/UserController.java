@@ -11,7 +11,6 @@ import com.example.sns.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,7 +66,7 @@ public class UserController {
         }
         User user = userOpt.get();
 
-        if (user.getSuspendedUntil() != null && user.getSuspendedUntil().isAfter(LocalDateTime.now())) {
+        if (user.isSuspended()) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
             return  ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "로그인 하려는 계정은 현재 정지되었습니다. \n이용 정지 종료: " + user.getSuspendedUntil().format(formatter)));

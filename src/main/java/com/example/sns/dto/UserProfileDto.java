@@ -12,4 +12,5 @@ import lombok.Setter;
 public class UserProfileDto {
     private String username;
     private String profileImageUrl;
+    private boolean suspended;
 }
