@@ -129,7 +129,7 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        if (!post.getAuthor().equals(username) && !"ADMIN".equals(role)) {
+        if (!post.getAuthor().getUsername().equals(username) && !"ADMIN".equals(role)) {
             throw new SecurityException("게시글 삭제 권한이 없습니다.");
         }
 

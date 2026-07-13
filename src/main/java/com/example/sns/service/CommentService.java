@@ -52,7 +52,7 @@ public class CommentService {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 삭제할 수 없습니다."));
 
-        if (!comment.getAuthor().equals(username) && !"ADMIN".equals(role)) {
+        if (!comment.getAuthor().getUsername().equals(username) && !"ADMIN".equals(role)) {
             throw new SecurityException("댓글 삭제 권한이 없습니다.");
         }
 
