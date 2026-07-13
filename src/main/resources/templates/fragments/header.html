@@ -18,6 +18,13 @@
 
     <span th:if="${username == null}">
       <a href="/login"><button class="btn login-btn">로그인</button></a>
+
+      <div class="hamburger-menu">
+        <button id="hamburgerBtn">☰</button>
+        <div id="dropdownMenu" class="dropdown-content" style="display: none;">
+          <a href="/signup"><button class="btn signup-btn">회원가입</button></a>
+        </div>
+      </div>
     </span>
   </div>
 </div>
