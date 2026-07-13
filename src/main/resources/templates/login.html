@@ -42,7 +42,6 @@
 
               if (response.ok) {
                 alert(data.message);
-                localStorage.setItem("token", data.token);
                 window.location.href = "/";
               } else {
                 alert(data.message || "로그인에 실패했습니다.");

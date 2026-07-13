@@ -36,7 +36,10 @@ public class ViewController {
     }
 
     @GetMapping("/post")
-    public String postPage() {
+    public String postPage(@CookieValue(value = "JWT_TOKEN", required = false) String token) {
+        if (token == null || !jwtUtil.validateToken(token)) {
+            return "redirect:/login";
+        }
         return "post";
     }
 

@@ -22,25 +22,23 @@
     document.getElementById("postForm").addEventListener("submit", function (e) {
         e.preventDefault();
 
-        const token = localStorage.getItem("token");
-        if (!token) {
-            alert("로그인이 필요합니다.");
-            window.location.href = "/login";
-            return;
-        }
-
         const title = document.getElementById("title").value;
         const content = document.getElementById("content").value;
 
         fetch("/api/posts", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Content-Type": "application/json"
             },
+            credentials: "include",
             body: JSON.stringify({ title, content })
         })
             .then(async response => {
+                if (response.status === 401) {
+                    alert("로그인이 필요합니다.");
+                    window.location.href = "/login";
+                    return;
+                }
                 const data = await response.json();
                 if (response.ok) {
                     alert("게시글이 등록되었습니다!");
