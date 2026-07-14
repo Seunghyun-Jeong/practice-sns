@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>유저 콘텐츠 조회</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="feed-container" style="margin-top: 30px;">
+    <h2 style="margin-bottom: 4px;">
+        <span th:text="${targetUsername}">username</span> 님의 콘텐츠
+    </h2>
+    <p style="color: #888; font-size: 14px; margin-bottom: 8px;">
+        정지 사유 확인용 — 관리자만 볼 수 있는 페이지입니다.
+    </p>
+
+    <h3 style="margin-top: 20px;">작성한 글</h3>
+    <div th:if="${posts.isEmpty()}" style="color: #888; padding: 20px 0;">작성한 글이 없습니다.</div>
+    <div th:each="post : ${posts}" class="post-summary" style="cursor: default;">
+        <p style="color: #888; font-size: 13px; margin: 0 0 6px;">
+            <span th:if="${post.updatedAt == null}" th:text="'작성일: ' + ${post.createdAt}"></span>
+            <span th:if="${post.updatedAt != null}" th:text="'수정일: ' + ${post.updatedAt} + ' (수정됨)'"></span>
+        </p>
+        <div th:text="${post.content}">내용</div>
+        <p style="color: #888; font-size: 13px; margin: 8px 0 0;">
+            좋아요 <span th:text="${post.likeCount}">0</span> · 댓글 <span th:text="${post.commentCount}">0</span>
+        </p>
+    </div>
+
+    <h3 style="margin-top: 32px;">작성한 댓글</h3>
+    <div th:if="${comments.isEmpty()}" style="color: #888; padding: 20px 0;">작성한 댓글이 없습니다.</div>
+    <div th:each="comment : ${comments}" class="post-summary" style="cursor: default;">
+        <p style="color: #888; font-size: 13px; margin: 0 0 6px;" th:text="'작성일: ' + ${comment.createdAt}"></p>
+        <div th:text="${comment.content}">댓글 내용</div>
+        <div style="margin-top: 10px; padding: 8px 10px; background: #f5f5f5; border-radius: 6px; font-size: 13px; color: #555;">
+            원문 글 (<span th:text="${comment.postAuthor}">작성자</span>):
+            <span th:text="${comment.postContent}">글 내용</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        hamburgerBtn?.addEventListener('click', () => {
+            dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            fetch('/api/users/logout', { method: 'POST', credentials: 'include' })
+                .then(() => window.location.href = '/');
+        });
+
+        document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => {
+            if (!confirm('정말로 회원 탈퇴하시겠습니까?')) return;
+            const response = await fetch('/api/users/me', { method: 'DELETE', credentials: 'include' });
+            if (response.ok) {
+                alert('회원 탈퇴가 완료되었습니다.');
+                window.location.href = '/login';
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

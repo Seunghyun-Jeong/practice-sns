@@ -19,7 +19,9 @@
 
     <div th:each="user : ${suspendedUsers}" class="suspended-user-item">
         <div>
-            <strong th:text="${user.username}">username</strong>
+            <a th:href="@{'/admin/users/' + ${user.id} + '/content'}"
+               th:text="${user.username}"
+               style="font-weight: 700; color: inherit; text-decoration: none; cursor: pointer;">username</a>
             <span class="suspend-until">정지 종료: <span th:text="${user.suspendedUntil}"></span></span>
         </div>
         <button class="unsuspend-btn" th:attr="data-user-id=${user.id}">이용 정지 해제</button>

@@ -1,5 +1,6 @@
 package com.example.sns.service;
 
+import com.example.sns.dto.AdminCommentDto;
 import com.example.sns.dto.CommentDto;
 import com.example.sns.dto.CommentUpdateRequest;
 import com.example.sns.entity.Comment;
@@ -10,6 +11,8 @@ import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -46,6 +49,19 @@ public class CommentService {
         comment.setContent(request.getContent());
         comment.setUpdatedAt(LocalDateTime.now());
         commentRepository.save(comment);
+    }
+
+    public List<AdminCommentDto> getCommentsByUser(Long userId) {
+        return commentRepository.findByAuthor_IdOrderByCreatedAtDesc(userId).stream()
+                .map(comment -> new AdminCommentDto(
+                        comment.getId(),
+                        comment.getContent(),
+                        comment.getCreatedAt().toString(),
+                        comment.getPost().getId(),
+                        comment.getPost().getContent(),
+                        comment.getPost().getAuthor().getUsername()
+                ))
+                .collect(Collectors.toList());
     }
 
     public void deleteComment(Long commentId, String username, String role) {

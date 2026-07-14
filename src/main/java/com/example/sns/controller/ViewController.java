@@ -5,6 +5,7 @@ import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.UserProfileDto;
 import com.example.sns.repository.UserRepository;
+import com.example.sns.service.CommentService;
 import com.example.sns.service.PostService;
 import com.example.sns.service.UserService;
 import com.example.sns.util.JwtUtil;
@@ -24,6 +25,7 @@ public class ViewController {
     private final PostService postService;
     private final JwtUtil jwtUtil;
     private final UserService userService;
+    private final CommentService commentService;
 
     @GetMapping("/signup")
     public String signupPage() {
@@ -106,5 +108,22 @@ public class ViewController {
 
         model.addAttribute("suspendedUsers", userService.getSuspendedUsers());
         return "suspended-users";
+    }
+
+    @GetMapping("/admin/users/{userId}/content")
+    public String adminUserContent(@PathVariable Long userId, Model model,
+                                   @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+        if (token == null || !jwtUtil.validateToken(token)
+                || !"ADMIN".equals(jwtUtil.getUserRoleFromToken(token))) {
+            return "redirect:/";
+        }
+
+        UserProfileDto profile = userService.getProfileById(userId);
+        model.addAttribute("targetUsername", profile.getUsername());
+        model.addAttribute("targetUserId", userId);
+        model.addAttribute("posts", postService.getPostsByUserIdWithExtras(userId));
+        model.addAttribute("comments", commentService.getCommentsByUser(userId));
+
+        return "admin-user-content";
     }
 }
