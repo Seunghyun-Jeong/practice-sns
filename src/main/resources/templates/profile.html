@@ -12,7 +12,7 @@
 <div class="profile-container">
     <div class="profile-header">
         <img th:src="@{${profileImageUrl}}" alt="프로필 이미지" class="profile-img" />
-        <div class="profile-info">
+        <div class="profile-info" style="position: relative;">
 
             <div id="nicknameDisplay" style="display: inline-block;">
                 <h2 id="nicknameText" th:text="${profileUsername}">username</h2>
@@ -27,7 +27,7 @@
 
             <div id="profileSuspendMenu" th:if="${currentUserRole == 'ADMIN'}"
                  th:attr="data-user-id=${profileUserId}"
-                 style="display: none; background: #fff; border: 1px solid #ccc; padding: 10px; margin-top: 8px;">
+                 style="display: none; position: absolute; top: 100%; left: 0; margin-top: 8px; z-index: 10; white-space: nowrap; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                 <label for="suspendDuration">이용정지 기간:</label>
                 <select id="suspendDuration">
                     <option value="1d">1일</option>
