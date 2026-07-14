@@ -89,11 +89,26 @@
             initLikeButtons();
             initCommentLikeButtons();
             initAuthorSuspendMenu();
+            initAuthorProfileLink();
 
         } catch (error) {
             alert('게시글 상세 정보를 불러오는데 실패했습니다.');
             console.error(error);
         }
+    }
+
+    function initAuthorProfileLink() {
+        const currentUserRole = document.getElementById("currentUserRole")?.value || 'USER';
+        if (currentUserRole === 'ADMIN') return;
+
+        document.querySelectorAll('#modalContent .author-name').forEach(authorEl => {
+            authorEl.addEventListener('click', () => {
+                const authorId = authorEl.getAttribute('data-author-id');
+                if (authorId) {
+                    window.location.href = '/profile/' + authorId;
+                }
+            });
+        });
     }
 
     function initDeleteButton() {
