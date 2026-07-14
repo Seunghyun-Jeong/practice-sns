@@ -25,6 +25,21 @@
                 <button id="cancelNicknameBtn">취소</button>
             </div>
 
+            <div id="profileSuspendMenu" th:if="${currentUserRole == 'ADMIN'}"
+                 th:attr="data-user-id=${profileUserId}"
+                 style="display: none; background: #fff; border: 1px solid #ccc; padding: 10px; margin-top: 8px;">
+                <label for="suspendDuration">이용정지 기간:</label>
+                <select id="suspendDuration">
+                    <option value="1d">1일</option>
+                    <option value="3d">3일</option>
+                    <option value="7d">7일</option>
+                    <option value="30d">30일</option>
+                    <option value="90d">90일</option>
+                    <option value="forever">영구정지</option>
+                </select>
+                <button id="suspendUserBtn">정지</button>
+            </div>
+
         </div>
 
             <form id="profileImageForm" enctype="multipart/form-data" th:if="${profileUsername == currentUsername}">
@@ -88,7 +103,6 @@
             initDeleteCommentButtons();
             initLikeButtons();
             initCommentLikeButtons();
-            initAuthorSuspendMenu();
             initAuthorProfileLink();
 
         } catch (error) {
@@ -98,9 +112,6 @@
     }
 
     function initAuthorProfileLink() {
-        const currentUserRole = document.getElementById("currentUserRole")?.value || 'USER';
-        if (currentUserRole === 'ADMIN') return;
-
         document.querySelectorAll('#modalContent .author-name').forEach(authorEl => {
             authorEl.addEventListener('click', () => {
                 const authorId = authorEl.getAttribute('data-author-id');
@@ -531,56 +542,38 @@
         });
     });
 
-    function initAuthorSuspendMenu() {
-        const currentUserRole = document.getElementById("currentUserRole")?.value || 'USER';
-        const authorMenu = document.getElementById("authorMenu");
 
-        if (!authorMenu || currentUserRole !== 'ADMIN') return;
+    document.addEventListener('DOMContentLoaded', () => {
+        const suspendMenu = document.getElementById('profileSuspendMenu');
+        if (!suspendMenu) return;
 
-        document.querySelectorAll(".author-name").forEach(authorEl => {
-            authorEl.addEventListener("click", function (e) {
-                const authorId = authorEl.getAttribute("data-author-id");
-                authorMenu.style.display = "block";
-                authorMenu.style.top = `${e.clientY}px`;
-                authorMenu.style.left = `${e.clientX}px`;
-                authorMenu.setAttribute("data-target-user-id", authorId);
-                e.stopPropagation();
-            });
+        const nicknameText = document.getElementById('nicknameText');
+        nicknameText.style.cursor = 'pointer';
+        nicknameText.addEventListener('click', () => {
+            suspendMenu.style.display = suspendMenu.style.display === 'block' ? 'none' : 'block';
         });
 
-        document.addEventListener("click", function (e) {
-            if (!authorMenu.contains(e.target) && !e.target.classList.contains("author-name")) {
-                authorMenu.style.display = "none";
+        document.getElementById('suspendUserBtn').addEventListener('click', async () => {
+            const userId = suspendMenu.getAttribute('data-user-id');
+            const duration = document.getElementById('suspendDuration').value;
+
+            try {
+                const response = await fetch(`/api/users/suspend/${userId}?duration=${duration}`, {
+                    method: 'PATCH',
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                alert(data.message);
+                if (response.ok) {
+                    location.reload();
+                }
+            } catch (err) {
+                console.error(err);
+                alert('이용 정지 실패');
             }
         });
-
-        const suspendBtn = document.getElementById("suspendUserBtn");
-        const durationSelect = document.getElementById("suspendDuration");
-
-        if (suspendBtn && durationSelect) {
-            suspendBtn.addEventListener("click", async function () {
-                const userId = authorMenu.getAttribute("data-target-user-id");
-                const duration = durationSelect.value;
-
-                try {
-                    const response = await fetch(`/api/users/suspend/${userId}?duration=${duration}`, {
-                        method: "PATCH",
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        credentials: 'include'
-                    });
-
-                    const data = await response.json();
-                    alert(data.message);
-                    authorMenu.style.display = "none";
-                } catch (err) {
-                    console.error(err);
-                    alert("이용 정지 실패");
-                }
-            });
-        }
-    }
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         const editNicknameBtn = document.getElementById('editNicknameBtn');

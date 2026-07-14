@@ -73,14 +73,25 @@ public class ViewController {
     }
 
     @GetMapping("/profile/{userId}")
-    public String getProfilePage(@PathVariable Long userId, Model model) {
+    public String getProfilePage(@PathVariable Long userId, Model model,
+                                 @CookieValue(value = "JWT_TOKEN", required = false) String token) {
         UserProfileDto profile = userService.getProfileById(userId);
         List<PostSummaryDto> posts = postService.getPostsByUserIdWithExtras(userId);
+
+        String currentUserRole = "USER";
+        if (token != null && jwtUtil.validateToken(token)) {
+            String roleFromToken = jwtUtil.getUserRoleFromToken(token);
+            if (roleFromToken != null) {
+                currentUserRole = roleFromToken;
+            }
+        }
 
         model.addAttribute("profileUsername", profile.getUsername());
         model.addAttribute("profileImageUrl", profile.getProfileImageUrl());
         model.addAttribute("myPosts", posts);
         model.addAttribute("profileSuspended", profile.isSuspended());
+        model.addAttribute("currentUserRole", currentUserRole);
+        model.addAttribute("profileUserId", userId);
 
         return "profile";
     }
