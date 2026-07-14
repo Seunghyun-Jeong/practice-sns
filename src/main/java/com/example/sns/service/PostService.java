@@ -41,12 +41,11 @@ public class PostService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 
         Post post = new Post();
-        post.setTitle(postRequest.getTitle());
         post.setContent(postRequest.getContent());
         post.setAuthor(user);
 
         Post saved = postRepository.save(post);
-        return new PostResponse(saved.getId(), saved.getTitle(), saved.getContent(), user.getUsername(), saved.getCreatedAt());
+        return new PostResponse(saved.getId(), saved.getContent(), user.getUsername(), saved.getCreatedAt());
     }
 
     public List<PostResponse> getAllPosts() {
@@ -54,7 +53,6 @@ public class PostService {
                 .filter(post -> !post.getAuthor().isSuspended())
                 .map(post -> new PostResponse(
                         post.getId(),
-                        post.getTitle(),
                         post.getContent(),
                         post.getAuthor().getUsername(),
                         post.getCreatedAt()
@@ -67,7 +65,6 @@ public class PostService {
                 .filter(post -> !post.getAuthor().isSuspended())
                 .map(post -> new PostSummaryDto(
                         post.getId(),
-                        post.getTitle(),
                         post.getAuthor().getUsername(),
                         post.getCreatedAt().toString(),
                         post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
@@ -118,7 +115,6 @@ public class PostService {
 
         return new PostDetailDto(
                 post.getId(),
-                postAuthorSuspended ? null : post.getTitle(),
                 postAuthorSuspended ? null : post.getContent(),
                 postAuthorSuspended ? null : post.getAuthor().getUsername(),
                 postAuthorSuspended ? null : post.getAuthor().getId(),
@@ -153,7 +149,6 @@ public class PostService {
             throw new SecurityException("게시글 수정 권한이 없습니다.");
         }
 
-        post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setUpdatedAt(LocalDateTime.now());
     }
@@ -162,7 +157,6 @@ public class PostService {
         return postRepository.findAllByAuthor_IdOrderByCreatedAtDesc(userId).stream()
                 .map(post -> new PostSummaryDto(
                         post.getId(),
-                        post.getTitle(),
                         post.getAuthor().getUsername(),
                         post.getCreatedAt() != null ? post.getCreatedAt().toString() : "",
                         post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,

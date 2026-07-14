@@ -13,9 +13,6 @@
             </div>
 
             <div th:unless="${post.suspended}">
-                <h2 class="post-title" th:text="${post.title}">게시글 제목</h2>
-                <input type="text" class="edit-title-input" th:value="${post.title}" style="display:none; width: 100%; font-size: 1.5em; padding: 4px; margin-bottom: 10px;"/>
-
                 <p><b>작성자:</b>
                     <span
                             th:text="${post.author}"

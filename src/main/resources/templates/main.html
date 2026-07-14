@@ -18,7 +18,6 @@
        th:onclick="'openPostModal(' + ${post.id} + ')'"
        style="cursor:pointer;">
 
-    <h3 th:text="${post.title}"></h3>
     <p th:text="'작성자: ' + ${post.author}"></p>
 
     <p>
@@ -113,17 +112,13 @@
   function initEditButton() {
     const editBtn = document.querySelector('#modalContent .edit-post-btn');
     const saveBtn = document.querySelector('#modalContent .save-post-btn');
-    const titleEl = document.querySelector('#modalContent .post-title');
-    const titleInput = document.querySelector('#modalContent .edit-title-input');
     const contentEl = document.querySelector('#modalContent .post-content');
     const contentInput = document.querySelector('#modalContent .edit-content-input');
 
-    if (!editBtn || !saveBtn || !titleEl || !titleInput || !contentEl || !contentInput) return;
+    if (!editBtn || !saveBtn || !contentEl || !contentInput) return;
 
     editBtn.onclick = function () {
-      titleEl.style.display = 'none';
       contentEl.style.display = 'none';
-      titleInput.style.display = 'block';
       contentInput.style.display = 'block';
       editBtn.style.display = 'none';
       saveBtn.style.display = 'inline-block';
@@ -131,7 +126,6 @@
 
     saveBtn.onclick = async function () {
       const postId = this.getAttribute('data-post-id');
-      const updatedTitle = titleInput.value;
       const updatedContent = contentInput.value;
 
       try {
@@ -142,18 +136,15 @@
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
           },
-          body: JSON.stringify({ title: updatedTitle, content: updatedContent })
+          body: JSON.stringify({ content: updatedContent })
         });
 
         if (response.ok) {
           alert('게시글이 수정되었습니다.');
 
-          titleEl.textContent = updatedTitle;
           contentEl.textContent = updatedContent;
 
-          titleEl.style.display = 'block';
           contentEl.style.display = 'block';
-          titleInput.style.display = 'none';
           contentInput.style.display = 'none';
           editBtn.style.display = 'inline-block';
           saveBtn.style.display = 'none';
