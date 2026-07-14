@@ -19,9 +19,11 @@ public class GlobalModelAttributeAdvice {
         if (token != null && jwtUtil.validateToken(token)) {
             String username = jwtUtil.getUsernameFromToken(token);
             Long userId = jwtUtil.getUserIdFromToken(token);
+            String role = jwtUtil.getUserRoleFromToken(token);
 
             model.addAttribute("username", username);
             model.addAttribute("userId", userId);
+            model.addAttribute("userRole", role);
         }
     }
 }

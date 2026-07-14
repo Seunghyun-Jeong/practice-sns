@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>정지 유저 목록</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="feed-container" style="margin-top: 30px;">
+    <h2 style="margin-bottom: 4px;">정지 유저 목록</h2>
+
+    <div th:if="${suspendedUsers.isEmpty()}"
+         style="color: #888; padding: 40px 0; text-align: center;">
+        현재 정지된 유저가 없습니다.
+    </div>
+
+    <div th:each="user : ${suspendedUsers}" class="suspended-user-item">
+        <div>
+            <strong th:text="${user.username}">username</strong>
+            <span class="suspend-until">정지 종료: <span th:text="${user.suspendedUntil}"></span></span>
+        </div>
+        <button class="unsuspend-btn" th:attr="data-user-id=${user.id}">이용 정지 해제</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // 헤더 햄버거 / 로그아웃 / 회원탈퇴
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        hamburgerBtn?.addEventListener('click', () => {
+            dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            fetch('/api/users/logout', { method: 'POST', credentials: 'include' })
+                .then(() => window.location.href = '/');
+        });
+
+        document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => {
+            if (!confirm('정말로 회원 탈퇴하시겠습니까?')) return;
+            const response = await fetch('/api/users/me', { method: 'DELETE', credentials: 'include' });
+            if (response.ok) {
+                alert('회원 탈퇴가 완료되었습니다.');
+                window.location.href = '/login';
+            }
+        });
+
+        // 이용 정지 해제
+        document.querySelectorAll('.unsuspend-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const userId = btn.getAttribute('data-user-id');
+                if (!confirm('이 유저의 이용 정지를 해제하시겠습니까?')) return;
+
+                try {
+                    const response = await fetch(`/api/users/unsuspend/${userId}`, {
+                        method: 'PATCH',
+                        credentials: 'include'
+                    });
+                    const data = await response.json();
+                    alert(data.message);
+                    if (response.ok) location.reload();
+                } catch (err) {
+                    console.error(err);
+                    alert('정지 해제 실패');
+                }
+            });
+        });
+    });
+</script>
+
+</body>
+</html>

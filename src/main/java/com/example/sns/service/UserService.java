@@ -1,11 +1,15 @@
 package com.example.sns.service;
 
+import com.example.sns.dto.SuspendedUserDto;
 import com.example.sns.dto.UserProfileDto;
 import com.example.sns.dto.UserSignUpRequest;
 import com.example.sns.entity.User;
 import com.example.sns.entity.User.Role;
 import com.example.sns.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -75,6 +79,27 @@ public class UserService {
                 user.getProfileImageUrl(),
                 user.isSuspended()
         );
+    }
+
+    public List<SuspendedUserDto> getSuspendedUsers() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
+        return userRepository.findBySuspendedUntilAfterOrderBySuspendedUntilAsc(LocalDateTime.now()).stream()
+                .map(user -> new SuspendedUserDto(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getSuspendedUntil().getYear() >= 9999
+                                ? "영구 정지"
+                                : user.getSuspendedUntil().format(formatter)
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void unsuspendUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다."));
+
+        user.setSuspendedUntil(null);
     }
 
     @Transactional

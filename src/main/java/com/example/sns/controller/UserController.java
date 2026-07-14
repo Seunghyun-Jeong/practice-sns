@@ -150,6 +150,33 @@ public class UserController {
         }
     }
 
+    @PatchMapping("/unsuspend/{userId}")
+    public ResponseEntity<Map<String, String>> unsuspendUser(@PathVariable Long userId, @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+        Map<String, String> res = new HashMap<>();
+
+        if (token == null || !jwtUtil.validateToken(token)) {
+            res.put("message", "유효하지 않은 토큰입니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
+        }
+
+        String username = jwtUtil.getUsernameFromToken(token);
+        Optional<User> adminOpt = userRepository.findByUsername(username);
+
+        if (adminOpt.isEmpty() || adminOpt.get().getRole() != Role.ADMIN) {
+            res.put("message", "권한이 없습니다.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(res);
+        }
+
+        try {
+            userService.unsuspendUser(userId);
+            res.put("message", "이용 정지가 해제되었습니다.");
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            res.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(res);
+        }
+    }
+
     @PutMapping("/username")
     public ResponseEntity<Map<String, String>> updateUsername(@Valid @RequestBody UserUpdateRequestDto requestDto, @CookieValue(value = "JWT_TOKEN", required = false) String token, HttpServletResponse response) {
         Map<String, String> res = new HashMap<>();

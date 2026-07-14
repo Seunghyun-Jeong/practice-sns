@@ -95,4 +95,16 @@ public class ViewController {
 
         return "profile";
     }
+
+    @GetMapping("/admin/suspended-users")
+    public String suspendedUsersPage(Model model,
+                                     @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+        if (token == null || !jwtUtil.validateToken(token)
+                || !"ADMIN".equals(jwtUtil.getUserRoleFromToken(token))) {
+            return "redirect:/";
+        }
+
+        model.addAttribute("suspendedUsers", userService.getSuspendedUsers());
+        return "suspended-users";
+    }
 }

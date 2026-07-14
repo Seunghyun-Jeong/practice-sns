@@ -578,3 +578,41 @@ button {
 .post-thumbnail:hover img {
     transform: scale(1.05);
 }
+
+/* 정지 유저 목록 */
+.suspended-user-item {
+    background-color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.suspended-user-item .suspend-until {
+    color: #888;
+    margin-left: 12px;
+    font-size: 14px;
+}
+
+.unsuspend-btn {
+    background-color: #ed4956;
+    color: white;
+    border: none;
+    padding: 7px 18px;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(237, 73, 86, 0.5);
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.unsuspend-btn:hover {
+    background-color: #c42f44;
+    box-shadow: 0 4px 10px rgba(196, 47, 68, 0.7);
+}

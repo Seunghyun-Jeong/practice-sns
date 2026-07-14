@@ -7,25 +7,21 @@
     <span th:if="${username != null}">
       <a th:href="@{'/profile/' + ${userId}}" class="username" th:text="${username}"></a>
       <button id="logoutBtn" class="btn logout-btn">로그아웃</button>
-
-      <div class="hamburger-menu">
-        <button id="hamburgerBtn">☰</button>
-        <div id="dropdownMenu" class="dropdown-content" style="display: none;">
-          <a href="/post"><button class="btn write-btn">게시글 작성</button></a>
-          <button id="deleteAccountBtn" class="btn delete-btn">회원탈퇴</button>
-        </div>
-      </div>
     </span>
 
     <span th:if="${username == null}">
       <a href="/login"><button class="btn login-btn">로그인</button></a>
-
-      <div class="hamburger-menu">
-        <button id="hamburgerBtn">☰</button>
-        <div id="dropdownMenu" class="dropdown-content" style="display: none;">
-          <a href="/signup"><button class="btn signup-btn">회원가입</button></a>
-        </div>
-      </div>
     </span>
+
+    <div class="hamburger-menu">
+      <button id="hamburgerBtn">☰</button>
+      <div id="dropdownMenu" class="dropdown-content" style="display: none;">
+        <a th:if="${username != null}" href="/post"><button class="btn write-btn">게시글 작성</button></a>
+        <a th:if="${username != null and userRole == 'ADMIN'}" href="/admin/suspended-users"><button class="btn">정지 유저 목록</button></a>
+        <button th:if="${username != null}" id="deleteAccountBtn" class="btn delete-btn">회원탈퇴</button>
+
+        <a th:if="${username == null}" href="/signup"><button class="btn signup-btn">회원가입</button></a>
+      </div>
+    </div>
   </div>
 </div>
