@@ -147,8 +147,7 @@
                         document.body.style.overflow = 'auto';
                         location.reload();
                     } else {
-                        const error = await response.text();
-                        alert('삭제 실패: ' + error);
+                        await alertError(response, '게시글 삭제에 실패했습니다.');
                     }
                 } catch (e) {
                     console.error(e);
@@ -198,8 +197,7 @@
                     editBtn.style.display = 'inline-block';
                     saveBtn.style.display = 'none';
                 } else {
-                    const error = await response.text();
-                    alert('수정 실패: ' + error);
+                    await alertError(response, '게시글 수정에 실패했습니다.');
                 }
             } catch (e) {
                 console.error(e);
@@ -217,6 +215,15 @@
             }
         }
         return null;
+    }
+
+    async function alertError(response, fallback) {
+        let message = fallback;
+        try {
+            const data = await response.json();
+            if (data && data.message) message = data.message;
+        } catch (e) { /* JSON 아님 → fallback 사용 */ }
+        alert(message);
     }
 
     document.getElementById('modalCloseBtn').addEventListener('click', function () {
@@ -260,15 +267,15 @@
                     });
 
                     if (!response.ok) {
-                        const error = await response.text();
-                        throw new Error(error);
+                        await alertError(response, '댓글 등록에 실패했습니다.');
+                        return;
                     }
 
                     alert('댓글이 등록되었습니다.');
                     openPostModal(postId);
                 } catch (error) {
                     console.error(error);
-                    alert('댓글 등록 실패: ' + error.message);
+                    alert('댓글 등록 중 오류가 발생했습니다.');
                 }
             }
         });
@@ -388,8 +395,7 @@
                         }
 
                     } else {
-                        const errMsg = await response.text();
-                        alert("댓글 삭제 실패: " + errMsg);
+                        await alertError(response, '댓글 삭제에 실패했습니다.');
                     }
                 } catch (error) {
                     console.error(error);
@@ -433,8 +439,7 @@
                             }
                         }
                     } else {
-                        const error = await response.text();
-                        alert('좋아요 실패: ' + error);
+                        await alertError(response, '좋아요 처리에 실패했습니다.');
                     }
                 } catch (error) {
                     console.error(error);
@@ -487,8 +492,7 @@
 
                         countEl.textContent = count;
                     } else {
-                        const error = await response.text();
-                        alert('댓글 좋아요 실패: ' + error);
+                        await alertError(response, '댓글 좋아요 처리에 실패했습니다.');
                     }
                 } catch (err) {
                     console.error(err);

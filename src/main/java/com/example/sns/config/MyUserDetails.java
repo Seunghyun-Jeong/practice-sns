@@ -38,6 +38,6 @@ public class MyUserDetails implements org.springframework.security.core.userdeta
     public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() { return !user.isSuspended(); }
 }
 
