@@ -96,10 +96,7 @@
         try {
           const response = await fetch('/api/posts/' + postId, {
             method: 'DELETE',
-            credentials: 'include',
-            headers: {
-              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
-            }
+            credentials: 'include'
           });
 
           if (response.ok) {
@@ -143,8 +140,7 @@
           method: 'PUT',
           credentials: 'include',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ content: updatedContent })
         });
@@ -166,17 +162,6 @@
         alert('수정 중 오류 발생');
       }
     };
-  }
-
-  function getCookie(name) {
-    const cookieStr = document.cookie;
-    const cookies = cookieStr.split(';').map(c => c.trim());
-    for (const cookie of cookies) {
-      if (cookie.startsWith(name + '=')) {
-        return decodeURIComponent(cookie.split('=')[1]);
-      }
-    }
-    return null;
   }
 
   async function alertError(response, fallback) {
@@ -222,8 +207,7 @@
             method: 'POST',
             credentials: 'include',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({ content })
           });
@@ -299,8 +283,7 @@
         const response = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + getCookie("JWT_TOKEN")
+            "Content-Type": "application/json"
           },
           body: JSON.stringify({ content: newContent })
         });
@@ -339,10 +322,7 @@
 
         try {
           const response = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
-            }
+            method: 'DELETE'
           });
 
           if (response.ok) {
@@ -378,9 +358,6 @@
         try {
           const response = await fetch(`/api/posts/${postId}/like`, {
             method: 'POST',
-            headers: {
-              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
-            },
             credentials: 'include'
           });
 
@@ -432,9 +409,6 @@
         try {
           const response = await fetch(`/api/posts/${postId}/comments/${commentId}/like`, {
             method: 'POST',
-            headers: {
-              'Authorization': 'Bearer ' + getCookie('JWT_TOKEN')
-            },
             credentials: 'include'
           });
 
