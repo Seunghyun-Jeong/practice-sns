@@ -112,7 +112,7 @@
     }
 
     function initAuthorProfileLink() {
-        document.querySelectorAll('#modalContent .author-name').forEach(authorEl => {
+        document.querySelectorAll('#modalContent .author-name, #modalContent .comment-author').forEach(authorEl => {
             authorEl.addEventListener('click', () => {
                 const authorId = authorEl.getAttribute('data-author-id');
                 if (authorId) {

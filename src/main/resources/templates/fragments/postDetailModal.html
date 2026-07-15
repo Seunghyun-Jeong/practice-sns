@@ -67,7 +67,9 @@
                     </div>
 
                     <div th:unless="${comment.suspended}">
-                        <div class="comment-author" th:text="${comment.author}">댓글 작성자</div>
+                        <div class="comment-author" th:text="${comment.author}"
+                             th:attr="data-author-id=${comment.authorId}"
+                             style="cursor: pointer; display: inline-block;">댓글 작성자</div>
 
                         <div class="comment-text" th:text="${comment.content}" style="display: block;"></div>
 
