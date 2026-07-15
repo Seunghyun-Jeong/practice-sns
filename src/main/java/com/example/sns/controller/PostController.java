@@ -1,19 +1,15 @@
 package com.example.sns.controller;
 
-import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostRequest;
 import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostUpdateRequest;
 import com.example.sns.service.PostService;
 import com.example.sns.util.JwtUtil;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,16 +24,6 @@ public class PostController {
     private final PostService postService;
     private final JwtUtil jwtUtil;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<PostDetailDto> getPostDetail(@PathVariable Long id) {
-        PostDetailDto post = postService.getPostDetail(id, null);
-        if (post != null) {
-            return ResponseEntity.ok(post);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
     @PostMapping
     public ResponseEntity<PostResponse> createPost(@RequestBody PostRequest postRequest,
                                                    @CookieValue(value = "JWT_TOKEN", required = false) String token) {
@@ -46,11 +32,6 @@ public class PostController {
         }
         PostResponse post = postService.createPost(postRequest, token);
         return ResponseEntity.ok(post);
-    }
-
-    @GetMapping
-    public ResponseEntity<List<PostResponse>> getAllPosts() {
-        return ResponseEntity.ok(postService.getAllPosts());
     }
 
     @DeleteMapping("/{id}")

@@ -48,18 +48,6 @@ public class PostService {
         return new PostResponse(saved.getId(), saved.getContent(), user.getUsername(), saved.getCreatedAt());
     }
 
-    public List<PostResponse> getAllPosts() {
-        return postRepository.findAllByOrderByCreatedAtDesc().stream()
-                .filter(post -> !post.getAuthor().isSuspended())
-                .map(post -> new PostResponse(
-                        post.getId(),
-                        post.getContent(),
-                        post.getAuthor().getUsername(),
-                        post.getCreatedAt()
-                ))
-                .collect(Collectors.toList());
-    }
-
     public List<PostSummaryDto> getPostsummaries() {
         return postRepository.findAllByOrderByCreatedAtDesc().stream()
                 .filter(post -> !post.getAuthor().isSuspended())
