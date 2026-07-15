@@ -1,7 +1,6 @@
 package com.example.sns.controller;
 
 import com.example.sns.dto.PostDetailDto;
-import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.UserProfileDto;
 import com.example.sns.repository.UserRepository;
@@ -11,8 +10,6 @@ import com.example.sns.service.UserService;
 import com.example.sns.util.JwtUtil;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
