@@ -11,21 +11,15 @@
 <input type="hidden" id="currentUsername" th:value="${currentUsername}">
 <div class="profile-container">
     <div class="profile-header">
-        <img th:src="@{${profileImageUrl}}" alt="프로필 이미지" class="profile-img" />
+        <img th:src="${(profileImageUrl != null and profileImageUrl != '') ? profileImageUrl : '/images/default-profile.svg'}"
+             alt="프로필 이미지" class="profile-img" style="cursor: pointer;" />
         <div class="profile-info" style="position: relative;">
 
             <div id="nicknameDisplay" style="display: inline-block;">
                 <h2 id="nicknameText" th:text="${profileUsername}">username</h2>
-                <button id="editNicknameBtn" th:if="${profileUsername == currentUsername}">닉네임 수정</button>
             </div>
 
-            <div id="nicknameEditForm" style="display: none;" th:if="${profileUsername == currentUsername}">
-                <input type="text" id="nicknameInput" th:value="${profileUsername}">
-                <button id="saveNicknameBtn">저장</button>
-                <button id="cancelNicknameBtn">취소</button>
-            </div>
-
-            <div id="profileSuspendMenu" th:if="${currentUserRole == 'ADMIN'}"
+            <div id="profileSuspendMenu" th:if="${currentUserRole == 'ADMIN' and profileUsername != currentUsername}"
                  th:attr="data-user-id=${profileUserId}"
                  style="display: none; position: absolute; top: 100%; left: 0; margin-top: 8px; z-index: 10; white-space: nowrap; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                 <label for="suspendDuration">이용정지 기간:</label>
@@ -41,12 +35,7 @@
             </div>
 
         </div>
-
-            <form id="profileImageForm" enctype="multipart/form-data" th:if="${profileUsername == currentUsername}">
-                <input type="file" name="profileImage" id="profileImageInput" />
-                <button type="submit">이미지 변경</button>
-            </form>
-        </div>
+    </div>
 
     <div th:if="${profileSuspended}" class="profile-suspended-notice"
          style="padding: 60px 20px; text-align: center; color: #888; font-size: 1.2em;">
@@ -69,6 +58,28 @@
             <p>
                 좋아요 <span th:text="${post.likeCount}">0</span> · 댓글 <span th:text="${post.commentCount}">0</span>
             </p>
+        </div>
+    </div>
+</div>
+
+<div id="profileImageModal" class="img-modal" style="display: none;">
+    <div class="img-modal-backdrop" id="imgModalBackdrop"></div>
+    <div class="img-modal-content">
+        <img id="enlargedProfileImg" class="enlarged-img" alt="프로필 이미지" />
+        <button th:if="${profileUsername == currentUsername}" id="changeProfileImageBtn" class="btn login-btn">프로필 사진 변경</button>
+        <input type="file" id="profileImageInput" accept="image/*" style="display: none;" />
+    </div>
+</div>
+
+<div id="nicknameModal" class="img-modal" style="display: none;" th:if="${profileUsername == currentUsername}">
+    <div class="img-modal-backdrop" id="nicknameModalBackdrop"></div>
+    <div class="img-modal-content">
+        <h3 style="margin: 0;">닉네임 수정</h3>
+        <input type="text" id="nicknameInput" th:value="${profileUsername}"
+               style="padding: 8px 10px; font-size: 16px; width: 220px; border: 1px solid #ccc; border-radius: 6px;" />
+        <div style="display: flex; gap: 10px;">
+            <button id="saveNicknameBtn" class="btn login-btn">저장</button>
+            <button id="cancelNicknameBtn" class="btn">취소</button>
         </div>
     </div>
 </div>
@@ -554,27 +565,25 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        const editNicknameBtn = document.getElementById('editNicknameBtn');
         const saveNicknameBtn = document.getElementById('saveNicknameBtn');
         const cancelNicknameBtn = document.getElementById('cancelNicknameBtn');
-        const nicknameDisplay = document.getElementById('nicknameDisplay');
-        const nicknameEditForm = document.getElementById('nicknameEditForm');
+        const nicknameModal = document.getElementById('nicknameModal');
         const nicknameInput = document.getElementById('nicknameInput');
         const nicknameText = document.getElementById('nicknameText');
 
-        if (!editNicknameBtn || !saveNicknameBtn || !cancelNicknameBtn || !nicknameDisplay || !nicknameEditForm || !nicknameInput) return;
+        if (!nicknameModal || !saveNicknameBtn || !cancelNicknameBtn || !nicknameInput) return;
 
-        editNicknameBtn.addEventListener('click', () => {
-            nicknameDisplay.style.display = 'none';
-            nicknameEditForm.style.display = 'inline-block';
+        nicknameText.style.cursor = 'pointer';
+        nicknameText.title = '클릭하여 닉네임 수정';
+        nicknameText.addEventListener('click', () => {
             nicknameInput.value = nicknameText.textContent.trim();
+            nicknameModal.style.display = 'flex';
             nicknameInput.focus();
         });
 
-        cancelNicknameBtn.addEventListener('click', () => {
-            nicknameEditForm.style.display = 'none';
-            nicknameDisplay.style.display = 'inline-block';
-        });
+        const closeModal = () => { nicknameModal.style.display = 'none'; };
+        cancelNicknameBtn.addEventListener('click', closeModal);
+        document.getElementById('nicknameModalBackdrop')?.addEventListener('click', closeModal);
 
         saveNicknameBtn.addEventListener('click', async () => {
             const newNickname = nicknameInput.value.trim();
@@ -615,6 +624,48 @@
             } catch (err) {
                 console.error(err);
                 alert("닉네임 수정 중 오류가 발생했습니다.");
+            }
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const profileImg = document.querySelector('.profile-img');
+        const imgModal = document.getElementById('profileImageModal');
+        if (!profileImg || !imgModal) return;
+
+        const enlargedImg = document.getElementById('enlargedProfileImg');
+        const changeBtn = document.getElementById('changeProfileImageBtn');
+        const fileInput = document.getElementById('profileImageInput');
+
+        // 프로필 사진 클릭 → 확대 모달
+        profileImg.addEventListener('click', () => {
+            enlargedImg.src = profileImg.src;
+            imgModal.style.display = 'flex';
+        });
+
+        // 모달 바깥(백드롭) 클릭 시 닫기
+        document.getElementById('imgModalBackdrop')?.addEventListener('click', () => {
+            imgModal.style.display = 'none';
+        });
+
+        // '프로필 사진 변경'(소유자만) → 파일 선택창 → 선택 시 즉시 업로드
+        changeBtn?.addEventListener('click', () => fileInput.click());
+        fileInput?.addEventListener('change', async () => {
+            if (!fileInput.files || fileInput.files.length === 0) return;
+            const formData = new FormData();
+            formData.append('profileImage', fileInput.files[0]);
+            try {
+                const response = await fetch('/api/users/profile-image', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                const data = await response.json();
+                alert(data.message);
+                if (response.ok) location.reload();
+            } catch (err) {
+                console.error(err);
+                alert('이미지 업로드 중 오류가 발생했습니다.');
             }
         });
     });

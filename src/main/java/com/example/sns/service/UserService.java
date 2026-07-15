@@ -6,20 +6,29 @@ import com.example.sns.dto.UserSignUpRequest;
 import com.example.sns.entity.User;
 import com.example.sns.entity.User.Role;
 import com.example.sns.repository.UserRepository;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     public void signup(UserSignUpRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -100,6 +109,38 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다."));
 
         user.setSuspendedUntil(null);
+    }
+
+    @Transactional
+    public String updateProfileImage(String username, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("이미지 파일을 선택해주세요.");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("이미지 파일만 업로드할 수 있습니다.");
+        }
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        String original = file.getOriginalFilename();
+        String ext = (original != null && original.contains("."))
+                ? original.substring(original.lastIndexOf('.'))
+                : "";
+        String filename = "profile_" + user.getId() + "_" + System.currentTimeMillis() + ext;
+
+        try {
+            Path dir = Paths.get(uploadDir).toAbsolutePath();
+            Files.createDirectories(dir);
+            Files.copy(file.getInputStream(), dir.resolve(filename));
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 저장에 실패했습니다.", e);
+        }
+
+        String url = "/uploads/" + filename;
+        user.setProfileImageUrl(url);
+        return url;
     }
 
     @Transactional

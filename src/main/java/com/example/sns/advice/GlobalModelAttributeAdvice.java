@@ -22,6 +22,7 @@ public class GlobalModelAttributeAdvice {
             String role = jwtUtil.getUserRoleFromToken(token);
 
             model.addAttribute("username", username);
+            model.addAttribute("currentUsername", username);
             model.addAttribute("userId", userId);
             model.addAttribute("userRole", role);
         }

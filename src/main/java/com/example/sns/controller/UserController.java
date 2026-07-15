@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/users")
@@ -215,6 +216,30 @@ public class UserController {
             response.addCookie(cookie);
 
             res.put("message", "닉네임이 수정되었습니다.");
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            res.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(res);
+        }
+    }
+
+    @PostMapping("/profile-image")
+    public ResponseEntity<Map<String, String>> updateProfileImage(
+            @RequestParam("profileImage") MultipartFile file,
+            @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+        Map<String, String> res = new HashMap<>();
+
+        if (token == null || !jwtUtil.validateToken(token)) {
+            res.put("message", "유효하지 않은 토큰입니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
+        }
+
+        String username = jwtUtil.getUsernameFromToken(token);
+
+        try {
+            String imageUrl = userService.updateProfileImage(username, file);
+            res.put("message", "프로필 이미지가 변경되었습니다.");
+            res.put("imageUrl", imageUrl);
             return ResponseEntity.ok(res);
         } catch (IllegalArgumentException e) {
             res.put("message", e.getMessage());

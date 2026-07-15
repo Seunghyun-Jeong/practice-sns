@@ -579,6 +579,42 @@ button {
     transform: scale(1.05);
 }
 
+/* 프로필 사진 확대 모달 */
+.img-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.img-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.img-modal-content {
+    position: relative;
+    z-index: 1;
+    background: #fff;
+    padding: 28px;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+
+.enlarged-img {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #ddd;
+}
+
 /* 정지 유저 목록 */
 .suspended-user-item {
     background-color: white;
