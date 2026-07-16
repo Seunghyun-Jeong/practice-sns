@@ -223,9 +223,13 @@ button {
 }
 
 .post-time {
-    padding: 4px 14px 12px;
     font-size: 12px;
     color: #8e8e8e;
+}
+
+/* 피드 카드에서만 시간에 여백 (모달 시간에는 적용 안 함) */
+.post-summary .post-time {
+    padding: 4px 14px 12px;
 }
 
 /* 인스타풍 아이콘 (하트 / 말풍선) */
@@ -259,12 +263,63 @@ button {
     stroke: #ed4956;
 }
 
+.ic-comment {
+    display: block;
+}
+
 .ic-comment path {
     fill: none;
     stroke: #262626;
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
+}
+
+/* 하트가 말풍선보다 커 보이는 착시 보정 (하트 22 / 말풍선 24) */
+.post-actions .ic-heart,
+.post-stats .ic-heart {
+    width: 22px;
+    height: 22px;
+}
+
+.post-actions .ic-comment,
+.post-stats .ic-comment {
+    width: 24px;
+    height: 24px;
+}
+
+.comment-like-btn .ic-heart {
+    width: 15px;
+    height: 15px;
+}
+
+/* 상세 모달 - 피드식 캡션 / 시간 */
+.detail-caption {
+    padding: 6px 0 2px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #262626;
+    word-break: break-word;
+}
+
+.detail-caption .detail-author {
+    font-weight: 700;
+    margin-right: 6px;
+    cursor: pointer;
+}
+
+.detail-time {
+    font-size: 12px;
+    color: #8e8e8e;
+    margin-top: 6px;
+}
+
+.post-edit-actions {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    display: flex;
+    gap: 10px;
 }
 
 .post-author-name {
@@ -388,23 +443,29 @@ button {
     font-size: 15px;
 }
 
-.modal {
+.modal-backdrop {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal {
+    position: relative;
     background-color: white;
     padding: 0;
     border-radius: 12px;
     box-shadow: 0 2px 20px rgba(0,0,0,0.2);
-    width: 90vw;
-    height: 90vh;
-    max-width: 1200px;
-    max-height: 90vh;
+    width: 76vw;
+    height: 80vh;
+    max-width: 1000px;
+    max-height: 82vh;
     overflow: hidden;
     display: flex;
     flex-direction: row;
-    z-index: 2000;
 }
 
 .modal-content {
@@ -414,11 +475,19 @@ button {
     height: 100%;
 }
 
+.comment-list {
+    flex: 1;
+    overflow-y: auto;
+    margin: 10px 0;
+}
+
 .post-detail-left {
     width: 66.66%;
     padding: 30px;
+    padding-bottom: 80px;
     overflow-y: auto;
     border-right: 1px solid #ccc;
+    position: relative;
 }
 
 .post-detail-right {
@@ -445,23 +514,6 @@ button {
 
 .delete-post-btn:hover {
     background-color: #cc0000;
-}
-
-.close-btn {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #eee;
-    border-radius: 20px;
-    padding: 8px 20px;
-    font-size: 18px;
-    font-weight: 600;
-    color: #444;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    z-index: 2100;
-    user-select: none;
 }
 
 .edit-post-btn {
@@ -544,13 +596,36 @@ button {
 
 .comment {
     position: relative;
-    padding: 10px 50px 10px 10px;
+    padding: 10px;
     font-size: 14px;
     color: #262626;
     border-bottom: 1px solid #f0f0f0;
     display: flex;
     flex-direction: column;
+    gap: 4px;
+}
+
+.comment-actions {
+    display: flex;
+    align-items: center;
     gap: 6px;
+    height: 20px;
+}
+
+.comment-actions .comment-like-btn {
+    display: inline-flex;
+    align-items: center;
+}
+
+.comment-actions .comment-like-count {
+    color: #8e8e8e;
+    font-size: 13px;
+}
+
+.comment-action-btns {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
 }
 
 .comment-author {
@@ -564,15 +639,13 @@ button {
 }
 
 .comment-date {
-    font-size: 0.8em;
+    font-size: 12px;
     color: #8e8e8e;
+    margin-top: 2px;
 }
 
 .edit-comment-btn,
 .save-comment-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
     background-color: #007bff;
     color: white;
     border: none;
@@ -597,9 +670,6 @@ button {
 
 .cancel-edit-btn {
     display: none;
-    position: absolute;
-    top: 38px;
-    right: 10px;
     background-color: #6c757d;
     color: white;
     border: none;
@@ -630,9 +700,6 @@ button {
 }
 
 .delete-comment-btn {
-    position: absolute;
-    top: 38px;
-    right: 10px;
     background-color: red;
     color: white;
     border: none;
@@ -655,28 +722,15 @@ button {
 
 .post-stats {
     display: flex;
-    gap: 20px;
+    gap: 8px;
     align-items: center;
-    font-size: 16px;
-    color: #333;
+    font-size: 15px;
+    color: #262626;
     margin-top: 10px;
 }
 
-.post-stats .like-icon,
 .post-stats .comment-icon {
-    cursor: pointer;
-    font-size: 22px;
-    transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.post-stats .like-icon.liked {
-    color: #ed4956;
-    transform: scale(1.2);
-}
-
-.post-stats .like-icon:hover,
-.post-stats .comment-icon:hover {
-    transform: scale(1.1);
+    margin-left: 8px;
 }
 
 .comment-like-btn {

@@ -41,12 +41,9 @@
   </div>
 </div>
 
-<div id="postDetailModal" class="modal" style="display:none;">
-  <div id="modalContent" class="modal-content">
-  </div>
+<div id="postDetailModal" class="modal-backdrop" style="display:none;">
+  <div id="modalContent"></div>
 </div>
-
-<div id="modalCloseBtn" class="close-btn" style="display:none;">닫기 X</div>
 
 <script>
   // 상대 시간 표시 (몇 분 전 / 몇 시간 전 ...)
@@ -106,8 +103,12 @@
       document.getElementById('modalContent').innerHTML = html;
 
       document.getElementById('postDetailModal').style.display = 'flex';
-      document.getElementById('modalCloseBtn').style.display = 'block';
       document.body.style.overflow = 'hidden';
+
+      // 모달 내부의 작성 시간 / 댓글 시간을 상대 시간으로 변환
+      document.querySelectorAll('#modalContent .post-time').forEach(el => {
+        el.textContent = timeAgo(el.getAttribute('data-time'));
+      });
 
       initDeleteButton();
       initEditButton();
@@ -117,11 +118,24 @@
       initCommentLikeButtons();
       initAuthorProfileLink();
 
+      // 현재 URL에 열린 게시글을 기록 → 프로필 다녀온 뒤 뒤로가기 시 모달 복원
+      if (location.hash !== '#post-' + postId) {
+        history.replaceState({ modalPost: postId }, '', '#post-' + postId);
+      }
+
     } catch (error) {
       alert('게시글 상세 정보를 불러오는데 실패했습니다.');
       console.error(error);
     }
   }
+
+  // 페이지 진입/뒤로가기 복원 시 URL 해시에 게시글이 있으면 모달 재오픈
+  window.addEventListener('pageshow', function () {
+    const m = location.hash.match(/^#post-(\d+)$/);
+    if (m && document.getElementById('postDetailModal').style.display !== 'flex') {
+      openPostModal(m[1]);
+    }
+  });
 
   function initAuthorProfileLink() {
     document.querySelectorAll('#modalContent .author-name, #modalContent .comment-author').forEach(authorEl => {
@@ -151,9 +165,7 @@
 
           if (response.ok) {
             alert('게시글이 삭제되었습니다.');
-            document.getElementById('postDetailModal').style.display = 'none';
-            document.getElementById('modalCloseBtn').style.display = 'none';
-            document.body.style.overflow = 'auto';
+            closeModal();
             location.reload();
           } else {
             await alertError(response, '게시글 삭제에 실패했습니다.');
@@ -223,20 +235,24 @@
     alert(message);
   }
 
-  document.getElementById('modalCloseBtn').addEventListener('click', function () {
-    document.getElementById('postDetailModal').style.display = 'none';
-    this.style.display = 'none';
+  function closeModal() {
+    const modal = document.getElementById('postDetailModal');
+    if (modal) modal.style.display = 'none';
     document.body.style.overflow = 'auto';
+    // URL 해시 정리 (닫은 뒤엔 뒤로가기로 모달이 다시 뜨지 않도록)
+    if (location.hash.indexOf('#post-') === 0) {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+  }
+
+  // 모달 바깥(어두운 백드롭) 클릭 시 닫기
+  document.getElementById('postDetailModal').addEventListener('click', function (event) {
+    if (event.target === this) closeModal();
   });
 
-  window.addEventListener('click', function(event) {
-    const modal = document.getElementById('postDetailModal');
-    const closeBtn = document.getElementById('modalCloseBtn');
-    if (event.target === modal) {
-      modal.style.display = 'none';
-      closeBtn.style.display = 'none';
-      document.body.style.overflow = 'auto';
-    }
+  // ESC 키로도 닫기
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeModal();
   });
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -397,6 +413,23 @@
     });
   }
 
+  // 모달 ↔ 피드 좋아요 상태 동기화
+  function syncFeedLike(postId, liked) {
+    const feedBtn = document.querySelector('.feed-like-btn[data-post-id="' + postId + '"]');
+    if (!feedBtn) return;
+    const feedCountEl = feedBtn.parentElement.querySelector('.feed-like-count');
+    const alreadyLiked = feedBtn.classList.contains('liked');
+    if (liked === alreadyLiked) return; // 상태 동일하면 카운트 중복 변경 방지
+    let count = feedCountEl ? (parseInt(feedCountEl.textContent) || 0) : 0;
+    if (liked) {
+      feedBtn.classList.add('liked');
+      if (feedCountEl) feedCountEl.textContent = count + 1;
+    } else {
+      feedBtn.classList.remove('liked');
+      if (feedCountEl) feedCountEl.textContent = Math.max(0, count - 1);
+    }
+  }
+
   function initLikeButtons() {
     document.querySelectorAll('.like-btn').forEach(btn => {
       btn.onclick = async (e) => {
@@ -425,6 +458,9 @@
                 btn.classList.remove('liked');
               }
             }
+
+            // 모달에서의 좋아요/취소를 피드 카드에도 실시간 반영
+            syncFeedLike(postId, result.liked);
           } else {
             await alertError(response, '좋아요 처리에 실패했습니다.');
           }
