@@ -1,4 +1,5 @@
 /* 기존 CSS 유지 + 필요한 부분만 수정/추가 */
+@import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
 
 *,
 *::before,
@@ -15,7 +16,8 @@ body {
 
 .header-bar {
     background-color: white;
-    padding: 10px 20px;
+    padding: 0 20px;
+    height: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -30,17 +32,34 @@ body {
 }
 
 .header-bar .logo {
-    color: #28a745;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 1.2px;
+    display: flex;
+    align-items: center;
 }
 
 .header-bar .user-info {
     display: flex;
+    align-items: center;
     font-size: 14px;
     color: #333;
-    gap: 12px; /* 간격 추가 */
+    gap: 12px;
+}
+
+/* 로그인/로그아웃 그룹(닉네임 + 버튼)을 세로 중앙 정렬 */
+.header-bar .user-info > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 햄버거 버튼: 배경 없는 아이콘 형태 */
+#hamburgerBtn {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    color: #262626;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .header-bar .user-info b {
@@ -111,7 +130,7 @@ button {
     background-color: #ed4956;
     color: white;
     border: none;
-    padding: 7px 22px;
+    padding: 8px 22px;
     border-radius: 9999px;
     font-weight: 600;
     font-size: 14px;
@@ -127,11 +146,12 @@ button {
 }
 
 .logo-link {
-    font-size: 20px;
-    font-weight: 700;
-    color: #28a745;
+    font-family: 'Lobster', 'Snell Roundhand', 'Segoe Script', 'Brush Script MT', cursive;
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    color: #262626;
     text-decoration: none;
-    letter-spacing: 1.2px;
 }
 
 .username {

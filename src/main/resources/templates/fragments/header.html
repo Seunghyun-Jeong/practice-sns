@@ -1,6 +1,6 @@
 <div th:fragment="header" class="header-bar">
   <div class="logo">
-    <a href="/" class="logo-link">SNS</a>
+    <a href="/" class="logo-link">Outplanetton</a>
   </div>
 
   <div class="user-info">
@@ -14,7 +14,13 @@
     </span>
 
     <div class="hamburger-menu">
-      <button id="hamburgerBtn">☰</button>
+      <button id="hamburgerBtn" aria-label="메뉴">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
       <div id="dropdownMenu" class="dropdown-content" style="display: none;">
         <a th:if="${username != null}" href="/post"><button class="btn write-btn">게시글 작성</button></a>
         <a th:if="${username != null and userRole == 'ADMIN'}" href="/admin/suspended-users"><button class="btn">정지 유저 목록</button></a>
