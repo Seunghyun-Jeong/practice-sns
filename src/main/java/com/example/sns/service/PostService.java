@@ -2,7 +2,6 @@ package com.example.sns.service;
 
 import com.example.sns.dto.CommentDto;
 import com.example.sns.dto.PostDetailDto;
-import com.example.sns.dto.PostRequest;
 import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.PostUpdateRequest;
@@ -18,6 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class PostService {
@@ -26,26 +26,30 @@ public class PostService {
     private final JwtUtil jwtUtil;
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final FileStorageService fileStorageService;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository) {
+    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, FileStorageService fileStorageService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.postLikeRepository = postLikeRepository;
         this.commentLikeRepository = commentLikeRepository;
+        this.fileStorageService = fileStorageService;
     }
 
-    public PostResponse createPost(PostRequest postRequest, String token) {
+    @Transactional
+    public PostResponse createPost(String content, MultipartFile image, String token) {
         String username = jwtUtil.getUsernameFromToken(token);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 
         Post post = new Post();
-        post.setContent(postRequest.getContent());
+        post.setContent(content);
+        post.setImageUrl(fileStorageService.storeImage(image, "post_" + user.getId()));
         post.setAuthor(user);
 
         Post saved = postRepository.save(post);
-        return new PostResponse(saved.getId(), saved.getContent(), user.getUsername(), saved.getCreatedAt());
+        return new PostResponse(saved.getId(), saved.getContent(), saved.getImageUrl(), user.getUsername(), saved.getCreatedAt());
     }
 
     public List<PostSummaryDto> getPostsummaries() {
@@ -57,6 +61,7 @@ public class PostService {
                         post.getCreatedAt().toString(),
                         post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                         post.getContent(),
+                        post.getImageUrl(),
                         postLikeRepository.countByPost(post),
                         post.getComments().size(),
                         false
@@ -104,6 +109,7 @@ public class PostService {
         return new PostDetailDto(
                 post.getId(),
                 postAuthorSuspended ? null : post.getContent(),
+                postAuthorSuspended ? null : post.getImageUrl(),
                 postAuthorSuspended ? null : post.getAuthor().getUsername(),
                 postAuthorSuspended ? null : post.getAuthor().getId(),
                 post.getCreatedAt().toString(),
@@ -149,6 +155,7 @@ public class PostService {
                         post.getCreatedAt() != null ? post.getCreatedAt().toString() : "",
                         post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                         post.getContent(),
+                        post.getImageUrl(),
                         postLikeRepository.countByPost(post),
                         post.getComments().size(),
                         post.getAuthor().isSuspended()

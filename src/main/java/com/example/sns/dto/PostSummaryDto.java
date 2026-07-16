@@ -11,6 +11,7 @@ public class PostSummaryDto {
     private String createdAt;
     private String updatedAt;
     private String content;
+    private String imageUrl;
     private long likeCount;
     private int commentCount;
     private boolean suspended;

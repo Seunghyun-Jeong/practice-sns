@@ -9,6 +9,7 @@ import lombok.Getter;
 public class PostDetailDto {
     private Long id;
     private String content;
+    private String imageUrl;
     private String author;
     private Long authorId;
     private String createdAt;

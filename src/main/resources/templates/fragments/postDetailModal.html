@@ -29,6 +29,7 @@
                     <span th:if="${post.updatedAt != null}" th:text="${post.updatedAt}">2023-01-02</span>
                     <span th:if="${post.updatedAt != null}">(수정됨)</span>
                 </p>
+                <img th:if="${post.imageUrl != null}" th:src="${post.imageUrl}" class="post-detail-image" alt="게시물 이미지" />
                 <div class="post-content" th:text="${post.content}">내용</div>
                 <textarea class="edit-content-input" style="display:none; width: 100%; height: 150px; padding: 8px; margin-top: 10px;">[[${post.content}]]</textarea>
 

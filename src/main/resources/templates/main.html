@@ -28,6 +28,8 @@
       </span>
     </p>
 
+    <img th:if="${post.imageUrl != null}" th:src="${post.imageUrl}" class="post-image" alt="게시물 이미지" />
+
     <div class="post-excerpt" th:text="${post.content}"></div>
 
     <p>
