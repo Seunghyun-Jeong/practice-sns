@@ -228,6 +228,49 @@ button {
     color: #8e8e8e;
 }
 
+/* 인스타풍 아이콘 (하트 / 말풍선) */
+.icon-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.icon-btn:hover {
+    opacity: 0.65;
+}
+
+.ic-heart {
+    display: block;
+}
+
+.ic-heart path {
+    fill: none;
+    stroke: #262626;
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.liked .ic-heart path {
+    fill: #ed4956;
+    stroke: #ed4956;
+}
+
+.ic-comment path {
+    fill: none;
+    stroke: #262626;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.post-author-name {
+    cursor: pointer;
+}
+
 .post-summary h3 {
     margin: 0 0 5px 0;
 }

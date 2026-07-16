@@ -63,6 +63,7 @@ public class PostService {
                 .map(post -> new PostSummaryDto(
                         post.getId(),
                         post.getAuthor().getUsername(),
+                        post.getAuthor().getId(),
                         post.getCreatedAt().toString(),
                         post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                         post.getContent(),
@@ -159,6 +160,7 @@ public class PostService {
                 .map(post -> new PostSummaryDto(
                         post.getId(),
                         post.getAuthor().getUsername(),
+                        post.getAuthor().getId(),
                         post.getCreatedAt() != null ? post.getCreatedAt().toString() : "",
                         post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                         post.getContent(),

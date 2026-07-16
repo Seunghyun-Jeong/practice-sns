@@ -8,6 +8,7 @@ import lombok.Getter;
 public class PostSummaryDto {
     private Long id;
     private String author;
+    private Long authorId;
     private String createdAt;
     private String updatedAt;
     private String content;
