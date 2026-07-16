@@ -14,5 +14,6 @@ public class PostSummaryDto {
     private String imageUrl;
     private long likeCount;
     private int commentCount;
+    private boolean likedByCurrentUser;
     private boolean suspended;
 }

@@ -20,7 +20,7 @@
         <div id="imagePlaceholder" class="image-placeholder">
             <span class="image-placeholder-icon">＋</span>
             <span>사진 선택</span>
-            <small>게시물에 넣을 사진을 선택하세요 (선택 사항)</small>
+            <small>게시물에 넣을 사진을 선택하세요</small>
         </div>
     </div>
 
@@ -55,6 +55,11 @@
 
     // 업로드
     document.getElementById('submitPostBtn').addEventListener('click', async () => {
+        if (!fileInput.files[0]) {
+            alert('사진을 선택해주세요.');
+            return;
+        }
+
         const content = document.getElementById('content').value.trim();
         if (!content) {
             alert('문구를 입력해주세요.');
@@ -63,9 +68,7 @@
 
         const formData = new FormData();
         formData.append('content', content);
-        if (fileInput.files[0]) {
-            formData.append('image', fileInput.files[0]);
-        }
+        formData.append('image', fileInput.files[0]);
 
         try {
             const response = await fetch('/api/posts', {

@@ -43,8 +43,13 @@ public class ViewController {
     }
 
     @GetMapping("/")
-    public String mainPage(Model model) {
-        List<PostSummaryDto> posts = postService.getPostsummaries();
+    public String mainPage(Model model,
+                           @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+        Long currentUserId = null;
+        if (token != null && jwtUtil.validateToken(token)) {
+            currentUserId = jwtUtil.getUserIdFromToken(token);
+        }
+        List<PostSummaryDto> posts = postService.getPostsummaries(currentUserId);
         model.addAttribute("posts", posts);
         return "main";
     }
@@ -75,15 +80,18 @@ public class ViewController {
     public String getProfilePage(@PathVariable Long userId, Model model,
                                  @CookieValue(value = "JWT_TOKEN", required = false) String token) {
         UserProfileDto profile = userService.getProfileById(userId);
-        List<PostSummaryDto> posts = postService.getPostsByUserIdWithExtras(userId);
 
         String currentUserRole = "USER";
+        Long currentUserId = null;
         if (token != null && jwtUtil.validateToken(token)) {
+            currentUserId = jwtUtil.getUserIdFromToken(token);
             String roleFromToken = jwtUtil.getUserRoleFromToken(token);
             if (roleFromToken != null) {
                 currentUserRole = roleFromToken;
             }
         }
+
+        List<PostSummaryDto> posts = postService.getPostsByUserIdWithExtras(userId, currentUserId);
 
         model.addAttribute("profileUsername", profile.getUsername());
         model.addAttribute("profileImageUrl", profile.getProfileImageUrl());
@@ -118,7 +126,7 @@ public class ViewController {
         UserProfileDto profile = userService.getProfileById(userId);
         model.addAttribute("targetUsername", profile.getUsername());
         model.addAttribute("targetUserId", userId);
-        model.addAttribute("posts", postService.getPostsByUserIdWithExtras(userId));
+        model.addAttribute("posts", postService.getPostsByUserIdWithExtras(userId, null));
         model.addAttribute("comments", commentService.getCommentsByUser(userId));
 
         return "admin-user-content";

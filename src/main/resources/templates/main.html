@@ -18,23 +18,21 @@
        th:onclick="'openPostModal(' + ${post.id} + ')'"
        style="cursor:pointer;">
 
-    <p th:text="'작성자: ' + ${post.author}"></p>
-
-    <p>
-      <span th:if="${post.updatedAt == null}" th:text="'작성일: ' + ${post.createdAt}"></span>
-      <span th:if="${post.updatedAt != null}">
-        수정일: <span th:text="${post.updatedAt}"></span>
-        <span style="color: #888888;">(수정됨)</span>
-      </span>
-    </p>
-
     <img th:if="${post.imageUrl != null}" th:src="${post.imageUrl}" class="post-image" alt="게시물 이미지" />
 
-    <div class="post-excerpt" th:text="${post.content}"></div>
+    <div class="post-actions">
+      <span class="post-like-state" th:text="${post.likedByCurrentUser} ? '❤️' : '🤍'">🤍</span>
+      <span class="post-action-count" th:text="${post.likeCount}">0</span>
+      <span class="post-comment-ic">💬</span>
+      <span class="post-action-count" th:text="${post.commentCount}">0</span>
+    </div>
 
-    <p>
-      좋아요 <span th:text="${post.likeCount}">0</span> · 댓글 <span th:text="${post.commentCount}">0</span>
-    </p>
+    <div class="post-caption">
+      <span class="post-author-name" th:text="${post.author}">닉네임</span>
+      <span class="post-caption-text" th:text="${post.content}">내용</span>
+    </div>
+
+    <div class="post-time" th:attr="data-time=${post.createdAt}"></div>
 
   </div>
 </div>
@@ -47,6 +45,23 @@
 <div id="modalCloseBtn" class="close-btn" style="display:none;">닫기 X</div>
 
 <script>
+  // 상대 시간 표시 (몇 분 전 / 몇 시간 전 ...)
+  function timeAgo(iso) {
+    if (!iso) return '';
+    const then = new Date(iso);
+    if (isNaN(then.getTime())) return '';
+    const diff = (Date.now() - then.getTime()) / 1000;
+    if (diff < 60) return '방금 전';
+    if (diff < 3600) return Math.floor(diff / 60) + '분 전';
+    if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
+    if (diff < 604800) return Math.floor(diff / 86400) + '일 전';
+    if (diff < 2592000) return Math.floor(diff / 604800) + '주 전';
+    return then.getFullYear() + '.' + String(then.getMonth() + 1).padStart(2, '0') + '.' + String(then.getDate()).padStart(2, '0');
+  }
+  document.querySelectorAll('.post-time').forEach(el => {
+    el.textContent = timeAgo(el.getAttribute('data-time'));
+  });
+
   async function openPostModal(postId) {
     try {
       const response = await fetch('/posts/' + postId + '/modal', {

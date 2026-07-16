@@ -39,6 +39,10 @@ public class PostService {
 
     @Transactional
     public PostResponse createPost(String content, MultipartFile image, String token) {
+        if (image == null || image.isEmpty()) {
+            throw new IllegalArgumentException("사진을 선택해주세요.");
+        }
+
         String username = jwtUtil.getUsernameFromToken(token);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
@@ -52,7 +56,8 @@ public class PostService {
         return new PostResponse(saved.getId(), saved.getContent(), saved.getImageUrl(), user.getUsername(), saved.getCreatedAt());
     }
 
-    public List<PostSummaryDto> getPostsummaries() {
+    public List<PostSummaryDto> getPostsummaries(Long currentUserId) {
+        final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
         return postRepository.findAllByOrderByCreatedAtDesc().stream()
                 .filter(post -> !post.getAuthor().isSuspended())
                 .map(post -> new PostSummaryDto(
@@ -64,6 +69,7 @@ public class PostService {
                         post.getImageUrl(),
                         postLikeRepository.countByPost(post),
                         post.getComments().size(),
+                        currentUser != null && postLikeRepository.existsByPostAndUser(post, currentUser),
                         false
                 ))
                 .collect(Collectors.toList());
@@ -147,7 +153,8 @@ public class PostService {
         post.setUpdatedAt(LocalDateTime.now());
     }
 
-    public List<PostSummaryDto> getPostsByUserIdWithExtras(Long userId) {
+    public List<PostSummaryDto> getPostsByUserIdWithExtras(Long userId, Long currentUserId) {
+        final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
         return postRepository.findAllByAuthor_IdOrderByCreatedAtDesc(userId).stream()
                 .map(post -> new PostSummaryDto(
                         post.getId(),
@@ -158,6 +165,7 @@ public class PostService {
                         post.getImageUrl(),
                         postLikeRepository.countByPost(post),
                         post.getComments().size(),
+                        currentUser != null && postLikeRepository.existsByPostAndUser(post, currentUser),
                         post.getAuthor().isSuspended()
                 ))
                 .collect(Collectors.toList());
