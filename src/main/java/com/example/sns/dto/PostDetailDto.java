@@ -12,6 +12,7 @@ public class PostDetailDto {
     private String imageUrl;
     private String author;
     private Long authorId;
+    private String authorProfileImageUrl;
     private String createdAt;
     private String updatedAt;
     private long likeCount;

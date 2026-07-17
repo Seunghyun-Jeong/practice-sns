@@ -11,6 +11,7 @@ public class CommentDto {
     private Long id;
     private String author;
     private Long authorId;
+    private String authorProfileImageUrl;
     private String content;
     private String createdAt;
     private String updatedAt;
