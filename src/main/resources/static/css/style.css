@@ -11,10 +11,34 @@ body {
     font-family: Arial, sans-serif;
     background-color: #ffffff;
     margin: 0;
-    padding: 20px;
+    padding: 0 20px 20px;
+}
+
+/* 헤더 래퍼: 상단 고정 + gap(padding-top)으로 마진 병합 방지 → 스크롤해도 안 움직임 */
+.header-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding-top: 20px;
+}
+
+/* 프로스트 레이어: pill 폭, 위쪽 틈~pill 중앙(50px)까지, backdrop-blur 반투명.
+   아래 경계는 불투명 pill이 덮어서 안 보임 */
+.header-frost {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
 }
 
 .header-bar {
+    position: relative;
+    z-index: 2;
     background-color: white;
     padding: 0 30px;
     height: 60px;
@@ -25,9 +49,6 @@ body {
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     font-weight: 600;
     font-size: 16px;
-    position: sticky;
-    top: 20px;
-    z-index: 100;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
