@@ -63,7 +63,7 @@ public class UserController {
 
         if (userOpt.isEmpty() || !passwordEncoder.matches(request.getPassword(), userOpt.get().getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "아이디 또는 비밀전호가 잘못되었습니다."));
+                    .body(Map.of("message", "아이디 또는 비밀번호를 잘못 입력하셨습니다."));
         }
         User user = userOpt.get();
 

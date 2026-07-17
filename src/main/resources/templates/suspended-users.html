@@ -43,10 +43,10 @@
         });
 
         document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => {
-            if (!confirm('정말로 회원 탈퇴하시겠습니까?')) return;
+            if (!(await confirmDialog('정말로 회원 탈퇴하시겠습니까?', { okText: '탈퇴', danger: true }))) return;
             const response = await fetch('/api/users/me', { method: 'DELETE', credentials: 'include' });
             if (response.ok) {
-                alert('회원 탈퇴가 완료되었습니다.');
+                toastAfterReload('회원 탈퇴가 완료되었습니다.');
                 window.location.href = '/login';
             }
         });
@@ -55,7 +55,7 @@
         document.querySelectorAll('.unsuspend-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const userId = btn.getAttribute('data-user-id');
-                if (!confirm('이 유저의 이용 정지를 해제하시겠습니까?')) return;
+                if (!(await confirmDialog('이 유저의 이용 정지를 해제하시겠습니까?', { okText: '해제' }))) return;
 
                 try {
                     const response = await fetch(`/api/users/unsuspend/${userId}`, {
@@ -63,11 +63,15 @@
                         credentials: 'include'
                     });
                     const data = await response.json();
-                    alert(data.message);
-                    if (response.ok) location.reload();
+                    if (response.ok) {
+                        toastAfterReload(data.message);
+                        location.reload();
+                    } else {
+                        showToast(data.message, 'error');
+                    }
                 } catch (err) {
                     console.error(err);
-                    alert('정지 해제 실패');
+                    showToast('정지 해제 실패', 'error');
                 }
             });
         });

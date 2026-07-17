@@ -132,7 +132,7 @@
             try {
                 const response = await fetch('/api/posts/' + postId + '/like', { method: 'POST', credentials: 'include' });
                 if (!response.ok) {
-                    alert(response.status === 401 || response.status === 403 ? '로그인이 필요합니다.' : '좋아요 처리에 실패했습니다.');
+                    showToast(response.status === 401 || response.status === 403 ? '로그인이 필요합니다.' : '좋아요 처리에 실패했습니다.', 'error');
                     return;
                 }
                 const data = await response.json();
@@ -140,7 +140,7 @@
                 let count = parseInt(countEl.textContent) || 0;
                 if (data.liked) { btn.classList.add('liked'); countEl.textContent = count + 1; }
                 else { btn.classList.remove('liked'); countEl.textContent = Math.max(0, count - 1); }
-            } catch (err) { console.error(err); alert('좋아요 처리 중 오류가 발생했습니다.'); }
+            } catch (err) { console.error(err); showToast('좋아요 처리 중 오류가 발생했습니다.', 'error'); }
         });
     });
 
@@ -185,7 +185,7 @@
             }
 
         } catch (error) {
-            alert('게시글 상세 정보를 불러오는데 실패했습니다.');
+            showToast('게시글 상세 정보를 불러오는데 실패했습니다.', 'error');
             console.error(error);
         }
     }
@@ -242,7 +242,7 @@
                 const postId = this.getAttribute('data-post-id');
                 console.log("삭제 버튼 클릭됨, postId:", postId);
 
-                if (!confirm('정말로 삭제하시겠습니까?')) return;
+                if (!(await confirmDialog('정말로 삭제하시겠습니까?', { okText: '삭제', danger: true }))) return;
 
                 try {
                     const response = await fetch('/api/posts/' + postId, {
@@ -251,7 +251,7 @@
                     });
 
                     if (response.ok) {
-                        alert('게시글이 삭제되었습니다.');
+                        toastAfterReload('게시글이 삭제되었습니다.');
                         closePostModal();
                         location.reload();
                     } else {
@@ -259,7 +259,7 @@
                     }
                 } catch (e) {
                     console.error(e);
-                    alert('삭제 중 오류 발생');
+                    showToast('삭제 중 오류 발생', 'error');
                 }
             };
         }
@@ -295,11 +295,11 @@
                 });
 
                 if (response.ok) {
-                    alert('게시글이 수정되었습니다.');
+                    showToast('게시글이 수정되었습니다.');
 
                     contentEl.textContent = updatedContent;
 
-                    contentEl.style.display = 'block';
+                    contentEl.style.display = 'inline';
                     contentInput.style.display = 'none';
                     editBtn.style.display = 'inline-block';
                     saveBtn.style.display = 'none';
@@ -308,7 +308,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                alert('수정 중 오류 발생');
+                showToast('수정 중 오류 발생', 'error');
             }
         };
     }
@@ -319,7 +319,7 @@
             const data = await response.json();
             if (data && data.message) message = data.message;
         } catch (e) { /* JSON 아님 → fallback 사용 */ }
-        alert(message);
+        showToast(message, 'error');
     }
 
     function closePostModal() {
@@ -354,7 +354,7 @@
                 const content = document.getElementById('commentInput').value.trim();
 
                 if (!content) {
-                    alert('댓글을 입력해주세요.');
+                    showToast('댓글을 입력해주세요.', 'error');
                     return;
                 }
 
@@ -373,11 +373,11 @@
                         return;
                     }
 
-                    alert('댓글이 등록되었습니다.');
+                    showToast('댓글이 등록되었습니다.');
                     openPostModal(postId);
                 } catch (error) {
                     console.error(error);
-                    alert('댓글 등록 중 오류가 발생했습니다.');
+                    showToast('댓글 등록 중 오류가 발생했습니다.', 'error');
                 }
             }
         });
@@ -411,7 +411,7 @@
 
     document.getElementById("commentEditSave").addEventListener("click", async () => {
         const newContent = document.getElementById("commentEditInput").value.trim();
-        if (!newContent) { alert("댓글 내용을 입력하세요."); return; }
+        if (!newContent) { showToast("댓글 내용을 입력하세요.", 'error'); return; }
         try {
             const response = await fetch(`/api/posts/${cePostId}/comments/${ceCommentId}`, {
                 method: "PUT",
@@ -420,14 +420,17 @@
                 body: JSON.stringify({ content: newContent })
             });
             if (response.ok) {
+                const flashTarget = ceTargetTextEl ? ceTargetTextEl.closest('.comment') : null;
                 if (ceTargetTextEl) ceTargetTextEl.textContent = newContent;
                 closeCommentEditModal();
+                showToast('댓글이 수정되었습니다.');
+                flashSuccess(flashTarget);
             } else {
                 await alertError(response, "댓글 수정에 실패했습니다.");
             }
         } catch (e) {
             console.error(e);
-            alert("댓글 수정 중 오류가 발생했습니다.");
+            showToast("댓글 수정 중 오류가 발생했습니다.", 'error');
         }
     });
 
@@ -442,13 +445,13 @@
             if (!deleteBtn) return;
 
             deleteBtn.addEventListener('click', async (e) => {
-                if (!confirm("댓글을 삭제하시겠습니까?")) return;
+                if (!(await confirmDialog("댓글을 삭제하시겠습니까?", { okText: '삭제', danger: true }))) return;
 
                 const commentId = commentEl.dataset.commentId;
                 const postId = e.target.getAttribute("data-post-id");
 
                 if (!postId) {
-                    alert("postId 정보를 찾을 수 없습니다.");
+                    showToast("postId 정보를 찾을 수 없습니다.", 'error');
                     return;
                 }
 
@@ -459,6 +462,7 @@
 
                     if (response.ok) {
                         commentEl.remove();
+                        showToast('댓글이 삭제되었습니다.');
 
                         const commentCountSpan = document.querySelector('#modalContent .comment-count');
                         if (commentCountSpan) {
@@ -473,7 +477,7 @@
                     }
                 } catch (error) {
                     console.error(error);
-                    alert("댓글 삭제 중 오류가 발생했습니다.");
+                    showToast("댓글 삭제 중 오류가 발생했습니다.", 'error');
                 }
             });
         });
@@ -532,7 +536,7 @@
                     }
                 } catch (error) {
                     console.error(error);
-                    alert('좋아요 처리 중 오류 발생');
+                    showToast('좋아요 처리 중 오류 발생', 'error');
                 }
             };
         });
@@ -580,7 +584,7 @@
                     }
                 } catch (err) {
                     console.error(err);
-                    alert('댓글 좋아요 처리 중 오류 발생');
+                    showToast('댓글 좋아요 처리 중 오류 발생', 'error');
                 }
             };
         });
@@ -608,7 +612,7 @@
         });
 
         deleteAccountBtn?.addEventListener('click', async () => {
-            const confirmDelete = confirm("정말로 회원 탈퇴하시겠습니까?");
+            const confirmDelete = await confirmDialog("정말로 회원 탈퇴하시겠습니까?", { okText: '탈퇴', danger: true });
             if (!confirmDelete) return;
 
             try {
@@ -618,14 +622,14 @@
                 });
 
                 if (response.ok) {
-                    alert("회원 탈퇴가 완료되었습니다.");
+                    toastAfterReload("회원 탈퇴가 완료되었습니다.");
                     window.location.href = "/login";
                 } else {
                     const data = await response.json();
-                    alert(data.message || "회원 탈퇴에 실패했습니다.");
+                    showToast(data.message || "회원 탈퇴에 실패했습니다.", 'error');
                 }
             } catch (err) {
-                alert("에러가 발생했습니다.");
+                showToast("에러가 발생했습니다.", 'error');
             }
         });
     });
@@ -652,13 +656,15 @@
                 });
 
                 const data = await response.json();
-                alert(data.message);
                 if (response.ok) {
+                    toastAfterReload(data.message);
                     location.reload();
+                } else {
+                    showToast(data.message, 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('이용 정지 실패');
+                showToast('이용 정지 실패', 'error');
             }
         });
     });
@@ -688,18 +694,18 @@
             const newNickname = nicknameInput.value.trim();
 
             if (!newNickname) {
-                alert("닉네임을 입력하세요.");
+                showToast("닉네임을 입력하세요.", 'error');
                 return;
             }
 
             if (newNickname.length < 4 || newNickname.length > 10) {
-                alert("닉네임은 4자 이상 10자 이하이어야 합니다.");
+                showToast("닉네임은 4자 이상 10자 이하이어야 합니다.", 'error');
                 return;
             }
 
             const usernamePattern = /^(?![0-9]+$)(?!.*[.]{2})(?!^\.)[a-zA-Z0-9._]{1,30}(?<!\.)$/;
             if (!usernamePattern.test(newNickname)) {
-                alert("닉네임은 1~30자의 영문자(대소문자), 숫자, '.', '_'만 사용 가능하며,\n숫자만으로 이루어질 수 없고,\n'.'는 연속으로 사용할 수 없으며 맨 앞이나 맨 뒤에 올 수 없습니다.");
+                showToast("닉네임은 1~30자의 영문자(대소문자), 숫자, '.', '_'만 사용 가능하며,\n숫자만으로 이루어질 수 없고,\n'.'는 연속으로 사용할 수 없으며 맨 앞이나 맨 뒤에 올 수 없습니다.", 'error');
                 return;
             }
 
@@ -714,15 +720,15 @@
                 });
 
                 if (response.ok) {
-                    alert("닉네임이 수정되었습니다.");
+                    toastAfterReload("닉네임이 수정되었습니다.");
                     location.reload();
                 } else {
                     const error = await response.json();
-                    alert("닉네임 수정 실패: " + (error.message || JSON.stringify(error)));
+                    showToast("닉네임 수정 실패: " + (error.message || JSON.stringify(error)), 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert("닉네임 수정 중 오류가 발생했습니다.");
+                showToast("닉네임 수정 중 오류가 발생했습니다.", 'error');
             }
         });
     });
@@ -760,11 +766,15 @@
                     body: formData
                 });
                 const data = await response.json();
-                alert(data.message);
-                if (response.ok) location.reload();
+                if (response.ok) {
+                    toastAfterReload(data.message);
+                    location.reload();
+                } else {
+                    showToast(data.message, 'error');
+                }
             } catch (err) {
                 console.error(err);
-                alert('이미지 업로드 중 오류가 발생했습니다.');
+                showToast('이미지 업로드 중 오류가 발생했습니다.', 'error');
             }
         });
     });

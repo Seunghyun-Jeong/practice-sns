@@ -56,13 +56,13 @@
     // 업로드
     document.getElementById('submitPostBtn').addEventListener('click', async () => {
         if (!fileInput.files[0]) {
-            alert('사진을 선택해주세요.');
+            showToast('사진을 선택해주세요.', 'error');
             return;
         }
 
         const content = document.getElementById('content').value.trim();
         if (!content) {
-            alert('문구를 입력해주세요.');
+            showToast('문구를 입력해주세요.', 'error');
             return;
         }
 
@@ -78,21 +78,21 @@
             });
 
             if (response.status === 401) {
-                alert('로그인이 필요합니다.');
+                toastAfterReload('로그인이 필요합니다.', 'error');
                 window.location.href = '/login';
                 return;
             }
 
             const data = await response.json();
             if (response.ok) {
-                alert('게시글이 등록되었습니다!');
+                toastAfterReload('게시글이 등록되었습니다.');
                 window.location.href = '/';
             } else {
-                alert(data.message || '게시글 등록에 실패했습니다.');
+                showToast(data.message || '게시글 등록에 실패했습니다.', 'error');
             }
         } catch (error) {
             console.error('게시글 등록 실패:', error);
-            alert('서버 오류로 게시글 등록에 실패했습니다.');
+            showToast('서버 오류로 게시글 등록에 실패했습니다.', 'error');
         }
     });
 
@@ -107,9 +107,9 @@
             .then(() => window.location.href = '/');
     });
     document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => {
-        if (!confirm('정말로 회원 탈퇴하시겠습니까?')) return;
+        if (!(await confirmDialog('정말로 회원 탈퇴하시겠습니까?', { okText: '탈퇴', danger: true }))) return;
         const r = await fetch('/api/users/me', { method: 'DELETE', credentials: 'include' });
-        if (r.ok) { alert('회원 탈퇴가 완료되었습니다.'); window.location.href = '/login'; }
+        if (r.ok) { toastAfterReload('회원 탈퇴가 완료되었습니다.'); window.location.href = '/login'; }
     });
 </script>
 </body>

@@ -6,6 +6,7 @@
   <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}" />
 </head>
 <body>
+<div th:replace="~{fragments/header :: header}"></div>
 <h2>로그인</h2>
 
 <form id="loginForm">
@@ -19,6 +20,15 @@
 </form>
 
 <script>
+  (function () {
+    const hb = document.getElementById('hamburgerBtn');
+    const dd = document.getElementById('dropdownMenu');
+    if (hb && dd) {
+      hb.addEventListener('click', (e) => { e.stopPropagation(); dd.style.display = dd.style.display === 'block' ? 'none' : 'block'; });
+      document.addEventListener('click', (e) => { if (!e.target.closest('.hamburger-menu')) dd.style.display = 'none'; });
+    }
+  })();
+
   document.getElementById("loginForm").addEventListener("submit", function (e) {
     e.preventDefault();
 
@@ -26,7 +36,7 @@
     const password = document.getElementById("password").value;
 
     if (!username || !password) {
-      alert("아이디와 비밀번호를 모두 입력해주세요.");
+      showToast("아이디와 비밀번호를 모두 입력해주세요.", 'error');
       return;
     }
 
@@ -41,15 +51,15 @@
               const data = await response.json();
 
               if (response.ok) {
-                alert(data.message);
+                toastAfterReload(data.message);
                 window.location.href = "/";
               } else {
-                alert(data.message || "로그인에 실패했습니다.");
+                showToast(data.message || "로그인에 실패했습니다.", 'error');
               }
             })
             .catch(error => {
               console.error("로그인 요청 실패:", error);
-              alert("서버 오류로 로그인에 실패했습니다.");
+              showToast("서버 오류로 로그인에 실패했습니다.", 'error');
             });
   });
 </script>
