@@ -9,23 +9,24 @@
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    background-color: #ffffff;
     margin: 0;
     padding: 20px;
 }
 
 .header-bar {
     background-color: white;
-    padding: 0 20px;
+    padding: 0 30px;
     height: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #ddd;
+    border-radius: 30px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     font-weight: 600;
     font-size: 16px;
     position: sticky;
-    top: 0;
+    top: 20px;
     z-index: 100;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
@@ -76,7 +77,7 @@ h2 {
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 6px 20px rgba(0,0,0,0.08);
     max-width: 400px;
     margin: auto;
 }
@@ -175,13 +176,13 @@ button {
     padding: 0;
     overflow: hidden;
     border-radius: 10px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 6px 20px rgba(0,0,0,0.08);
     cursor: pointer;
     transition: box-shadow 0.2s ease;
 }
 
 .post-summary:hover {
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10), 0 10px 28px rgba(0,0,0,0.14);
 }
 
 /* 인스타식 피드 카드 */
@@ -276,50 +277,19 @@ button {
 }
 
 /* 하트가 말풍선보다 커 보이는 착시 보정 (하트 22 / 말풍선 24) */
-.post-actions .ic-heart,
-.post-stats .ic-heart {
+.post-actions .ic-heart {
     width: 22px;
     height: 22px;
 }
 
-.post-actions .ic-comment,
-.post-stats .ic-comment {
+.post-actions .ic-comment {
     width: 24px;
     height: 24px;
 }
 
 .comment-like-btn .ic-heart {
-    width: 15px;
-    height: 15px;
-}
-
-/* 상세 모달 - 피드식 캡션 / 시간 */
-.detail-caption {
-    padding: 6px 0 2px;
-    font-size: 15px;
-    line-height: 1.6;
-    color: #262626;
-    word-break: break-word;
-}
-
-.detail-caption .detail-author {
-    font-weight: 700;
-    margin-right: 6px;
-    cursor: pointer;
-}
-
-.detail-time {
-    font-size: 12px;
-    color: #8e8e8e;
-    margin-top: 6px;
-}
-
-.post-edit-actions {
-    position: absolute;
-    bottom: 30px;
-    left: 30px;
-    display: flex;
-    gap: 10px;
+    width: 14px;
+    height: 14px;
 }
 
 .post-author-name {
@@ -355,17 +325,17 @@ button {
     object-fit: cover;
     display: block;
     background: #fafafa;
+    /* 흰 배경 사진도 경계가 보이도록 얇은 테두리 */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 /* 게시글 이미지 (상세 모달) */
 .post-detail-image {
     width: 100%;
-    max-height: 380px;
+    height: 100%;
     object-fit: contain;
-    border-radius: 8px;
-    margin: 12px 0;
     display: block;
-    background: #fafafa;
 }
 
 /* 게시글 작성 페이지 */
@@ -453,6 +423,84 @@ button {
     justify-content: center;
 }
 
+/* 댓글 수정 모달 (상세 모달 위에 뜸) */
+.ce-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ce-box {
+    background: #fff;
+    border-radius: 14px;
+    width: 420px;
+    max-width: 90vw;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.ce-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: #262626;
+}
+
+.ce-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    resize: vertical;
+    min-height: 70px;
+}
+
+.ce-input:focus {
+    outline: none;
+    border-color: #0095f6;
+}
+
+.ce-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.ce-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.ce-save {
+    background: #0095f6;
+    color: #fff;
+}
+
+.ce-save:hover {
+    background: #0080d6;
+}
+
+.ce-cancel {
+    background: #efefef;
+    color: #262626;
+}
+
+.ce-cancel:hover {
+    background: #e0e0e0;
+}
+
 .modal {
     position: relative;
     background-color: white;
@@ -476,28 +524,291 @@ button {
 }
 
 .comment-list {
-    flex: 1;
-    overflow-y: auto;
-    margin: 10px 0;
+    margin: 0;
 }
 
-.post-detail-left {
-    width: 66.66%;
-    padding: 30px;
-    padding-bottom: 80px;
-    overflow-y: auto;
-    border-right: 1px solid #ccc;
-    position: relative;
+/* ===== 인스타식 상세 모달 ===== */
+/* 왼쪽: 이미지 전용 (검은 배경에 사진 contain) */
+.post-detail-media {
+    width: 62%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
-.post-detail-right {
-    width: 33.3%;
-    padding: 20px;
+/* 오른쪽: 헤더 / 본문 / 액션바 / 좋아요수 / 입력창 세로 스택 */
+.post-detail-side {
+    width: 38%;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     height: 100%;
+    min-width: 0;
+    border-left: 1px solid #efefef;
+}
+
+/* 헤더 */
+.pd-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #efefef;
+    flex-shrink: 0;
+}
+
+.pd-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #efefef;
+    flex-shrink: 0;
+}
+
+.pd-username {
+    font-weight: 600;
+    font-size: 14px;
+    color: #262626;
+    cursor: pointer;
+}
+
+.pd-menu {
+    position: relative;
+    margin-left: auto;
+}
+
+.pd-menu-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: #262626;
+    display: inline-flex;
+    align-items: center;
+}
+
+.pd-menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: #fff;
+    border: 1px solid #efefef;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 10;
+    min-width: 120px;
+}
+
+.pd-menu-dropdown .btn {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    color: #262626;
+    cursor: pointer;
+}
+
+.pd-menu-dropdown .btn:not(:last-child) {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.pd-menu-dropdown .btn:hover {
+    background: #f7f7f7;
+}
+
+.pd-menu-dropdown .edit-post-btn {
+    color: #0095f6; /* 댓글 수정 버튼과 동일 색상 */
+    font-weight: 600;
+}
+
+.pd-menu-dropdown .delete-post-btn {
+    color: #ed4956;
+    font-weight: 600;
+}
+
+/* 본문 (스크롤): 캡션 + 댓글 */
+.pd-body {
+    flex: 1;
     overflow-y: auto;
+    padding: 14px 16px;
+    min-height: 0;
+}
+
+.pd-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.pd-avatar-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #efefef;
+    flex-shrink: 0;
+}
+
+.pd-row-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.pd-row-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #262626;
+    word-break: break-word;
+}
+
+.pd-username-inline {
+    font-weight: 600;
+    margin-right: 6px;
+    cursor: pointer;
+}
+
+.pd-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #8e8e8e;
+}
+
+/* 시간·(수정됨)은 글자 중간에서 안 깨지게 */
+.pd-meta > span {
+    white-space: nowrap;
+}
+
+/* 수정/삭제 버튼을 오른쪽으로 밀고, 안 맞으면 그룹째 아랫줄로 */
+.pd-meta-btns {
+    margin-left: auto;
+    display: flex;
+    gap: 0;
+    flex-shrink: 0;
+}
+
+.pd-meta .edit-comment-btn,
+.pd-meta .delete-comment-btn,
+.pd-meta .save-comment-btn,
+.pd-meta .cancel-edit-btn {
+    background: none;
+    border: none;
+    padding: 2px 6px;
+    box-shadow: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pd-meta .edit-comment-btn,
+.pd-meta .save-comment-btn {
+    color: #0095f6; /* "게시" 버튼과 동일 색상 */
+}
+
+.pd-meta .delete-comment-btn {
+    color: #ed4956;
+}
+
+.pd-meta .cancel-edit-btn {
+    color: #8e8e8e;
+}
+
+/* hover 시 파랑/빨강/회색 알약이 글자보다 크게 채워짐 */
+.pd-meta .edit-comment-btn:hover,
+.pd-meta .save-comment-btn:hover {
+    background-color: #0095f6;
+    color: #fff;
+}
+
+.pd-meta .delete-comment-btn:hover {
+    background-color: #ed4956;
+    color: #fff;
+}
+
+.pd-meta .cancel-edit-btn:hover {
+    background-color: #8e8e8e;
+    color: #fff;
+}
+
+.pd-caption-row {
+    border-bottom: 1px solid #efefef;
+    margin-bottom: 6px;
+    padding-bottom: 14px;
+}
+
+/* 댓글 우측: 하트 + 숫자(세로) */
+.pd-comment-like {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.pd-comment-like .comment-like-count {
+    font-size: 12px;
+    color: #262626;
+}
+
+/* 내가 좋아요 누른 게시글/댓글은 숫자도 빨간색 */
+.feed-like-btn.liked + .feed-like-count,
+.like-btn.liked + .pd-count,
+.comment-like-btn.liked + .comment-like-count {
+    color: #ed4956;
+}
+
+.comment .comment-suspended {
+    padding: 8px 0;
+}
+
+/* 하단 액션바: (하트) N (말풍선) N */
+.pd-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px 4px;
+    border-top: 1px solid #efefef;
+    flex-shrink: 0;
+}
+
+.pd-action-ic {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.pd-comment-ic {
+    margin-left: 12px;
+}
+
+.pd-count {
+    font-weight: 600;
+    font-size: 14px;
+    color: #262626;
+}
+
+.pd-posttime {
+    padding: 4px 16px 10px;
+    font-size: 11px;
+    color: #8e8e8e;
+    text-transform: uppercase;
+    flex-shrink: 0;
 }
 
 .delete-post-btn {
@@ -533,40 +844,42 @@ button {
 }
 
 .comment-form {
-    padding: 16px;
+    padding: 6px 16px;
+    border-top: 1px solid #efefef;
+    flex-shrink: 0;
 }
 
 .comment-input-wrapper {
-    position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
+    gap: 8px;
 }
 
 .comment-input-wrapper input[type="text"] {
-    width: 100%;
-    height: 80px;
-    padding: 24px 70px 24px 20px;
-    font-size: 16px;
-    line-height: 1.6;
-    border: 1px solid #ccc;
-    border-radius: 30px;
+    flex: 1;
+    min-width: 0;
+    padding: 10px 0;
+    font-size: 14px;
+    line-height: 1.4;
+    border: none;
+    outline: none;
     box-sizing: border-box;
 }
 
 .comment-submit-button {
-    position: absolute;
-    top: 50%;
-    right: 16px;
-    transform: translateY(-50%);
-    background-color: #007bff;
-    color: white;
+    background: none;
     border: none;
-    border-radius: 15px;
-    padding: 6px 12px;
+    color: #0095f6;
+    font-weight: 600;
     font-size: 14px;
-    height: auto;
-    width: auto;
+    padding: 6px 2px;
     white-space: nowrap;
     cursor: pointer;
+}
+
+.comment-submit-button:hover {
+    color: #00376b;
 }
 
 .post-title {
@@ -595,37 +908,8 @@ button {
 }
 
 .comment {
-    position: relative;
-    padding: 10px;
     font-size: 14px;
     color: #262626;
-    border-bottom: 1px solid #f0f0f0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.comment-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    height: 20px;
-}
-
-.comment-actions .comment-like-btn {
-    display: inline-flex;
-    align-items: center;
-}
-
-.comment-actions .comment-like-count {
-    color: #8e8e8e;
-    font-size: 13px;
-}
-
-.comment-action-btns {
-    margin-left: auto;
-    display: flex;
-    gap: 8px;
 }
 
 .comment-author {
@@ -636,12 +920,6 @@ button {
 .comment-text {
     white-space: pre-wrap;
     line-height: 1.5;
-}
-
-.comment-date {
-    font-size: 12px;
-    color: #8e8e8e;
-    margin-top: 2px;
 }
 
 .edit-comment-btn,
@@ -691,11 +969,15 @@ button {
 }
 
 .edit-comment-input {
+    /* 댓글 텍스트 줄 자리를 그대로 차지 → 행이 늘어나지 않음 */
+    display: block;
     width: 100%;
-    padding: 8px 12px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
+    margin: 0;
+    padding: 2px 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    border: 1px solid #dbdbdb;
+    border-radius: 6px;
     box-sizing: border-box;
 }
 
@@ -720,22 +1002,8 @@ button {
     background-color: #cc0000;
 }
 
-.post-stats {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    font-size: 15px;
-    color: #262626;
-    margin-top: 10px;
-}
-
-.post-stats .comment-icon {
-    margin-left: 8px;
-}
-
 .comment-like-btn {
     cursor: pointer;
-    font-size: 1.2em;
     user-select: none;
     transition: transform 0.2s ease;
 }
@@ -756,25 +1024,41 @@ button {
 .dropdown-content {
     position: absolute;
     right: 0;
+    margin-top: 8px;
     background-color: white;
-    border: 1px solid #ccc;
+    border: 1px solid #efefef;
+    border-radius: 14px;
+    overflow: hidden;
     z-index: 999;
-    min-width: 120px;
-    padding: 8px 0;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    min-width: 150px;
+    padding: 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* 각 메뉴 행(앵커 또는 버튼) 사이 구분선 */
+.dropdown-content > a,
+.dropdown-content > button {
+    display: block;
+    width: 100%;
+}
+
+.dropdown-content > a:not(:last-child),
+.dropdown-content > button:not(:last-child) {
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .dropdown-content .btn {
     width: 100%;
     background: none;
     border: none;
-    padding: 10px;
+    padding: 12px 16px;
     text-align: left;
+    font-size: 14px;
     cursor: pointer;
 }
 
 .dropdown-content .btn:hover {
-    background-color: #f1f1f1;
+    background-color: #f7f7f7;
 }
 
 .profile-container {
@@ -877,7 +1161,7 @@ button {
     background-color: white;
     padding: 15px 20px;
     border-radius: 10px;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 6px 20px rgba(0,0,0,0.08);
     display: flex;
     align-items: center;
     justify-content: space-between;
