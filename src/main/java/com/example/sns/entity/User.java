@@ -53,6 +53,14 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<CommentLike> commentLikes = new ArrayList<>();
 
+    /** 내가 다른 사람을 팔로우한 기록 */
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Follow> following = new ArrayList<>();
+
+    /** 다른 사람이 나를 팔로우한 기록 */
+    @OneToMany(mappedBy = "following", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Follow> followers = new ArrayList<>();
+
     @Column
     private LocalDateTime suspendedUntil;
 

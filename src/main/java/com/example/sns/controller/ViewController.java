@@ -5,6 +5,7 @@ import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.UserProfileDto;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.service.CommentService;
+import com.example.sns.service.FollowService;
 import com.example.sns.service.PostService;
 import com.example.sns.service.UserService;
 import com.example.sns.util.JwtUtil;
@@ -15,6 +16,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class ViewController {
     private final JwtUtil jwtUtil;
     private final UserService userService;
     private final CommentService commentService;
+    private final FollowService followService;
 
     @GetMapping("/signup")
     public String signupPage() {
@@ -44,13 +47,22 @@ public class ViewController {
 
     @GetMapping("/")
     public String mainPage(Model model,
+                           @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
                            @CookieValue(value = "JWT_TOKEN", required = false) String token) {
         Long currentUserId = null;
         if (token != null && jwtUtil.validateToken(token)) {
             currentUserId = jwtUtil.getUserIdFromToken(token);
         }
-        List<PostSummaryDto> posts = postService.getPostsummaries(currentUserId);
+
+        // 비로그인 상태에서는 팔로잉 탭을 볼 수 없으므로 전체 탭으로 되돌린다
+        boolean followingTab = "following".equals(tab) && currentUserId != null;
+
+        List<PostSummaryDto> posts = followingTab
+                ? postService.getFollowingFeed(currentUserId)
+                : postService.getPostsummaries(currentUserId);
+
         model.addAttribute("posts", posts);
+        model.addAttribute("tab", followingTab ? "following" : "all");
         return "main";
     }
 
@@ -99,6 +111,11 @@ public class ViewController {
         model.addAttribute("profileSuspended", profile.isSuspended());
         model.addAttribute("currentUserRole", currentUserRole);
         model.addAttribute("profileUserId", userId);
+
+        // 팔로우 정보
+        model.addAttribute("followerCount", followService.countFollowers(userId));
+        model.addAttribute("followingCount", followService.countFollowing(userId));
+        model.addAttribute("isFollowing", followService.isFollowing(currentUserId, userId));
 
         return "profile";
     }

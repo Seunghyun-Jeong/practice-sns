@@ -34,6 +34,20 @@
                 <button id="suspendUserBtn">정지</button>
             </div>
 
+            <!-- 게시글 / 팔로워 / 팔로잉 수 -->
+            <div class="profile-stats" th:unless="${profileSuspended}">
+                <span><b th:text="${#lists.size(myPosts)}">0</b> 게시물</span>
+                <span><b id="followerCount" th:text="${followerCount}">0</b> 팔로워</span>
+                <span><b th:text="${followingCount}">0</b> 팔로잉</span>
+            </div>
+
+            <!-- 팔로우 버튼 (본인 프로필 · 정지 유저 · 비로그인 제외) -->
+            <button th:if="${username != null and profileUsername != currentUsername and !profileSuspended}"
+                    id="followBtn" class="follow-btn"
+                    th:classappend="${isFollowing} ? 'following' : ''"
+                    th:attr="data-user-id=${profileUserId}, data-following=${isFollowing}"
+                    th:text="${isFollowing} ? '팔로잉' : '팔로우'">팔로우</button>
+
         </div>
     </div>
 
@@ -595,12 +609,50 @@
         initDeleteCommentButtons();
         initLikeButtons();
         initCommentLikeButtons();
+        initFollowButton();
 
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', logout);
         }
     });
+
+    // 팔로우 / 팔로우 취소
+    function initFollowButton() {
+        const btn = document.getElementById('followBtn');
+        if (!btn) return;
+
+        btn.addEventListener('click', async () => {
+            const userId = btn.getAttribute('data-user-id');
+            btn.disabled = true;
+            try {
+                const response = await fetch(`/api/users/${userId}/follow`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showToast(data.message || '팔로우 처리에 실패했습니다.', 'error');
+                    return;
+                }
+
+                btn.textContent = data.following ? '팔로잉' : '팔로우';
+                btn.classList.toggle('following', data.following);
+                btn.setAttribute('data-following', data.following);
+
+                const countEl = document.getElementById('followerCount');
+                if (countEl) countEl.textContent = data.followerCount;
+
+                showToast(data.following ? '팔로우했습니다.' : '팔로우를 취소했습니다.');
+            } catch (err) {
+                console.error(err);
+                showToast('팔로우 처리 중 오류가 발생했습니다.', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         const hamburgerBtn = document.getElementById('hamburgerBtn');

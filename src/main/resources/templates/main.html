@@ -10,10 +10,16 @@
 
 <div style="height: 20px;"></div>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto;">
+<div class="feed-tabs" th:if="${username != null}">
+  <a href="/" class="feed-tab" th:classappend="${tab != 'following'} ? 'active' : ''">전체</a>
+  <a href="/?tab=following" class="feed-tab" th:classappend="${tab == 'following'} ? 'active' : ''">팔로잉</a>
 </div>
 
 <div class="feed-container">
+  <div th:if="${tab == 'following' and #lists.isEmpty(posts)}" class="feed-empty">
+    아직 팔로우한 사람이 없습니다.<br />
+    관심 있는 유저를 팔로우하면 여기에 게시글이 보입니다.
+  </div>
   <div th:each="post : ${posts}" class="post-summary"
        th:onclick="'openPostModal(' + ${post.id} + ')'"
        style="cursor:pointer;">

@@ -1339,3 +1339,84 @@ button {
     animation: flashSuccess 0.9s ease-out;
     border-radius: 6px;
 }
+
+/* ===== 피드 탭 (전체 / 팔로잉) ===== */
+.feed-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    max-width: 600px;
+    margin: 0 auto 20px;
+    border-bottom: 1px solid #efefef;
+}
+
+.feed-tab {
+    padding: 10px 4px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #8e8e8e;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.feed-tab:hover {
+    color: #262626;
+}
+
+.feed-tab.active {
+    color: #262626;
+    border-bottom-color: #262626;
+}
+
+.feed-empty {
+    text-align: center;
+    color: #8e8e8e;
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 60px 20px;
+}
+
+/* ===== 프로필 통계 / 팔로우 버튼 ===== */
+.profile-stats {
+    display: flex;
+    gap: 26px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: #262626;
+}
+
+.profile-stats b {
+    font-weight: 600;
+}
+
+.follow-btn {
+    margin-top: 14px;
+    padding: 7px 22px;
+    border: none;
+    border-radius: 8px;
+    background-color: #0095f6;
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.follow-btn:hover {
+    background-color: #0080d6;
+}
+
+.follow-btn.following {
+    background-color: #efefef;
+    color: #262626;
+}
+
+.follow-btn.following:hover {
+    background-color: #e0e0e0;
+}
+
+.follow-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
