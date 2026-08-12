@@ -1420,3 +1420,98 @@ button {
     opacity: 0.6;
     cursor: default;
 }
+
+/* 팔로워 / 팔로잉 숫자 클릭 */
+.profile-stats .stat-link {
+    cursor: pointer;
+}
+
+.profile-stats .stat-link:hover {
+    color: #8e8e8e;
+}
+
+/* ===== 팔로워 / 팔로잉 목록 모달 ===== */
+.fl-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 3500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fl-box {
+    background: #fff;
+    border-radius: 14px;
+    width: 400px;
+    max-width: 90vw;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.fl-header {
+    position: relative;
+    padding: 14px 16px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 15px;
+    color: #262626;
+    border-bottom: 1px solid #efefef;
+    flex-shrink: 0;
+}
+
+.fl-close {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 4px;
+    color: #262626;
+    cursor: pointer;
+    display: inline-flex;
+}
+
+.fl-body {
+    overflow-y: auto;
+    padding: 6px 0;
+}
+
+.fl-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+}
+
+.fl-row:hover {
+    background: #fafafa;
+}
+
+.fl-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #efefef;
+    flex-shrink: 0;
+}
+
+.fl-username {
+    font-weight: 600;
+    font-size: 14px;
+    color: #262626;
+}
+
+.fl-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #8e8e8e;
+    font-size: 14px;
+}

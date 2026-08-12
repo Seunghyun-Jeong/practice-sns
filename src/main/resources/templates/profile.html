@@ -9,6 +9,7 @@
 
 <div th:replace="~{fragments/header :: header}"></div>
 <input type="hidden" id="currentUsername" th:value="${currentUsername}">
+<input type="hidden" id="profileUserId" th:value="${profileUserId}">
 <div class="profile-container">
     <div class="profile-header">
         <img th:src="${(profileImageUrl != null and profileImageUrl != '') ? profileImageUrl : '/images/default-profile.svg'}"
@@ -37,8 +38,8 @@
             <!-- 게시글 / 팔로워 / 팔로잉 수 -->
             <div class="profile-stats" th:unless="${profileSuspended}">
                 <span><b th:text="${#lists.size(myPosts)}">0</b> 게시물</span>
-                <span><b id="followerCount" th:text="${followerCount}">0</b> 팔로워</span>
-                <span><b th:text="${followingCount}">0</b> 팔로잉</span>
+                <span class="stat-link" id="openFollowers"><b id="followerCount" th:text="${followerCount}">0</b> 팔로워</span>
+                <span class="stat-link" id="openFollowing"><b id="followingCount" th:text="${followingCount}">0</b> 팔로잉</span>
             </div>
 
             <!-- 팔로우 버튼 (본인 프로필 · 정지 유저 · 비로그인 제외) -->
@@ -104,6 +105,19 @@
 
 <div id="postDetailModal" class="modal-backdrop" style="display:none;">
     <div id="modalContent"></div>
+</div>
+
+<!-- 팔로워 / 팔로잉 목록 모달 -->
+<div id="followListModal" class="fl-backdrop" style="display:none;">
+    <div class="fl-box">
+        <div class="fl-header">
+            <span id="followListTitle">팔로워</span>
+            <button type="button" id="followListClose" class="fl-close" aria-label="닫기">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+            </button>
+        </div>
+        <div id="followListBody" class="fl-body"></div>
+    </div>
 </div>
 
 <!-- 댓글 수정 모달 -->
@@ -610,12 +624,85 @@
         initLikeButtons();
         initCommentLikeButtons();
         initFollowButton();
+        initFollowListModal();
 
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', logout);
         }
     });
+
+    // 팔로워 / 팔로잉 목록 모달
+    function initFollowListModal() {
+        const modal = document.getElementById('followListModal');
+        if (!modal) return;
+
+        const profileUserId = document.getElementById('profileUserId')?.value;
+        if (!profileUserId) return;
+
+        document.getElementById('openFollowers')?.addEventListener('click', () => openFollowList('followers', profileUserId));
+        document.getElementById('openFollowing')?.addEventListener('click', () => openFollowList('following', profileUserId));
+        document.getElementById('followListClose')?.addEventListener('click', closeFollowList);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeFollowList(); });
+    }
+
+    function closeFollowList() {
+        const modal = document.getElementById('followListModal');
+        if (modal) modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    async function openFollowList(type, userId) {
+        const modal = document.getElementById('followListModal');
+        const body = document.getElementById('followListBody');
+        document.getElementById('followListTitle').textContent = type === 'followers' ? '팔로워' : '팔로잉';
+        body.innerHTML = '<div class="fl-empty">불러오는 중...</div>';
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+
+        try {
+            const response = await fetch(`/api/users/${userId}/${type}`, { credentials: 'include' });
+            const data = await response.json();
+
+            if (!response.ok) {
+                body.innerHTML = '';
+                showToast(data.message || '목록을 불러오지 못했습니다.', 'error');
+                closeFollowList();
+                return;
+            }
+
+            if (!data.users || data.users.length === 0) {
+                body.innerHTML = '<div class="fl-empty">' +
+                    (type === 'followers' ? '아직 팔로워가 없습니다.' : '아직 팔로우한 사람이 없습니다.') + '</div>';
+                return;
+            }
+
+            body.innerHTML = '';
+            data.users.forEach(u => {
+                const row = document.createElement('div');
+                row.className = 'fl-row';
+
+                const img = document.createElement('img');
+                img.className = 'fl-avatar';
+                img.src = u.profileImageUrl || '/images/default-profile.svg';
+                img.alt = '프로필';
+
+                const name = document.createElement('span');
+                name.className = 'fl-username';
+                name.textContent = u.username;
+
+                row.appendChild(img);
+                row.appendChild(name);
+                row.addEventListener('click', () => { window.location.href = '/profile/' + u.id; });
+                body.appendChild(row);
+            });
+        } catch (err) {
+            console.error(err);
+            body.innerHTML = '';
+            showToast('목록을 불러오는 중 오류가 발생했습니다.', 'error');
+            closeFollowList();
+        }
+    }
 
     // 팔로우 / 팔로우 취소
     function initFollowButton() {

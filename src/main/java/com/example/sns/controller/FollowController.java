@@ -15,13 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/users/{userId}/follow")
+@RequestMapping("/api/users/{userId}")
 public class FollowController {
     private final FollowService followService;
     private final JwtUtil jwtUtil;
 
     /** 팔로우 / 팔로우 취소 */
-    @PostMapping
+    @PostMapping("/follow")
     public ResponseEntity<?> toggleFollow(@PathVariable Long userId,
                                           @CookieValue(name = "JWT_TOKEN", required = false) String token) {
         if (token == null || !jwtUtil.validateToken(token)) {
@@ -41,8 +41,28 @@ public class FollowController {
         }
     }
 
+    /** 나를 팔로우하는 사람 목록 */
+    @GetMapping("/followers")
+    public ResponseEntity<?> getFollowers(@PathVariable Long userId) {
+        try {
+            return ResponseEntity.ok(Map.of("users", followService.getFollowers(userId)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    /** 내가 팔로우하는 사람 목록 */
+    @GetMapping("/following")
+    public ResponseEntity<?> getFollowingList(@PathVariable Long userId) {
+        try {
+            return ResponseEntity.ok(Map.of("users", followService.getFollowingList(userId)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     /** 팔로워 / 팔로잉 수 + 내가 팔로우 중인지 */
-    @GetMapping
+    @GetMapping("/follow")
     public ResponseEntity<?> getFollowInfo(@PathVariable Long userId,
                                            @CookieValue(name = "JWT_TOKEN", required = false) String token) {
         Long currentUserId = null;

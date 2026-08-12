@@ -1,10 +1,13 @@
 package com.example.sns.service;
 
+import com.example.sns.dto.FollowUserDto;
 import com.example.sns.entity.Follow;
 import com.example.sns.entity.User;
 import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.UserRepository;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +64,34 @@ public class FollowService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
         return followRepository.countByFollower(user);
+    }
+
+    /** 나를 팔로우하는 사람 목록 (정지 유저 제외) */
+    public List<FollowUserDto> getFollowers(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        return followRepository.findAllByFollowingOrderByFollowedAtDesc(user).stream()
+                .map(Follow::getFollower)
+                .filter(u -> !u.isSuspended())
+                .map(this::toFollowUserDto)
+                .collect(Collectors.toList());
+    }
+
+    /** 내가 팔로우하는 사람 목록 (정지 유저 제외) */
+    public List<FollowUserDto> getFollowingList(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        return followRepository.findAllByFollowerOrderByFollowedAtDesc(user).stream()
+                .map(Follow::getFollowing)
+                .filter(u -> !u.isSuspended())
+                .map(this::toFollowUserDto)
+                .collect(Collectors.toList());
+    }
+
+    private FollowUserDto toFollowUserDto(User user) {
+        return new FollowUserDto(user.getId(), user.getUsername(), user.getProfileImageUrl());
     }
 
     /** currentUserId 가 targetUserId 를 팔로우 중인지 */

@@ -18,4 +18,10 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 
     /** 내가 팔로우하는 사람들 */
     List<Follow> findAllByFollower(User follower);
+
+    /** 내가 팔로우하는 사람들 (최신순) */
+    List<Follow> findAllByFollowerOrderByFollowedAtDesc(User follower);
+
+    /** 나를 팔로우하는 사람들 (최신순) */
+    List<Follow> findAllByFollowingOrderByFollowedAtDesc(User following);
 }
