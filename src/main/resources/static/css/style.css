@@ -1377,6 +1377,18 @@ button {
     padding: 60px 20px;
 }
 
+.feed-loading {
+    text-align: center;
+    color: #8e8e8e;
+    font-size: 13px;
+    padding: 16px 0 32px;
+}
+
+/* 무한 스크롤 감지용. 높이가 0이면 교차 영역이 0이라 옵저버가 반응하지 않는다 */
+#feedSentinel {
+    height: 1px;
+}
+
 /* ===== 프로필 통계 / 팔로우 버튼 ===== */
 .profile-stats {
     display: flex;

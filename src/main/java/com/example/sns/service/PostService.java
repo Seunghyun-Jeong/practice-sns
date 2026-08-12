@@ -1,6 +1,7 @@
 package com.example.sns.service;
 
 import com.example.sns.dto.CommentDto;
+import com.example.sns.dto.FeedPageDto;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
@@ -9,14 +10,21 @@ import com.example.sns.entity.Follow;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
 import com.example.sns.repository.CommentLikeRepository;
+import com.example.sns.repository.CommentRepository;
 import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.PostLikeRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.util.JwtUtil;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,15 +36,17 @@ public class PostService {
     private final JwtUtil jwtUtil;
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final CommentRepository commentRepository;
     private final FollowRepository followRepository;
     private final FileStorageService fileStorageService;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, FollowRepository followRepository, FileStorageService fileStorageService) {
+    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FollowRepository followRepository, FileStorageService fileStorageService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.postLikeRepository = postLikeRepository;
         this.commentLikeRepository = commentLikeRepository;
+        this.commentRepository = commentRepository;
         this.followRepository = followRepository;
         this.fileStorageService = fileStorageService;
     }
@@ -60,25 +70,21 @@ public class PostService {
         return new PostResponse(saved.getId(), saved.getContent(), saved.getImageUrl(), user.getUsername(), saved.getCreatedAt());
     }
 
-    public List<PostSummaryDto> getPostsummaries(Long currentUserId) {
+    /** 전체 피드 한 페이지 */
+    public FeedPageDto getFeedPage(Long currentUserId, int page, int size) {
         final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
-        return postRepository.findAllByOrderByCreatedAtDesc().stream()
-                .filter(post -> !post.getAuthor().isSuspended())
-                .map(post -> toSummaryDto(post, currentUser))
-                .collect(Collectors.toList());
+        Slice<Post> slice = postRepository.findFeed(LocalDateTime.now(), PageRequest.of(page, size));
+        return new FeedPageDto(toSummaryDtos(slice.getContent(), currentUser), page, slice.hasNext());
     }
 
     /**
-     * 내가 팔로우한 사람들의 게시글 (본인 글 포함).
+     * 내가 팔로우한 사람들의 게시글 한 페이지 (본인 글 포함).
      * 팔로우한 사람이 없으면 본인 글만 나온다.
      */
-    public List<PostSummaryDto> getFollowingFeed(Long currentUserId) {
-        if (currentUserId == null) {
-            return List.of();
-        }
-        User currentUser = userRepository.findById(currentUserId).orElse(null);
+    public FeedPageDto getFollowingFeedPage(Long currentUserId, int page, int size) {
+        User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
         if (currentUser == null) {
-            return List.of();
+            return new FeedPageDto(List.of(), page, false);
         }
 
         List<User> authors = followRepository.findAllByFollower(currentUser).stream()
@@ -86,26 +92,52 @@ public class PostService {
                 .collect(Collectors.toList());
         authors.add(currentUser);
 
-        return postRepository.findAllByAuthorInOrderByCreatedAtDesc(authors).stream()
-                .filter(post -> !post.getAuthor().isSuspended())
-                .map(post -> toSummaryDto(post, currentUser))
+        Slice<Post> slice = postRepository.findFeedByAuthors(authors, LocalDateTime.now(), PageRequest.of(page, size));
+        return new FeedPageDto(toSummaryDtos(slice.getContent(), currentUser), page, slice.hasNext());
+    }
+
+    /**
+     * 게시글 목록을 DTO로 변환한다.
+     * 게시글마다 좋아요 수·댓글 수·좋아요 여부를 따로 조회하면 N+1이 되므로,
+     * 세 가지를 각각 한 번의 쿼리로 모아서 가져온 뒤 메모리에서 붙인다.
+     */
+    private List<PostSummaryDto> toSummaryDtos(List<Post> posts, User currentUser) {
+        if (posts.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> postIds = posts.stream().map(Post::getId).collect(Collectors.toList());
+
+        Map<Long, Long> likeCounts = toCountMap(postLikeRepository.countByPostIds(postIds));
+        Map<Long, Long> commentCounts = toCountMap(commentRepository.countByPostIds(postIds));
+        Set<Long> likedPostIds = currentUser == null
+                ? Set.of()
+                : new HashSet<>(postLikeRepository.findLikedPostIds(currentUser.getId(), postIds));
+
+        return posts.stream()
+                .map(post -> new PostSummaryDto(
+                        post.getId(),
+                        post.getAuthor().getUsername(),
+                        post.getAuthor().getId(),
+                        post.getCreatedAt().toString(),
+                        post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
+                        post.getContent(),
+                        post.getImageUrl(),
+                        likeCounts.getOrDefault(post.getId(), 0L),
+                        commentCounts.getOrDefault(post.getId(), 0L).intValue(),
+                        likedPostIds.contains(post.getId()),
+                        post.getAuthor().isSuspended()
+                ))
                 .collect(Collectors.toList());
     }
 
-    private PostSummaryDto toSummaryDto(Post post, User currentUser) {
-        return new PostSummaryDto(
-                post.getId(),
-                post.getAuthor().getUsername(),
-                post.getAuthor().getId(),
-                post.getCreatedAt().toString(),
-                post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
-                post.getContent(),
-                post.getImageUrl(),
-                postLikeRepository.countByPost(post),
-                post.getComments().size(),
-                currentUser != null && postLikeRepository.existsByPostAndUser(post, currentUser),
-                false
-        );
+    /** [postId, count] 결과를 Map으로 변환 */
+    private Map<Long, Long> toCountMap(List<Object[]> rows) {
+        Map<Long, Long> map = new HashMap<>();
+        for (Object[] row : rows) {
+            map.put((Long) row[0], (Long) row[1]);
+        }
+        return map;
     }
 
     public PostDetailDto getPostDetail(Long postId, Long currentUserId) {
@@ -190,20 +222,6 @@ public class PostService {
 
     public List<PostSummaryDto> getPostsByUserIdWithExtras(Long userId, Long currentUserId) {
         final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
-        return postRepository.findAllByAuthor_IdOrderByCreatedAtDesc(userId).stream()
-                .map(post -> new PostSummaryDto(
-                        post.getId(),
-                        post.getAuthor().getUsername(),
-                        post.getAuthor().getId(),
-                        post.getCreatedAt() != null ? post.getCreatedAt().toString() : "",
-                        post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
-                        post.getContent(),
-                        post.getImageUrl(),
-                        postLikeRepository.countByPost(post),
-                        post.getComments().size(),
-                        currentUser != null && postLikeRepository.existsByPostAndUser(post, currentUser),
-                        post.getAuthor().isSuspended()
-                ))
-                .collect(Collectors.toList());
+        return toSummaryDtos(postRepository.findByAuthorIdWithAuthor(userId), currentUser);
     }
 }

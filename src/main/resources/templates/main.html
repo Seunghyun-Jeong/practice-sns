@@ -15,37 +15,16 @@
   <a href="/?tab=following" class="feed-tab" th:classappend="${tab == 'following'} ? 'active' : ''">팔로잉</a>
 </div>
 
-<div class="feed-container">
+<div class="feed-container" id="feedContainer" th:attr="data-tab=${tab}, data-has-next=${hasNext}">
   <div th:if="${tab == 'following' and #lists.isEmpty(posts)}" class="feed-empty">
     아직 팔로우한 사람이 없습니다.<br />
     관심 있는 유저를 팔로우하면 여기에 게시글이 보입니다.
   </div>
-  <div th:each="post : ${posts}" class="post-summary"
-       th:onclick="'openPostModal(' + ${post.id} + ')'"
-       style="cursor:pointer;">
-
-    <img th:if="${post.imageUrl != null}" th:src="${post.imageUrl}" class="post-image" alt="게시물 이미지" />
-
-    <div class="post-actions">
-      <span class="feed-like-btn icon-btn" th:classappend="${post.likedByCurrentUser} ? 'liked' : ''" th:attr="data-post-id=${post.id}">
-        <svg class="ic-heart" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-      </span>
-      <span class="post-action-count feed-like-count" th:text="${post.likeCount}">0</span>
-      <span class="icon-btn post-comment-ic">
-        <svg class="ic-comment" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-      </span>
-      <span class="post-action-count" th:text="${post.commentCount}">0</span>
-    </div>
-
-    <div class="post-caption">
-      <span class="post-author-name" th:text="${post.author}" th:attr="data-author-id=${post.authorId}">닉네임</span>
-      <span class="post-caption-text" th:text="${post.content}">내용</span>
-    </div>
-
-    <div class="post-time" th:attr="data-time=${post.createdAt}"></div>
-
-  </div>
+  <div th:replace="~{fragments/postCards :: cards}"></div>
 </div>
+
+<div id="feedSentinel"></div>
+<div id="feedLoading" class="feed-loading" style="display:none;">불러오는 중...</div>
 
 <div id="postDetailModal" class="modal-backdrop" style="display:none;">
   <div id="modalContent"></div>
@@ -64,6 +43,13 @@
 </div>
 
 <script>
+  // 무한 스크롤 페이지는 브라우저의 스크롤 복원을 끈다.
+  // 새로고침 시 브라우저가 이전 위치로 되돌리려 하는데, 첫 페이지만 그려진 짧은 문서라
+  // 엉뚱한 중간 지점에 멈춰버린다. 항상 맨 위에서 시작하도록 직접 제어한다.
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+
   // 상대 시간 표시 (몇 분 전 / 몇 시간 전 ...)
   function timeAgo(iso) {
     if (!iso) return '';
@@ -77,38 +63,110 @@
     if (diff < 2592000) return Math.floor(diff / 604800) + '주 전';
     return then.getFullYear() + '.' + String(then.getMonth() + 1).padStart(2, '0') + '.' + String(then.getDate()).padStart(2, '0');
   }
-  document.querySelectorAll('.post-time').forEach(el => {
-    el.textContent = timeAgo(el.getAttribute('data-time'));
-  });
+  // 게시글 카드에 상대 시간 / 좋아요 / 닉네임 클릭을 연결한다.
+  // 무한 스크롤로 새로 불러온 카드에도 그대로 다시 적용한다.
+  function initPostCards(root) {
+    root.querySelectorAll('.post-time').forEach(el => {
+      el.textContent = timeAgo(el.getAttribute('data-time'));
+    });
 
-  // 피드 하트 클릭 → 좋아요 토글 (모달 안 열림)
-  document.querySelectorAll('.feed-like-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const postId = btn.getAttribute('data-post-id');
+    // 피드 하트 클릭 → 좋아요 토글 (모달 안 열림)
+    root.querySelectorAll('.feed-like-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const postId = btn.getAttribute('data-post-id');
+        try {
+          const response = await fetch('/api/posts/' + postId + '/like', { method: 'POST', credentials: 'include' });
+          if (!response.ok) {
+            showToast(response.status === 401 || response.status === 403 ? '로그인이 필요합니다.' : '좋아요 처리에 실패했습니다.', 'error');
+            return;
+          }
+          const data = await response.json();
+          const countEl = btn.parentElement.querySelector('.feed-like-count');
+          let count = parseInt(countEl.textContent) || 0;
+          if (data.liked) { btn.classList.add('liked'); countEl.textContent = count + 1; }
+          else { btn.classList.remove('liked'); countEl.textContent = Math.max(0, count - 1); }
+        } catch (err) { console.error(err); showToast('좋아요 처리 중 오류가 발생했습니다.', 'error'); }
+      });
+    });
+
+    // 피드 닉네임 클릭 → 프로필 (모달 안 열림)
+    root.querySelectorAll('.post-summary .post-author-name').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const authorId = el.getAttribute('data-author-id');
+        if (authorId) window.location.href = '/profile/' + authorId;
+      });
+    });
+  }
+
+  initPostCards(document);
+
+  // ===== 무한 스크롤 =====
+  (function () {
+    const container = document.getElementById('feedContainer');
+    const sentinel = document.getElementById('feedSentinel');
+    const loading = document.getElementById('feedLoading');
+    if (!container || !sentinel) return;
+
+    let page = 0;
+    let hasNext = container.getAttribute('data-has-next') === 'true';
+    const tab = container.getAttribute('data-tab') || 'all';
+    let isLoading = false;
+
+    async function loadNextPage() {
+      if (isLoading || !hasNext) return;
+      isLoading = true;
+      loading.style.display = 'block';
+
       try {
-        const response = await fetch('/api/posts/' + postId + '/like', { method: 'POST', credentials: 'include' });
-        if (!response.ok) {
-          showToast(response.status === 401 || response.status === 403 ? '로그인이 필요합니다.' : '좋아요 처리에 실패했습니다.', 'error');
+        const response = await fetch(`/feed?tab=${tab}&page=${page + 1}`, { credentials: 'include' });
+        if (!response.ok) throw new Error('failed to load feed page');
+
+        const html = await response.text();
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+
+        const cards = [...temp.querySelectorAll('.post-summary')];
+        if (cards.length === 0) {
+          hasNext = false;
           return;
         }
-        const data = await response.json();
-        const countEl = btn.parentElement.querySelector('.feed-like-count');
-        let count = parseInt(countEl.textContent) || 0;
-        if (data.liked) { btn.classList.add('liked'); countEl.textContent = count + 1; }
-        else { btn.classList.remove('liked'); countEl.textContent = Math.max(0, count - 1); }
-      } catch (err) { console.error(err); showToast('좋아요 처리 중 오류가 발생했습니다.', 'error'); }
-    });
-  });
 
-  // 피드 닉네임 클릭 → 프로필 (모달 안 열림)
-  document.querySelectorAll('.post-summary .post-author-name').forEach(el => {
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const authorId = el.getAttribute('data-author-id');
-      if (authorId) window.location.href = '/profile/' + authorId;
-    });
-  });
+        // 이벤트는 새 카드에만 연결한다 (붙이기 전에 연결해도 이동 후 그대로 유지됨)
+        initPostCards(temp);
+        cards.forEach(card => container.appendChild(card));
+
+        page += 1;
+        const meta = temp.querySelector('.feed-page-meta');
+        hasNext = meta ? meta.getAttribute('data-has-next') === 'true' : false;
+      } catch (err) {
+        console.error(err);
+        hasNext = false;
+      } finally {
+        isLoading = false;
+        loading.style.display = 'none';
+      }
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) loadNextPage();
+    }, { rootMargin: '200px' });
+
+    observer.observe(sentinel);
+
+    // 폴백: 스크롤이 바닥 근처에 닿으면 불러온다.
+    // (렌더링이 지연되는 환경에서 옵저버 콜백이 오지 않는 경우 대비)
+    function checkNearBottom() {
+      if (!hasNext || isLoading) return;
+      const remaining = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+      if (remaining < 300) loadNextPage();
+    }
+
+    window.addEventListener('scroll', checkNearBottom, { passive: true });
+    window.addEventListener('resize', checkNearBottom);
+    checkNearBottom();   // 첫 화면이 짧아 스크롤이 없을 때도 채운다
+  })();
 
   async function openPostModal(postId) {
     try {

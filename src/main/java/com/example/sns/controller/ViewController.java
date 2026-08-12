@@ -1,5 +1,6 @@
 package com.example.sns.controller;
 
+import com.example.sns.dto.FeedPageDto;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.UserProfileDto;
@@ -26,6 +27,9 @@ public class ViewController {
     private final UserService userService;
     private final CommentService commentService;
     private final FollowService followService;
+
+    /** 피드 한 페이지에 보여줄 게시글 수 */
+    private static final int FEED_PAGE_SIZE = 10;
 
     @GetMapping("/signup")
     public String signupPage() {
@@ -57,13 +61,36 @@ public class ViewController {
         // 비로그인 상태에서는 팔로잉 탭을 볼 수 없으므로 전체 탭으로 되돌린다
         boolean followingTab = "following".equals(tab) && currentUserId != null;
 
-        List<PostSummaryDto> posts = followingTab
-                ? postService.getFollowingFeed(currentUserId)
-                : postService.getPostsummaries(currentUserId);
+        FeedPageDto feed = followingTab
+                ? postService.getFollowingFeedPage(currentUserId, 0, FEED_PAGE_SIZE)
+                : postService.getFeedPage(currentUserId, 0, FEED_PAGE_SIZE);
 
-        model.addAttribute("posts", posts);
+        model.addAttribute("posts", feed.getPosts());
+        model.addAttribute("hasNext", feed.isHasNext());
         model.addAttribute("tab", followingTab ? "following" : "all");
         return "main";
+    }
+
+    /** 무한 스크롤: 다음 페이지의 게시글 카드만 HTML 조각으로 반환 */
+    @GetMapping("/feed")
+    public String feedPage(Model model,
+                           @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
+                           @RequestParam(value = "page", defaultValue = "0") int page,
+                           @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+        Long currentUserId = null;
+        if (token != null && jwtUtil.validateToken(token)) {
+            currentUserId = jwtUtil.getUserIdFromToken(token);
+        }
+
+        boolean followingTab = "following".equals(tab) && currentUserId != null;
+
+        FeedPageDto feed = followingTab
+                ? postService.getFollowingFeedPage(currentUserId, page, FEED_PAGE_SIZE)
+                : postService.getFeedPage(currentUserId, page, FEED_PAGE_SIZE);
+
+        model.addAttribute("posts", feed.getPosts());
+        model.addAttribute("hasNext", feed.isHasNext());
+        return "fragments/postCards :: cards";
     }
 
     @GetMapping("/posts/{id}/modal")
