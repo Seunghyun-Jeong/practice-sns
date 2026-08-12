@@ -39,3 +39,6 @@ out/
 src/main/resources/application.properties
 # 업로드된 파일 (프로필 이미지 등)
 uploads/
+
+### macOS ###
+.DS_Store
