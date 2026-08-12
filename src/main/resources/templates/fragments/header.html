@@ -6,6 +6,22 @@
     </div>
 
     <div class="user-info">
+      <!-- 알림 -->
+      <div class="noti-menu" th:if="${username != null}">
+        <button id="notiBtn" class="noti-btn" aria-label="알림">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span id="notiBadge" class="noti-badge" style="display:none;">0</span>
+        </button>
+
+        <div id="notiDropdown" class="noti-dropdown" style="display:none;">
+          <div class="noti-header">알림</div>
+          <div id="notiList" class="noti-list"></div>
+        </div>
+      </div>
+
       <span th:if="${username != null}">
         <a th:href="@{'/profile/' + ${userId}}" class="username" th:text="${username}"></a>
         <button id="logoutBtn" class="btn logout-btn">로그아웃</button>
@@ -34,4 +50,5 @@
     </div>
   </div>
   <script src="/js/notify.js"></script>
+  <script src="/js/notification.js"></script>
 </div>

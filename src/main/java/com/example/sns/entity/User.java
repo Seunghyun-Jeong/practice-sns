@@ -61,6 +61,14 @@ public class User {
     @OneToMany(mappedBy = "following", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Follow> followers = new ArrayList<>();
 
+    /** 내가 받은 알림 */
+    @OneToMany(mappedBy = "recipient", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Notification> receivedNotifications = new ArrayList<>();
+
+    /** 내 행동으로 남에게 생긴 알림 */
+    @OneToMany(mappedBy = "actor", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Notification> sentNotifications = new ArrayList<>();
+
     @Column
     private LocalDateTime suspendedUntil;
 

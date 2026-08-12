@@ -214,6 +214,14 @@
     }
   });
 
+  // 이미 이 페이지에 있는 상태에서 해시만 바뀐 경우 (알림에서 게시글로 이동 등)
+  window.addEventListener('hashchange', function () {
+    const m = location.hash.match(/^#post-(\d+)$/);
+    if (m && document.getElementById('postDetailModal').style.display !== 'flex') {
+      openPostModal(m[1]);
+    }
+  });
+
   function initAuthorProfileLink() {
     document.querySelectorAll('#modalContent .author-name, #modalContent .comment-author').forEach(authorEl => {
       authorEl.addEventListener('click', () => {

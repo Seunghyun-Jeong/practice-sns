@@ -2,6 +2,7 @@ package com.example.sns.service;
 
 import com.example.sns.dto.FollowUserDto;
 import com.example.sns.entity.Follow;
+import com.example.sns.entity.Notification;
 import com.example.sns.entity.User;
 import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.UserRepository;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     /**
      * 팔로우 토글. 이미 팔로우 중이면 취소한다.
@@ -42,6 +44,7 @@ public class FollowService {
         Optional<Follow> existing = followRepository.findByFollowerAndFollowing(follower, target);
         if (existing.isPresent()) {
             followRepository.delete(existing.get());
+            notificationService.cancel(target, follower, Notification.Type.FOLLOW, null);
             return false;
         }
 
@@ -49,6 +52,9 @@ public class FollowService {
         follow.setFollower(follower);
         follow.setFollowing(target);
         followRepository.save(follow);
+
+        // 팔로우 당한 사람에게 알림
+        notificationService.notify(target, follower, Notification.Type.FOLLOW, null);
         return true;
     }
 

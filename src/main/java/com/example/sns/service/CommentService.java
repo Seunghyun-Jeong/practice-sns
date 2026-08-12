@@ -4,6 +4,7 @@ import com.example.sns.dto.AdminCommentDto;
 import com.example.sns.dto.CommentDto;
 import com.example.sns.dto.CommentUpdateRequest;
 import com.example.sns.entity.Comment;
+import com.example.sns.entity.Notification;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
 import com.example.sns.repository.CommentRepository;
@@ -22,6 +23,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public void addComment(Long postId, CommentDto dto, String username) {
         Post post = postRepository.findById(postId)
@@ -36,6 +38,9 @@ public class CommentService {
         comment.setCreatedAt(LocalDateTime.now());
 
         commentRepository.save(comment);
+
+        // 게시글 작성자에게 알림 (어떤 댓글인지도 함께 남긴다)
+        notificationService.notify(post.getAuthor(), user, Notification.Type.COMMENT, post, comment);
     }
 
     public void updateComment(Long commentId, CommentUpdateRequest request, String username) {

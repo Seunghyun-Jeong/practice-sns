@@ -1,5 +1,6 @@
 package com.example.sns.service;
 
+import com.example.sns.entity.Notification;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.PostLike;
 import com.example.sns.entity.User;
@@ -16,6 +17,7 @@ public class PostLikeService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
+    private final NotificationService notificationService;
 
     public boolean toggleLike(Long postId, String username) {
         User user = userRepository.findByUsername(username)
@@ -28,12 +30,16 @@ public class PostLikeService {
 
         if (existingLike.isPresent()) {
             postLikeRepository.delete(existingLike.get());
+            notificationService.cancel(post.getAuthor(), user, Notification.Type.POST_LIKE, post);
             return false;
         } else {
             PostLike like = new PostLike();
             like.setPost(post);
             like.setUser(user);
             postLikeRepository.save(like);
+
+            // 게시글 작성자에게 알림
+            notificationService.notify(post.getAuthor(), user, Notification.Type.POST_LIKE, post);
             return true;
         }
     }
