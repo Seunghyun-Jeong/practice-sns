@@ -1695,3 +1695,193 @@ button {
         max-width: none;
     }
 }
+
+/* ===== 검색 (헤더 입력창 + 드롭다운) ===== */
+.search-box {
+    position: relative;
+    flex: 0 1 240px;
+    margin: 0 16px;
+    display: flex;
+    align-items: center;
+}
+
+/* 전역 input[type="text"] 규칙(margin-bottom 등)보다 우선하도록 선택자를 구체적으로 둔다.
+   그대로 두면 아래 여백 때문에 입력창이 위로 치우쳐 보인다. */
+.search-box .search-input {
+    width: 100%;
+    height: 36px;
+    padding: 0 14px;
+    font-size: 14px;
+    border: 1px solid #efefef;
+    border-radius: 9999px;
+    background: #fafafa;
+    outline: none;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.search-box .search-input:focus {
+    background: #fff;
+    border-color: #dbdbdb;
+}
+
+.search-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    width: 340px;
+    max-width: 90vw;
+    max-height: 420px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #efefef;
+    border-radius: 14px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
+    z-index: 200;
+    padding: 6px 0;
+}
+
+.search-section {
+    padding: 8px 16px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8e8e8e;
+}
+
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.search-row:hover {
+    background: #fafafa;
+}
+
+.search-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #efefef;
+    flex-shrink: 0;
+}
+
+.search-tag-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #efefef;
+    color: #262626;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.search-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #262626;
+}
+
+.search-sub {
+    font-size: 12px;
+    color: #8e8e8e;
+}
+
+.search-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: #8e8e8e;
+    font-size: 14px;
+}
+
+/* ===== 해시태그 ===== */
+.hashtag-link {
+    color: #00376b;
+    text-decoration: none;
+}
+
+.hashtag-link:hover {
+    text-decoration: underline;
+}
+
+/* 해시태그로 걸러 보는 피드 상단 */
+.tag-feed-header {
+    max-width: 600px;
+    margin: 0 auto 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #efefef;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.tag-feed-name {
+    font-size: 20px;
+    font-weight: 600;
+    color: #262626;
+}
+
+.tag-feed-back {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0095f6;
+    text-decoration: none;
+}
+
+/* 좁은 화면에서는 검색창을 줄이고 드롭다운을 화면에 맞춘다 */
+@media (max-width: 640px) {
+    .search-box {
+        flex: 0 1 130px;
+        margin: 0 8px;
+    }
+
+    .search-dropdown {
+        position: fixed;
+        top: 86px;
+        left: 16px;
+        right: 16px;
+        width: auto;
+        max-width: none;
+    }
+}
+
+/* 헤더 버튼은 줄바꿈되지 않게 */
+.login-btn,
+.logout-btn,
+.follow-btn {
+    white-space: nowrap;
+}
+
+/* 좁은 화면 헤더: 검색창이 들어오면서 공간이 부족해진다.
+   로고를 줄이고 유저명을 숨겨 검색창 자리를 확보한다. */
+@media (max-width: 640px) {
+    .header-bar {
+        padding: 0 16px;
+    }
+
+    .logo-link {
+        font-size: 24px;
+    }
+
+    .header-bar .user-info {
+        gap: 8px;
+    }
+
+    .header-bar .username {
+        display: none;
+    }
+
+    .search-box {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0 10px;
+    }
+}
