@@ -37,7 +37,7 @@
         const password = document.getElementById("password").value;
         const passwordConfirm = document.getElementById("passwordConfirm").value;
 
-        const usernameRegex = /^(?![0-9]+$)(?!.*[_.]{2})[a-z0-9._]{4,10}$/;
+        const usernameRegex = /^(?![0-9]+$)(?!.*[_.]{2})(?!^[._])(?!.*[._]$)[a-z0-9._]{4,10}$/;
         if (!usernameRegex.test(username)) {
             showToast("아이디는 4자 이상 10자 이하, 소문자와 숫자만 포함되며, 숫자만 사용하거나 .과 _를 제외한 특수문자 사용은 불가능합니다.", 'error');
             return false;
