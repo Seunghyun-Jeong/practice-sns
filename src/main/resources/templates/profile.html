@@ -198,6 +198,8 @@
                 el.textContent = timeAgo(el.getAttribute('data-time'));
             });
 
+            if (window.linkifyHashtags) window.linkifyHashtags(document.getElementById('modalContent'));
+
             initDeleteButton();
             initEditButton();
             initEditCommentButtons();

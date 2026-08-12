@@ -10,15 +10,24 @@
 
 <div style="height: 20px;"></div>
 
-<div class="feed-tabs" th:if="${username != null}">
+<div class="feed-tabs" th:if="${username != null and tag == null}">
   <a href="/" class="feed-tab" th:classappend="${tab != 'following'} ? 'active' : ''">전체</a>
   <a href="/?tab=following" class="feed-tab" th:classappend="${tab == 'following'} ? 'active' : ''">팔로잉</a>
 </div>
 
-<div class="feed-container" id="feedContainer" th:attr="data-tab=${tab}, data-has-next=${hasNext}">
-  <div th:if="${tab == 'following' and #lists.isEmpty(posts)}" class="feed-empty">
+<!-- 해시태그로 걸러 보는 중 -->
+<div class="tag-feed-header" th:if="${tag != null}">
+  <div class="tag-feed-name" th:text="'#' + ${tag}">#태그</div>
+  <a href="/" class="tag-feed-back">전체 피드로</a>
+</div>
+
+<div class="feed-container" id="feedContainer" th:attr="data-tab=${tab}, data-tag=${tag}, data-has-next=${hasNext}">
+  <div th:if="${tab == 'following' and tag == null and #lists.isEmpty(posts)}" class="feed-empty">
     아직 팔로우한 사람이 없습니다.<br />
     관심 있는 유저를 팔로우하면 여기에 게시글이 보입니다.
+  </div>
+  <div th:if="${tag != null and #lists.isEmpty(posts)}" class="feed-empty">
+    이 해시태그가 달린 게시글이 없습니다.
   </div>
   <div th:replace="~{fragments/postCards :: cards}"></div>
 </div>
@@ -98,6 +107,9 @@
         if (authorId) window.location.href = '/profile/' + authorId;
       });
     });
+
+    // 글 내용의 #태그를 링크로
+    if (window.linkifyHashtags) window.linkifyHashtags(root);
   }
 
   initPostCards(document);
@@ -112,6 +124,7 @@
     let page = 0;
     let hasNext = container.getAttribute('data-has-next') === 'true';
     const tab = container.getAttribute('data-tab') || 'all';
+    const tag = container.getAttribute('data-tag') || '';
     let isLoading = false;
 
     async function loadNextPage() {
@@ -120,7 +133,8 @@
       loading.style.display = 'block';
 
       try {
-        const response = await fetch(`/feed?tab=${tab}&page=${page + 1}`, { credentials: 'include' });
+        const tagParam = tag ? '&tag=' + encodeURIComponent(tag) : '';
+        const response = await fetch(`/feed?tab=${tab}${tagParam}&page=${page + 1}`, { credentials: 'include' });
         if (!response.ok) throw new Error('failed to load feed page');
 
         const html = await response.text();
@@ -185,6 +199,9 @@
       document.querySelectorAll('#modalContent .post-time').forEach(el => {
         el.textContent = timeAgo(el.getAttribute('data-time'));
       });
+
+      // 모달 안의 #태그도 링크로
+      if (window.linkifyHashtags) window.linkifyHashtags(document.getElementById('modalContent'));
 
       initDeleteButton();
       initEditButton();

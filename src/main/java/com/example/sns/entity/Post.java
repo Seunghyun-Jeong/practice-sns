@@ -52,4 +52,8 @@ public class Post {
     /** 이 게시글을 가리키는 알림 (게시글이 지워지면 알림도 함께 삭제) */
     @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Notification> notifications = new ArrayList<>();
+
+    /** 이 게시글에 달린 해시태그 연결 */
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostHashtag> hashtags = new ArrayList<>();
 }

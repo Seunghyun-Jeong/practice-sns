@@ -39,8 +39,9 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final FollowRepository followRepository;
     private final FileStorageService fileStorageService;
+    private final HashtagService hashtagService;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FollowRepository followRepository, FileStorageService fileStorageService) {
+    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FollowRepository followRepository, FileStorageService fileStorageService, HashtagService hashtagService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
@@ -49,6 +50,7 @@ public class PostService {
         this.commentRepository = commentRepository;
         this.followRepository = followRepository;
         this.fileStorageService = fileStorageService;
+        this.hashtagService = hashtagService;
     }
 
     @Transactional
@@ -67,6 +69,7 @@ public class PostService {
         post.setAuthor(user);
 
         Post saved = postRepository.save(post);
+        hashtagService.syncTags(saved);   // 본문의 #태그를 뽑아 연결
         return new PostResponse(saved.getId(), saved.getContent(), saved.getImageUrl(), user.getUsername(), saved.getCreatedAt());
     }
 
@@ -93,6 +96,15 @@ public class PostService {
         authors.add(currentUser);
 
         Slice<Post> slice = postRepository.findFeedByAuthors(authors, LocalDateTime.now(), PageRequest.of(page, size));
+        return new FeedPageDto(toSummaryDtos(slice.getContent(), currentUser), page, slice.hasNext());
+    }
+
+    /** 특정 해시태그가 달린 게시글 한 페이지 */
+    public FeedPageDto getFeedPageByTag(String tag, Long currentUserId, int page, int size) {
+        final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
+        String normalized = tag == null ? "" : tag.trim().toLowerCase();
+
+        Slice<Post> slice = postRepository.findFeedByTag(normalized, LocalDateTime.now(), PageRequest.of(page, size));
         return new FeedPageDto(toSummaryDtos(slice.getContent(), currentUser), page, slice.hasNext());
     }
 
@@ -218,6 +230,7 @@ public class PostService {
 
         post.setContent(request.getContent());
         post.setUpdatedAt(LocalDateTime.now());
+        hashtagService.syncTags(post);   // 본문이 바뀌었으니 태그도 다시 계산
     }
 
     public List<PostSummaryDto> getPostsByUserIdWithExtras(Long userId, Long currentUserId) {

@@ -34,6 +34,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                                   @Param("now") LocalDateTime now,
                                   Pageable pageable);
 
+    /** 특정 해시태그가 달린 게시글 (페이지 단위) */
+    @Query("SELECT p FROM Post p JOIN FETCH p.author a "
+            + "WHERE p.id IN (SELECT ph.post.id FROM PostHashtag ph WHERE ph.hashtag.name = :tag) "
+            + "AND (a.suspendedUntil IS NULL OR a.suspendedUntil <= :now) "
+            + "ORDER BY p.createdAt DESC")
+    Slice<Post> findFeedByTag(@Param("tag") String tag,
+                              @Param("now") LocalDateTime now,
+                              Pageable pageable);
+
     /** 프로필 피드 (작성자 fetch join) */
     @Query("SELECT p FROM Post p JOIN FETCH p.author a "
             + "WHERE a.id = :userId ORDER BY p.createdAt DESC")

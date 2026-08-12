@@ -52,6 +52,7 @@ public class ViewController {
     @GetMapping("/")
     public String mainPage(Model model,
                            @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
+                           @RequestParam(value = "tag", required = false) String tag,
                            @CookieValue(value = "JWT_TOKEN", required = false) String token) {
         Long currentUserId = null;
         if (token != null && jwtUtil.validateToken(token)) {
@@ -60,14 +61,21 @@ public class ViewController {
 
         // 비로그인 상태에서는 팔로잉 탭을 볼 수 없으므로 전체 탭으로 되돌린다
         boolean followingTab = "following".equals(tab) && currentUserId != null;
+        boolean tagFeed = tag != null && !tag.isBlank();
 
-        FeedPageDto feed = followingTab
-                ? postService.getFollowingFeedPage(currentUserId, 0, FEED_PAGE_SIZE)
-                : postService.getFeedPage(currentUserId, 0, FEED_PAGE_SIZE);
+        FeedPageDto feed;
+        if (tagFeed) {
+            feed = postService.getFeedPageByTag(tag, currentUserId, 0, FEED_PAGE_SIZE);
+        } else if (followingTab) {
+            feed = postService.getFollowingFeedPage(currentUserId, 0, FEED_PAGE_SIZE);
+        } else {
+            feed = postService.getFeedPage(currentUserId, 0, FEED_PAGE_SIZE);
+        }
 
         model.addAttribute("posts", feed.getPosts());
         model.addAttribute("hasNext", feed.isHasNext());
         model.addAttribute("tab", followingTab ? "following" : "all");
+        model.addAttribute("tag", tagFeed ? tag.trim().toLowerCase() : null);
         return "main";
     }
 
@@ -75,6 +83,7 @@ public class ViewController {
     @GetMapping("/feed")
     public String feedPage(Model model,
                            @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
+                           @RequestParam(value = "tag", required = false) String tag,
                            @RequestParam(value = "page", defaultValue = "0") int page,
                            @CookieValue(value = "JWT_TOKEN", required = false) String token) {
         Long currentUserId = null;
@@ -83,10 +92,16 @@ public class ViewController {
         }
 
         boolean followingTab = "following".equals(tab) && currentUserId != null;
+        boolean tagFeed = tag != null && !tag.isBlank();
 
-        FeedPageDto feed = followingTab
-                ? postService.getFollowingFeedPage(currentUserId, page, FEED_PAGE_SIZE)
-                : postService.getFeedPage(currentUserId, page, FEED_PAGE_SIZE);
+        FeedPageDto feed;
+        if (tagFeed) {
+            feed = postService.getFeedPageByTag(tag, currentUserId, page, FEED_PAGE_SIZE);
+        } else if (followingTab) {
+            feed = postService.getFollowingFeedPage(currentUserId, page, FEED_PAGE_SIZE);
+        } else {
+            feed = postService.getFeedPage(currentUserId, page, FEED_PAGE_SIZE);
+        }
 
         model.addAttribute("posts", feed.getPosts());
         model.addAttribute("hasNext", feed.isHasNext());
