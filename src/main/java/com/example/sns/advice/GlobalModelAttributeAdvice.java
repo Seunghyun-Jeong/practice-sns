@@ -1,30 +1,22 @@
 package com.example.sns.advice;
 
-import com.example.sns.service.UserService;
-import com.example.sns.util.JwtUtil;
-import lombok.RequiredArgsConstructor;
+import com.example.sns.config.MyUserDetails;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+/** 모든 뷰에서 쓰는 로그인 사용자 정보(헤더의 닉네임 등)를 모델에 실어준다. */
 @ControllerAdvice
-@RequiredArgsConstructor
 public class GlobalModelAttributeAdvice {
-    private final JwtUtil jwtUtil;
 
     @ModelAttribute
-    public void addGlobalAttributes(Model model,
-                                    @CookieValue(value = "JWT_TOKEN", required = false) String token) {
-        if (token != null && jwtUtil.validateToken(token)) {
-            String username = jwtUtil.getUsernameFromToken(token);
-            Long userId = jwtUtil.getUserIdFromToken(token);
-            String role = jwtUtil.getUserRoleFromToken(token);
-
-            model.addAttribute("username", username);
-            model.addAttribute("currentUsername", username);
-            model.addAttribute("userId", userId);
-            model.addAttribute("userRole", role);
+    public void addGlobalAttributes(Model model, @AuthenticationPrincipal MyUserDetails user) {
+        if (user != null) {
+            model.addAttribute("username", user.getUsername());
+            model.addAttribute("currentUsername", user.getUsername());
+            model.addAttribute("userId", user.getUserId());
+            model.addAttribute("userRole", user.getRole());
         }
     }
 }

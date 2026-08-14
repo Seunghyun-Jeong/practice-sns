@@ -15,7 +15,6 @@ import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.PostLikeRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
-import com.example.sns.util.JwtUtil;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,7 +32,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final CommentRepository commentRepository;
@@ -41,10 +39,9 @@ public class PostService {
     private final FileStorageService fileStorageService;
     private final HashtagService hashtagService;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, JwtUtil jwtUtil, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FollowRepository followRepository, FileStorageService fileStorageService, HashtagService hashtagService) {
+    public PostService(PostRepository postRepository, UserRepository userRepository, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FollowRepository followRepository, FileStorageService fileStorageService, HashtagService hashtagService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
-        this.jwtUtil = jwtUtil;
         this.postLikeRepository = postLikeRepository;
         this.commentLikeRepository = commentLikeRepository;
         this.commentRepository = commentRepository;
@@ -54,12 +51,11 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse createPost(String content, MultipartFile image, String token) {
+    public PostResponse createPost(String content, MultipartFile image, String username) {
         if (image == null || image.isEmpty()) {
             throw new IllegalArgumentException("사진을 선택해주세요.");
         }
 
-        String username = jwtUtil.getUsernameFromToken(token);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 

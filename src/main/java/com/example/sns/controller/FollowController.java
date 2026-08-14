@@ -1,12 +1,11 @@
 package com.example.sns.controller;
 
+import com.example.sns.config.MyUserDetails;
 import com.example.sns.service.FollowService;
-import com.example.sns.util.JwtUtil;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,20 +17,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/users/{userId}")
 public class FollowController {
     private final FollowService followService;
-    private final JwtUtil jwtUtil;
 
     /** 팔로우 / 팔로우 취소 */
     @PostMapping("/follow")
     public ResponseEntity<?> toggleFollow(@PathVariable Long userId,
-                                          @CookieValue(name = "JWT_TOKEN", required = false) String token) {
-        if (token == null || !jwtUtil.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "로그인이 필요합니다."));
-        }
-
-        String username = jwtUtil.getUsernameFromToken(token);
+                                          @AuthenticationPrincipal MyUserDetails user) {
         try {
-            boolean following = followService.toggleFollow(username, userId);
+            boolean following = followService.toggleFollow(user.getUsername(), userId);
             return ResponseEntity.ok(Map.of(
                     "following", following,
                     "followerCount", followService.countFollowers(userId)
@@ -61,14 +53,11 @@ public class FollowController {
         }
     }
 
-    /** 팔로워 / 팔로잉 수 + 내가 팔로우 중인지 */
+    /** 팔로워 / 팔로잉 수 + 내가 팔로우 중인지 (비로그인도 조회 가능) */
     @GetMapping("/follow")
     public ResponseEntity<?> getFollowInfo(@PathVariable Long userId,
-                                           @CookieValue(name = "JWT_TOKEN", required = false) String token) {
-        Long currentUserId = null;
-        if (token != null && jwtUtil.validateToken(token)) {
-            currentUserId = jwtUtil.getUserIdFromToken(token);
-        }
+                                           @AuthenticationPrincipal MyUserDetails user) {
+        Long currentUserId = user != null ? user.getUserId() : null;
 
         try {
             return ResponseEntity.ok(Map.of(

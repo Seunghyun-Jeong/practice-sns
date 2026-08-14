@@ -13,6 +13,15 @@ public class MyUserDetails implements org.springframework.security.core.userdeta
         this.user = user;
     }
 
+    /** 컨트롤러에서 토큰을 다시 파싱하지 않고 바로 쓰기 위한 접근자 */
+    public Long getUserId() {
+        return user.getId();
+    }
+
+    public String getRole() {
+        return user.getRole().name();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(user.getRole().name()));

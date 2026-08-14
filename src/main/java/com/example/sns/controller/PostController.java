@@ -1,14 +1,14 @@
 package com.example.sns.controller;
 
+import com.example.sns.config.MyUserDetails;
 import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostUpdateRequest;
 import com.example.sns.service.PostService;
-import com.example.sns.util.JwtUtil;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,17 +24,13 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class PostController {
     private final PostService postService;
-    private final JwtUtil jwtUtil;
 
     @PostMapping
     public ResponseEntity<?> createPost(@RequestParam("content") String content,
                                         @RequestParam(value = "image", required = false) MultipartFile image,
-                                        @CookieValue(value = "JWT_TOKEN", required = false) String token) {
-        if (token == null || !jwtUtil.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+                                        @AuthenticationPrincipal MyUserDetails user) {
         try {
-            PostResponse post = postService.createPost(content, image, token);
+            PostResponse post = postService.createPost(content, image, user.getUsername());
             return ResponseEntity.ok(post);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
@@ -43,16 +39,9 @@ public class PostController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePost(@PathVariable Long id,
-                                        @CookieValue(name = "JWT_TOKEN", required = false) String token) {
-        if (token == null || !jwtUtil.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
-        }
-
-        String username = jwtUtil.getUsernameFromToken(token);
-        String role = jwtUtil.getUserRoleFromToken(token);
-
+                                        @AuthenticationPrincipal MyUserDetails user) {
         try {
-            postService.deletePost(id, username, role);
+            postService.deletePost(id, user.getUsername(), user.getRole());
             return ResponseEntity.ok("삭제 완료");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -64,15 +53,9 @@ public class PostController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updatePost(@PathVariable Long id,
                                         @RequestBody PostUpdateRequest request,
-                                        @CookieValue(name = "JWT_TOKEN", required = false) String token) {
-        if (token == null || !jwtUtil.validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
-        }
-
-        String username = jwtUtil.getUsernameFromToken(token);
-
+                                        @AuthenticationPrincipal MyUserDetails user) {
         try {
-            postService.updatePost(id, request, username);
+            postService.updatePost(id, request, user.getUsername());
             return ResponseEntity.ok("수정 완료");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

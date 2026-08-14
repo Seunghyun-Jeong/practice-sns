@@ -1,29 +1,32 @@
 package com.example.sns.controller;
 
+import com.example.sns.config.MyUserDetails;
 import com.example.sns.dto.FeedPageDto;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.UserProfileDto;
-import com.example.sns.repository.UserRepository;
 import com.example.sns.service.CommentService;
 import com.example.sns.service.FollowService;
 import com.example.sns.service.PostService;
 import com.example.sns.service.UserService;
-import com.example.sns.util.JwtUtil;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+/**
+ * SSR 페이지 컨트롤러.
+ * 인증 정보는 JwtAuthFilter가 세팅한 SecurityContext에서 받는다.
+ * API(401 JSON)와 달리 페이지는 로그인 화면으로 리다이렉트해야 하므로 여기서 분기한다.
+ */
 @Controller
 @RequiredArgsConstructor
 public class ViewController {
     private final PostService postService;
-    private final JwtUtil jwtUtil;
     private final UserService userService;
     private final CommentService commentService;
     private final FollowService followService;
@@ -42,8 +45,8 @@ public class ViewController {
     }
 
     @GetMapping("/post")
-    public String postPage(@CookieValue(value = "JWT_TOKEN", required = false) String token) {
-        if (token == null || !jwtUtil.validateToken(token)) {
+    public String postPage(@AuthenticationPrincipal MyUserDetails user) {
+        if (user == null) {
             return "redirect:/login";
         }
         return "post";
@@ -53,11 +56,8 @@ public class ViewController {
     public String mainPage(Model model,
                            @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
                            @RequestParam(value = "tag", required = false) String tag,
-                           @CookieValue(value = "JWT_TOKEN", required = false) String token) {
-        Long currentUserId = null;
-        if (token != null && jwtUtil.validateToken(token)) {
-            currentUserId = jwtUtil.getUserIdFromToken(token);
-        }
+                           @AuthenticationPrincipal MyUserDetails user) {
+        Long currentUserId = user != null ? user.getUserId() : null;
 
         // 비로그인 상태에서는 팔로잉 탭을 볼 수 없으므로 전체 탭으로 되돌린다
         boolean followingTab = "following".equals(tab) && currentUserId != null;
@@ -85,11 +85,8 @@ public class ViewController {
                            @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
                            @RequestParam(value = "tag", required = false) String tag,
                            @RequestParam(value = "page", defaultValue = "0") int page,
-                           @CookieValue(value = "JWT_TOKEN", required = false) String token) {
-        Long currentUserId = null;
-        if (token != null && jwtUtil.validateToken(token)) {
-            currentUserId = jwtUtil.getUserIdFromToken(token);
-        }
+                           @AuthenticationPrincipal MyUserDetails user) {
+        Long currentUserId = user != null ? user.getUserId() : null;
 
         boolean followingTab = "following".equals(tab) && currentUserId != null;
         boolean tagFeed = tag != null && !tag.isBlank();
@@ -110,17 +107,9 @@ public class ViewController {
 
     @GetMapping("/posts/{id}/modal")
     public String postDetailModal(@PathVariable Long id, Model model,
-                                  @CookieValue(value = "JWT_TOKEN", required = false) String token) {
-        Long currentUserId = null;
-        String currentUserRole = "USER";
-
-        if (token != null && jwtUtil.validateToken(token)) {
-            currentUserId = jwtUtil.getUserIdFromToken(token);
-            String roleFromToken = jwtUtil.getUserRoleFromToken(token);
-            if (roleFromToken != null) {
-                currentUserRole = roleFromToken;
-            }
-        }
+                                  @AuthenticationPrincipal MyUserDetails user) {
+        Long currentUserId = user != null ? user.getUserId() : null;
+        String currentUserRole = user != null ? user.getRole() : "USER";
 
         PostDetailDto post = postService.getPostDetail(id, currentUserId);
         model.addAttribute("post", post);
@@ -132,18 +121,11 @@ public class ViewController {
 
     @GetMapping("/profile/{userId}")
     public String getProfilePage(@PathVariable Long userId, Model model,
-                                 @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+                                 @AuthenticationPrincipal MyUserDetails user) {
         UserProfileDto profile = userService.getProfileById(userId);
 
-        String currentUserRole = "USER";
-        Long currentUserId = null;
-        if (token != null && jwtUtil.validateToken(token)) {
-            currentUserId = jwtUtil.getUserIdFromToken(token);
-            String roleFromToken = jwtUtil.getUserRoleFromToken(token);
-            if (roleFromToken != null) {
-                currentUserRole = roleFromToken;
-            }
-        }
+        Long currentUserId = user != null ? user.getUserId() : null;
+        String currentUserRole = user != null ? user.getRole() : "USER";
 
         List<PostSummaryDto> posts = postService.getPostsByUserIdWithExtras(userId, currentUserId);
 
@@ -164,9 +146,8 @@ public class ViewController {
 
     @GetMapping("/admin/suspended-users")
     public String suspendedUsersPage(Model model,
-                                     @CookieValue(value = "JWT_TOKEN", required = false) String token) {
-        if (token == null || !jwtUtil.validateToken(token)
-                || !"ADMIN".equals(jwtUtil.getUserRoleFromToken(token))) {
+                                     @AuthenticationPrincipal MyUserDetails user) {
+        if (user == null || !"ADMIN".equals(user.getRole())) {
             return "redirect:/";
         }
 
@@ -176,9 +157,8 @@ public class ViewController {
 
     @GetMapping("/admin/users/{userId}/content")
     public String adminUserContent(@PathVariable Long userId, Model model,
-                                   @CookieValue(value = "JWT_TOKEN", required = false) String token) {
-        if (token == null || !jwtUtil.validateToken(token)
-                || !"ADMIN".equals(jwtUtil.getUserRoleFromToken(token))) {
+                                   @AuthenticationPrincipal MyUserDetails user) {
+        if (user == null || !"ADMIN".equals(user.getRole())) {
             return "redirect:/";
         }
 

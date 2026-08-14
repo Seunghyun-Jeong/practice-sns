@@ -1,10 +1,10 @@
 package com.example.sns.controller;
 
+import com.example.sns.config.MyUserDetails;
 import com.example.sns.dto.UserLoginRequest;
 import com.example.sns.dto.UserSignUpRequest;
 import com.example.sns.dto.UserUpdateRequestDto;
 import com.example.sns.entity.User;
-import com.example.sns.entity.User.Role;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.service.UserService;
 import com.example.sns.util.JwtUtil;
@@ -19,8 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -102,16 +102,10 @@ public class UserController {
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<Map<String, String>> deleteCurrentUser(@CookieValue(value = "JWT_TOKEN", required = false) String token, HttpServletResponse response) {
+    public ResponseEntity<Map<String, String>> deleteCurrentUser(@AuthenticationPrincipal MyUserDetails user, HttpServletResponse response) {
         Map<String, String> res = new HashMap<>();
 
-        if (token == null || !jwtUtil.validateToken(token)) {
-            res.put("message", "유효하지 않은 토큰입니다");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
-        }
-
-        String username = jwtUtil.getUsernameFromToken(token);
-        userService.deleteUser(username);
+        userService.deleteUser(user.getUsername());
 
         ResponseCookie expiredCookie = ResponseCookie.from("JWT_TOKEN", "")
                 .httpOnly(true)
@@ -125,21 +119,9 @@ public class UserController {
     }
 
     @PatchMapping("/suspend/{userId}")
-    public ResponseEntity<Map<String, String>> suspendUser(@PathVariable Long userId, @RequestParam String duration, @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+    public ResponseEntity<Map<String, String>> suspendUser(@PathVariable Long userId, @RequestParam String duration) {
+        // 관리자 권한 검사는 SecurityConfig의 hasAuthority("ADMIN")가 담당한다.
         Map<String, String> res = new HashMap<>();
-
-        if (token == null || !jwtUtil.validateToken(token)) {
-            res.put("message", "유효하지 않은 토큰입니다.");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
-        }
-
-        String username = jwtUtil.getUsernameFromToken(token);
-        Optional<User> adminOpt = userRepository.findByUsername(username);
-
-        if (adminOpt.isEmpty() || adminOpt.get().getRole() != Role.ADMIN) {
-            res.put("message", "권한이 없습니다.");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(res);
-        }
 
         try {
             userService.suspendUser(userId, duration);
@@ -152,21 +134,9 @@ public class UserController {
     }
 
     @PatchMapping("/unsuspend/{userId}")
-    public ResponseEntity<Map<String, String>> unsuspendUser(@PathVariable Long userId, @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+    public ResponseEntity<Map<String, String>> unsuspendUser(@PathVariable Long userId) {
+        // 관리자 권한 검사는 SecurityConfig의 hasAuthority("ADMIN")가 담당한다.
         Map<String, String> res = new HashMap<>();
-
-        if (token == null || !jwtUtil.validateToken(token)) {
-            res.put("message", "유효하지 않은 토큰입니다.");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
-        }
-
-        String username = jwtUtil.getUsernameFromToken(token);
-        Optional<User> adminOpt = userRepository.findByUsername(username);
-
-        if (adminOpt.isEmpty() || adminOpt.get().getRole() != Role.ADMIN) {
-            res.put("message", "권한이 없습니다.");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(res);
-        }
 
         try {
             userService.unsuspendUser(userId);
@@ -179,21 +149,8 @@ public class UserController {
     }
 
     @PutMapping("/username")
-    public ResponseEntity<Map<String, String>> updateUsername(@Valid @RequestBody UserUpdateRequestDto requestDto, @CookieValue(value = "JWT_TOKEN", required = false) String token, HttpServletResponse response) {
+    public ResponseEntity<Map<String, String>> updateUsername(@Valid @RequestBody UserUpdateRequestDto requestDto, @AuthenticationPrincipal MyUserDetails user, HttpServletResponse response) {
         Map<String, String> res = new HashMap<>();
-
-        if (token == null || !jwtUtil.validateToken(token)) {
-            res.put("message", "유효하지 않은 토큰입니다.");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
-        }
-
-        String username = jwtUtil.getUsernameFromToken(token);
-        Optional<User> userOpt = userRepository.findByUsername(username);
-
-        if (userOpt.isEmpty()) {
-            res.put("message", "사용자를 찾을 수 없습니다.");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
-        }
 
         String newUsername = requestDto.getUsername();
 
@@ -203,9 +160,10 @@ public class UserController {
         }
 
         try {
-            userService.updateUsername(userOpt.get().getId(), newUsername);
+            userService.updateUsername(user.getUserId(), newUsername);
 
-            String newToken = jwtUtil.generateToken(userOpt.get().getId(), newUsername, userOpt.get().getRole().name());
+            // 쿠키의 토큰에 예전 닉네임이 남으면 인증이 깨지므로 새로 발급한다
+            String newToken = jwtUtil.generateToken(user.getUserId(), newUsername, user.getRole());
 
             Cookie cookie = new Cookie("JWT_TOKEN", newToken);
             cookie.setHttpOnly(true);
@@ -226,18 +184,11 @@ public class UserController {
     @PostMapping("/profile-image")
     public ResponseEntity<Map<String, String>> updateProfileImage(
             @RequestParam("profileImage") MultipartFile file,
-            @CookieValue(value = "JWT_TOKEN", required = false) String token) {
+            @AuthenticationPrincipal MyUserDetails user) {
         Map<String, String> res = new HashMap<>();
 
-        if (token == null || !jwtUtil.validateToken(token)) {
-            res.put("message", "유효하지 않은 토큰입니다.");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
-        }
-
-        String username = jwtUtil.getUsernameFromToken(token);
-
         try {
-            String imageUrl = userService.updateProfileImage(username, file);
+            String imageUrl = userService.updateProfileImage(user.getUsername(), file);
             res.put("message", "프로필 이미지가 변경되었습니다.");
             res.put("imageUrl", imageUrl);
             return ResponseEntity.ok(res);
