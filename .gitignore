@@ -36,7 +36,8 @@ out/
 ### VS Code ###
 .vscode/
 
-src/main/resources/application.properties
+# 로컬 시크릿 (DB 계정, JWT 키) — secrets.properties.example 참고
+secrets.properties
 # 업로드된 파일 (프로필 이미지 등)
 uploads/
 

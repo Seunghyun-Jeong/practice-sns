@@ -160,25 +160,15 @@ RESTful API(`/api/**`)와 Thymeleaf 서버사이드 렌더링을 함께 사용�
    CREATE DATABASE sns_db CHARACTER SET utf8mb4;
    ```
 
-2. `src/main/resources/application.properties` 작성 (git에 포함되지 않음)
+2. 프로젝트 루트의 `secrets.properties.example` 을 `secrets.properties` 로 복사하고 값 채우기 (git에 포함되지 않음)
    ```properties
-   spring.application.name=sns
-
-   spring.datasource.url=jdbc:mysql://localhost:3306/sns_db?serverTimezone=UTC&characterEncoding=UTF-8
-   spring.datasource.username=<사용자명>
-   spring.datasource.password=<비밀번호>
-   spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-
-   spring.jpa.hibernate.ddl-auto=update
-   spring.jpa.show-sql=true
-   spring.thymeleaf.cache=false
-
-   # HS256 서명용 시크릿 (최소 32바이트 이상)
-   jwt.secret=<시크릿_키>
-
-   # 업로드한 이미지가 저장될 경로
-   file.upload-dir=<업로드_디렉터리_경로>
+   DB_USERNAME=<DB 사용자명>
+   DB_PASSWORD=<DB 비밀번호>
+   # HS256 서명용 랜덤 키, 32바이트 이상. 생성 예: openssl rand -base64 48
+   JWT_SECRET=<시크릿 키>
    ```
+   나머지 설정은 `src/main/resources/application.properties` 에 있으며, 시크릿 자리만 `${...}` 로 비워져 있다.
+   배포 환경에서는 파일 대신 같은 이름의 환경변수를 설정하면 우선 적용된다.
 
 3. 애플리케이션 실행
    ```bash
