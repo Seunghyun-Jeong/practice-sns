@@ -1885,3 +1885,305 @@ button {
         margin: 0 10px;
     }
 }
+
+/* ===== 채팅 ===== */
+.chat-header-link {
+    text-decoration: none;
+}
+
+.chat-container {
+    max-width: 640px;
+    margin: 90px auto 40px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.chat-title {
+    margin: 0;
+    padding: 18px 22px;
+    font-size: 19px;
+    border-bottom: 1px solid #efefef;
+}
+
+/* --- 목록 --- */
+.chat-room-list {
+    min-height: 200px;
+}
+
+.chat-empty {
+    padding: 48px 20px;
+    text-align: center;
+    color: #8e8e8e;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.chat-room-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 22px;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.chat-room-item:hover {
+    background: #fafafa;
+}
+
+.chat-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #f0f0f0;
+}
+
+.chat-room-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-room-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-room-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.chat-room-time {
+    color: #8e8e8e;
+    font-size: 12px;
+}
+
+.chat-room-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 3px;
+    gap: 8px;
+}
+
+.chat-room-preview {
+    color: #8e8e8e;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-room-preview.unread {
+    color: #262626;
+    font-weight: 600;
+}
+
+.chat-room-unread {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #ed4956;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* --- 대화방 --- */
+.chat-room-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 140px);
+    min-height: 420px;
+}
+
+.chat-room-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #efefef;
+    flex-shrink: 0;
+}
+
+.chat-back {
+    display: inline-flex;
+    align-items: center;
+    color: #262626;
+    text-decoration: none;
+    padding: 4px;
+}
+
+.chat-back:hover {
+    opacity: 0.65;
+}
+
+.chat-partner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.chat-partner .chat-avatar {
+    width: 34px;
+    height: 34px;
+}
+
+.chat-partner-name {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.chat-load-prev {
+    align-self: center;
+    margin-bottom: 8px;
+    padding: 6px 14px;
+    border: 1px solid #dbdbdb;
+    border-radius: 14px;
+    background: #fff;
+    color: #262626;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.chat-load-prev:hover {
+    background: #fafafa;
+}
+
+.chat-msg {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    max-width: 75%;
+}
+
+.chat-msg.mine {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.chat-msg.theirs {
+    align-self: flex-start;
+}
+
+.chat-bubble {
+    padding: 8px 12px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.45;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.chat-msg.mine .chat-bubble {
+    background: #0095f6;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-msg.theirs .chat-bubble {
+    background: #efefef;
+    color: #262626;
+    border-bottom-left-radius: 4px;
+}
+
+.chat-msg-time {
+    color: #8e8e8e;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.chat-send-form {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid #efefef;
+    flex-shrink: 0;
+}
+
+.chat-input {
+    flex: 1;
+    border: 1px solid #dbdbdb;
+    border-radius: 20px;
+    padding: 9px 16px;
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 0;
+}
+
+.chat-input:focus {
+    border-color: #a8a8a8;
+}
+
+.chat-send-btn {
+    border: none;
+    background: none;
+    color: #0095f6;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0 6px;
+}
+
+.chat-send-btn:disabled {
+    color: #b3dbff;
+    cursor: default;
+}
+
+@media (max-width: 700px) {
+    .chat-container {
+        margin: 78px 10px 20px;
+    }
+
+    .chat-room-container {
+        height: calc(100vh - 110px);
+    }
+}
+
+.message-btn {
+    margin-left: 8px;
+    background-color: #efefef;
+    color: #262626;
+}
+
+.message-btn:hover {
+    background-color: #e0e0e0;
+}
+
+/* 읽음 표시: 파란 원 안의 흰 체크. 상대가 읽기 전에는 숨긴다 */
+.chat-read-check {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #0095f6;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chat-read-check.on {
+    display: inline-flex;
+}

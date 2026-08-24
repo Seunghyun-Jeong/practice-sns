@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Outplanetton</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}" />
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<input type="hidden" id="chatRoomId" th:value="${room.roomId}" />
+<input type="hidden" id="chatMyId" th:value="${userId}" />
+
+<div class="chat-container chat-room-container">
+    <div class="chat-room-header">
+        <a href="/chat" class="chat-back" aria-label="목록으로">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+        </a>
+        <a th:href="@{'/profile/' + ${room.partnerId}}" class="chat-partner">
+            <img class="chat-avatar"
+                 th:src="${room.partnerProfileImageUrl != null} ? ${room.partnerProfileImageUrl} : '/images/default-profile.svg'"
+                 alt="프로필" />
+            <span class="chat-partner-name" th:text="${room.partnerUsername}"></span>
+        </a>
+    </div>
+
+    <div id="chatMessages" class="chat-messages">
+        <button id="chatLoadPrev" class="chat-load-prev" style="display:none;">이전 메시지 보기</button>
+    </div>
+
+    <form id="chatSendForm" class="chat-send-form" autocomplete="off">
+        <input type="text" id="chatInput" class="chat-input" placeholder="메시지 입력..." maxlength="1000" />
+        <button type="submit" id="chatSendBtn" class="chat-send-btn" disabled>보내기</button>
+    </form>
+</div>
+
+</body>
+</html>

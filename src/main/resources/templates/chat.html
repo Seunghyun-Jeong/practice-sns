@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Outplanetton</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}" />
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="chat-container">
+    <h2 class="chat-title">메시지</h2>
+    <div id="chatRoomList" class="chat-room-list">
+        <div class="chat-empty">불러오는 중...</div>
+    </div>
+</div>
+
+</body>
+</html>

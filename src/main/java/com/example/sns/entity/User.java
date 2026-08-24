@@ -65,6 +65,13 @@ public class User {
     @OneToMany(mappedBy = "recipient", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Notification> receivedNotifications = new ArrayList<>();
 
+    /** 내가 참여한 채팅방 (탈퇴 시 방과 메시지도 함께 삭제) */
+    @OneToMany(mappedBy = "user1", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<ChatRoom> chatRoomsAsUser1 = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user2", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<ChatRoom> chatRoomsAsUser2 = new ArrayList<>();
+
     /** 내 행동으로 남에게 생긴 알림 */
     @OneToMany(mappedBy = "actor", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Notification> sentNotifications = new ArrayList<>();

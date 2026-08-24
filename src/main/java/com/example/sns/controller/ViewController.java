@@ -5,6 +5,7 @@ import com.example.sns.dto.FeedPageDto;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.UserProfileDto;
+import com.example.sns.service.ChatService;
 import com.example.sns.service.CommentService;
 import com.example.sns.service.FollowService;
 import com.example.sns.service.PostService;
@@ -29,6 +30,7 @@ public class ViewController {
     private final PostService postService;
     private final UserService userService;
     private final CommentService commentService;
+    private final ChatService chatService;
     private final FollowService followService;
 
     /** 피드 한 페이지에 보여줄 게시글 수 */
@@ -169,5 +171,28 @@ public class ViewController {
         model.addAttribute("comments", commentService.getCommentsByUser(userId));
 
         return "admin-user-content";
+    }
+
+    @GetMapping("/chat")
+    public String chatListPage(@AuthenticationPrincipal MyUserDetails user) {
+        if (user == null) {
+            return "redirect:/login";
+        }
+        return "chat";
+    }
+
+    @GetMapping("/chat/{roomId}")
+    public String chatRoomPage(@PathVariable Long roomId, Model model,
+                               @AuthenticationPrincipal MyUserDetails user) {
+        if (user == null) {
+            return "redirect:/login";
+        }
+        try {
+            model.addAttribute("room", chatService.getRoom(user.getUserId(), roomId));
+        } catch (IllegalArgumentException e) {
+            // 없는 방이거나 내 방이 아니면 목록으로 돌려보낸다
+            return "redirect:/chat";
+        }
+        return "chatRoom";
     }
 }

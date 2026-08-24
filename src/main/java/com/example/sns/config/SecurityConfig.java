@@ -41,9 +41,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/posts/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/posts/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/posts/*/like/me", "/api/posts/*/comments/*/like/me").authenticated()
-                        // 로그인 필요: 팔로우 토글, 알림, 내 계정 관리
+                        // 로그인 필요: 팔로우 토글, 알림, 채팅, 내 계정 관리
                         .requestMatchers(HttpMethod.POST, "/api/users/*/follow").authenticated()
                         .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers("/api/chats/**").authenticated()
+                        .requestMatchers("/ws").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/users/me").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/users/username").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/users/profile-image").authenticated()

@@ -49,6 +49,11 @@
                     th:attr="data-user-id=${profileUserId}, data-following=${isFollowing}"
                     th:text="${isFollowing} ? '팔로잉' : '팔로우'">팔로우</button>
 
+            <!-- 메시지 버튼 (팔로우 버튼과 같은 조건) -->
+            <button th:if="${username != null and profileUsername != currentUsername and !profileSuspended}"
+                    id="messageBtn" class="follow-btn message-btn"
+                    th:attr="data-user-id=${profileUserId}">메시지</button>
+
         </div>
     </div>
 
@@ -626,6 +631,7 @@
         initLikeButtons();
         initCommentLikeButtons();
         initFollowButton();
+        initMessageButton();
         initFollowListModal();
 
         const logoutBtn = document.getElementById('logoutBtn');
@@ -704,6 +710,30 @@
             showToast('목록을 불러오는 중 오류가 발생했습니다.', 'error');
             closeFollowList();
         }
+    }
+
+    // 메시지: 방을 열고(없으면 생성) 대화방으로 이동
+    function initMessageButton() {
+        const btn = document.getElementById('messageBtn');
+        if (!btn) return;
+
+        btn.addEventListener('click', async () => {
+            const userId = btn.getAttribute('data-user-id');
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/chats/with/${userId}`, { method: 'POST', credentials: 'include' });
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.message || '대화를 시작하지 못했습니다.', 'error');
+                    return;
+                }
+                location.href = `/chat/${data.roomId}`;
+            } catch (e) {
+                showToast('대화를 시작하지 못했습니다.', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
     }
 
     // 팔로우 / 팔로우 취소
