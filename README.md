@@ -8,6 +8,7 @@ RESTful API(`/api/**`)와 Thymeleaf 서버사이드 렌더링을 함께 사용�
 - **Java 21**, **Spring Boot 3.4.5**, Gradle
 - Spring Data JPA + **MySQL**
 - Spring Security + **JWT**(jjwt 0.12.5) — httpOnly 쿠키 기반 인증
+- **WebSocket** — DM 실시간 푸시
 - Thymeleaf, Lombok
 - 테스트: **JUnit 5**, Mockito, MockMvc, **H2**(인메모리)
 
@@ -105,6 +106,21 @@ RESTful API(`/api/**`)와 Thymeleaf 서버사이드 렌더링을 함께 사용�
 
 ---
 
+### 💬 DM (1:1 채팅) ✅
+
+- 프로필의 **메시지 버튼**으로 대화 시작, 헤더의 종이비행기 아이콘으로 대화 목록 진입
+- 방은 두 사람 조합당 하나 — 누가 먼저 열어도 같은 방 (복합 유니크 제약)
+- **전송은 REST, 수신은 WebSocket 푸시** — 상대가 접속 중이면 새 메시지를 즉시 전달
+  - 핸드셰이크가 일반 HTTP 요청이라 기존 JWT 쿠키 인증을 그대로 통과
+  - 소켓이 끊긴 동안은 폴링이 대신 동작하고, 3초 후 자동 재연결
+- 헤더에 **안읽음 배지** — 어느 페이지에 있든 실시간 갱신
+- **읽음 표시** — 상대가 읽는 순간 내 메시지의 체크 표시가 실시간으로 켜짐
+- 메시지는 최신순 페이징으로 불러오고, "이전 메시지 보기"로 과거 내역 조회
+- 자기 자신, 정지된 유저와는 대화할 수 없고, 참여자가 아니면 조회와 전송 모두 불가
+- 회원 탈퇴 시 참여한 방과 메시지도 함께 삭제
+
+---
+
 ### 🛠️ 관리자 기능
 
 #### 게시물 / 댓글 삭제 ✅
@@ -137,7 +153,7 @@ RESTful API(`/api/**`)와 Thymeleaf 서버사이드 렌더링을 함께 사용�
 ./gradlew test
 ```
 
-- 총 **35개** (서비스 단위 테스트 15 / API 테스트 19 / 컨텍스트 로드 1)
+- 총 **52개** (서비스 단위 테스트 24 / API 테스트 27 / 컨텍스트 로드 1)
 - 서비스는 **Mockito**로, API는 **MockMvc**로 검증
 - 테스트는 `src/test/resources/application.properties`의 **H2 인메모리 DB**를 사용하므로 실서비스 DB(`sns_db`)에 영향을 주지 않음
   - H2에서는 `user`가 예약어라 JDBC URL에 `NON_KEYWORDS=USER`를 지정
