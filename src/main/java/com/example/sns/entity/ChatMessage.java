@@ -39,5 +39,15 @@ public class ChatMessage {
     /** 상대방이 읽었는지 (안읽음 수 계산에 사용) */
     private boolean isRead = false;
 
+    /** 보낸 뒤 수정했는지 ("수정됨" 표시용) */
+    private boolean isEdited = false;
+
+    /**
+     * 삭제했는지. 행을 지우지 않고 표시만 바꾸는 이유는
+     * 그 자리에 "삭제된 메시지입니다"를 그려야 하기 때문이다.
+     * 삭제 시 content 는 비운다 (안 읽힌 내용이라 보관할 이유가 없다).
+     */
+    private boolean isDeleted = false;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 }

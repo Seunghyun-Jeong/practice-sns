@@ -9,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -61,6 +63,29 @@ public class ChatController {
                                          @AuthenticationPrincipal MyUserDetails user) {
         try {
             return ResponseEntity.ok(chatService.sendMessage(user.getUserId(), roomId, request.getContent()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    /** 메시지 수정 (상대가 읽기 전에만) */
+    @PutMapping("/messages/{messageId}")
+    public ResponseEntity<?> editMessage(@PathVariable Long messageId,
+                                         @RequestBody ChatSendRequest request,
+                                         @AuthenticationPrincipal MyUserDetails user) {
+        try {
+            return ResponseEntity.ok(chatService.editMessage(user.getUserId(), messageId, request.getContent()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    /** 메시지 삭제 (상대가 읽기 전에만) */
+    @DeleteMapping("/messages/{messageId}")
+    public ResponseEntity<?> deleteMessage(@PathVariable Long messageId,
+                                           @AuthenticationPrincipal MyUserDetails user) {
+        try {
+            return ResponseEntity.ok(chatService.deleteMessage(user.getUserId(), messageId));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }

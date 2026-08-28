@@ -159,6 +159,71 @@ public class ChatService {
         return dto;
     }
 
+    /**
+     * 메시지 수정. 상대가 아직 읽지 않은 내 메시지만 가능하다.
+     * 수정 후에는 상대 화면도 갱신되도록 푸시한다.
+     */
+    @Transactional
+    public ChatMessageDto editMessage(Long myId, Long messageId, String content) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("메시지 내용을 입력해주세요.");
+        }
+        if (content.length() > MAX_CONTENT_LENGTH) {
+            throw new IllegalArgumentException("메시지는 " + MAX_CONTENT_LENGTH + "자 이하여야 합니다.");
+        }
+
+        ChatMessage message = findModifiableMessage(myId, messageId);
+        message.setContent(content.trim());
+        message.setEdited(true);
+
+        ChatMessageDto dto = toDto(message);
+        pushToPartner(message, myId, dto);
+        return dto;
+    }
+
+    /**
+     * 메시지 삭제. 상대가 아직 읽지 않은 내 메시지만 가능하다.
+     * 행은 남기고 표시만 바꾼다 — 그 자리에 "삭제된 메시지입니다"를 그려야 하기 때문이다.
+     */
+    @Transactional
+    public ChatMessageDto deleteMessage(Long myId, Long messageId) {
+        ChatMessage message = findModifiableMessage(myId, messageId);
+        message.setContent("");   // 안 읽힌 내용이라 보관하지 않는다
+        message.setDeleted(true);
+
+        ChatMessageDto dto = toDto(message);
+        pushToPartner(message, myId, dto);
+        return dto;
+    }
+
+    /**
+     * 수정·삭제가 가능한 메시지인지 확인한다.
+     * 두 기능이 같은 규칙을 쓰도록 한곳에 모았다.
+     * 클라이언트가 메뉴를 숨기더라도, 메뉴가 떠 있는 사이 상대가 읽을 수 있으므로
+     * 서버에서 읽음 여부를 최종 판단한다.
+     */
+    private ChatMessage findModifiableMessage(Long myId, Long messageId) {
+        ChatMessage message = chatMessageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("메시지를 찾을 수 없습니다."));
+
+        if (!message.getSender().getId().equals(myId)) {
+            throw new IllegalArgumentException("본인이 보낸 메시지만 수정하거나 삭제할 수 있습니다.");
+        }
+        if (message.isDeleted()) {
+            throw new IllegalArgumentException("이미 삭제된 메시지입니다.");
+        }
+        if (message.isRead()) {
+            throw new IllegalArgumentException("상대가 읽은 메시지는 수정하거나 삭제할 수 없습니다.");
+        }
+        return message;
+    }
+
+    /** 수정·삭제 결과를 상대 화면에도 반영시킨다 */
+    private void pushToPartner(ChatMessage message, Long myId, ChatMessageDto dto) {
+        Long partnerId = message.getRoom().getPartnerOf(myId).getId();
+        pushSocketHandler.pushToUser(partnerId, Map.of("type", "chat-message-updated", "message", dto));
+    }
+
     /** 방에 들어왔을 때 상대가 보낸 메시지를 읽음 처리 */
     @Transactional
     public void markAsRead(Long myId, Long roomId) {
@@ -203,7 +268,9 @@ public class ChatService {
                 m.getSender().getUsername(),
                 m.getContent(),
                 m.getCreatedAt().toString(),
-                m.isRead()
+                m.isRead(),
+                m.isEdited(),
+                m.isDeleted()
         );
     }
 }

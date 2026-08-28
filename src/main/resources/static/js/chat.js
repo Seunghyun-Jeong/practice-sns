@@ -59,6 +59,7 @@
   let socket = null;
   let handleChatMessage = null;   // 페이지별 새 메시지 처리 (목록/대화방에서 등록)
   let handleChatRead = null;      // 상대가 읽었을 때 처리 (대화방에서 등록)
+  let handleChatMessageUpdated = null;   // 상대가 메시지를 수정·삭제했을 때 (대화방에서 등록)
 
   function socketOpen() {
     return socket && socket.readyState === WebSocket.OPEN;
@@ -86,6 +87,8 @@
         handleChatMessage(data.message);
       } else if (data.type === 'chat-read' && handleChatRead) {
         handleChatRead(data.roomId);
+      } else if (data.type === 'chat-message-updated' && handleChatMessageUpdated) {
+        handleChatMessageUpdated(data.message);
       } else if (data.type === 'noti-badge') {
         // 알림 배지는 notification.js 담당이라 문서 이벤트로 넘긴다
         document.dispatchEvent(new CustomEvent('noti-badge', { detail: { count: data.count || 0 } }));
@@ -167,17 +170,29 @@
 
   function messageHtml(m) {
     const mine = m.senderId === myId;
-    const readMark = mine
+    // 삭제된 메시지는 읽음 체크를 보여줄 이유가 없다
+    const readMark = (mine && !m.deleted)
       ? `<span class="chat-read-check${m.read ? ' on' : ''}" aria-label="읽음">
            <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
          </span>`
       : '';
+    const bubble = m.deleted
+      ? `<div class="chat-bubble deleted">삭제된 메시지입니다.</div>`
+      : `<div class="chat-bubble">${escapeHtml(m.content)}${m.edited ? '<span class="chat-edited">수정됨</span>' : ''}</div>`;
     return `
-      <div class="chat-msg ${mine ? 'mine' : 'theirs'}" data-id="${m.id}">
-        <div class="chat-bubble">${escapeHtml(m.content)}</div>
+      <div class="chat-msg ${mine ? 'mine' : 'theirs'}" data-id="${m.id}"
+           data-read="${m.read}" data-deleted="${m.deleted}">
+        ${bubble}
         ${readMark}
         <span class="chat-msg-time">${timeShort(m.createdAt)}</span>
       </div>`;
+  }
+
+  /** 이미 그려진 메시지를 새 내용으로 갈아끼운다 (수정·삭제 반영) */
+  function replaceMessage(m) {
+    const el = messagesEl.querySelector(`.chat-msg[data-id="${m.id}"]`);
+    if (!el) return;
+    el.outerHTML = messageHtml(m);
   }
 
   function scrollToBottom() {
@@ -209,6 +224,15 @@
   handleChatRead = (rid) => {
     if (String(rid) !== String(roomId)) return;
     messagesEl.querySelectorAll('.chat-msg.mine .chat-read-check').forEach(el => el.classList.add('on'));
+    // 읽힌 뒤에는 수정·삭제가 불가능하므로 메뉴 판단용 상태도 같이 갱신한다
+    messagesEl.querySelectorAll('.chat-msg.mine').forEach(el => el.dataset.read = 'true');
+    closeMenu();
+  };
+
+  // 상대가 자기 메시지를 수정하거나 삭제하면 내 화면도 갱신한다
+  handleChatMessageUpdated = (m) => {
+    if (!m || String(m.roomId) !== String(roomId)) return;
+    replaceMessage(m);
   };
 
   // WebSocket 푸시: 이 방의 상대 메시지면 바로 붙이고 읽음 처리한다
@@ -262,6 +286,90 @@
       if (fresh.some(m => m.senderId !== myId)) markRead();
     } catch (e) { /* 다음 폴링에서 다시 시도한다 */ }
   }
+
+  // ---------- 우클릭 메뉴 (수정·삭제) ----------
+  const menu = document.getElementById('chatMsgMenu');
+  const editModal = document.getElementById('chatEditModal');
+  const editInput = document.getElementById('chatEditInput');
+  let targetId = null;   // 메뉴가 열린 대상 메시지 id
+
+  function closeMenu() {
+    menu.style.display = 'none';
+    targetId = null;
+  }
+
+  /** 상대가 읽기 전인 내 메시지에서만 메뉴를 연다 */
+  messagesEl.addEventListener('contextmenu', (e) => {
+    const el = e.target.closest('.chat-msg.mine');
+    if (!el) return;                                   // 상대 메시지는 브라우저 기본 메뉴를 둔다
+    if (el.dataset.read === 'true' || el.dataset.deleted === 'true') return;
+
+    e.preventDefault();
+    targetId = el.dataset.id;
+    menu.style.display = 'block';
+
+    // 메뉴는 .chat-room-container 기준으로 배치되므로(offsetParent),
+    // 좌표 변환과 경계 보정 모두 같은 기준을 써야 한다.
+    const box = menu.offsetParent.getBoundingClientRect();
+    const x = Math.min(e.clientX - box.left, box.width - menu.offsetWidth - 8);
+    const y = Math.min(e.clientY - box.top, box.height - menu.offsetHeight - 8);
+    menu.style.left = Math.max(8, x) + 'px';
+    menu.style.top = Math.max(8, y) + 'px';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!menu.contains(e.target)) closeMenu();
+  });
+  messagesEl.addEventListener('scroll', closeMenu);
+
+  document.getElementById('chatEditBtn').addEventListener('click', () => {
+    const el = messagesEl.querySelector(`.chat-msg[data-id="${targetId}"] .chat-bubble`);
+    if (!el) return;
+    editInput.value = el.textContent.replace(/수정됨$/, '').trim();
+    editModal.dataset.messageId = targetId;
+    editModal.style.display = 'flex';
+    closeMenu();
+    editInput.focus();
+  });
+
+  document.getElementById('chatDeleteBtn').addEventListener('click', async () => {
+    const id = targetId;
+    closeMenu();
+    if (!id) return;
+    if (!(await confirmDialog('이 메시지를 삭제할까요?'))) return;
+    try {
+      const res = await fetch(`/api/chats/messages/${id}`, { method: 'DELETE', credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.message || '삭제하지 못했습니다.', 'error'); return; }
+      replaceMessage(data);
+    } catch (e) {
+      showToast('삭제하지 못했습니다.', 'error');
+    }
+  });
+
+  document.getElementById('chatEditCancel').addEventListener('click', () => {
+    editModal.style.display = 'none';
+  });
+
+  document.getElementById('chatEditSave').addEventListener('click', async () => {
+    const id = editModal.dataset.messageId;
+    const content = editInput.value.trim();
+    if (!content) { showToast('메시지 내용을 입력해주세요.', 'error'); return; }
+    try {
+      const res = await fetch(`/api/chats/messages/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content })
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.message || '수정하지 못했습니다.', 'error'); return; }
+      replaceMessage(data);
+      editModal.style.display = 'none';
+    } catch (e) {
+      showToast('수정하지 못했습니다.', 'error');
+    }
+  });
 
   // 전송
   input.addEventListener('input', () => {

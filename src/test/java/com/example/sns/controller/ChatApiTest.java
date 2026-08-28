@@ -1,7 +1,9 @@
 package com.example.sns.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -79,6 +81,15 @@ class ChatApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"" + content + "\"}"))
                 .andExpect(status().isOk());
+    }
+
+    /** 방의 최신 메시지 id (목록이 최신순이라 첫 번째) */
+    private Long lastMessageId(Long roomId) throws Exception {
+        String body = mockMvc.perform(get("/api/chats/{roomId}/messages", roomId).cookie(myCookie))
+                .andReturn().getResponse().getContentAsString();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"id\":(\\d+)").matcher(body);
+        m.find();
+        return Long.valueOf(m.group(1));
     }
 
     @Test
@@ -166,6 +177,87 @@ class ChatApiTest {
 
         mockMvc.perform(get("/api/chats/{roomId}/messages", roomId).cookie(myCookie))
                 .andExpect(jsonPath("$.messages[0].read").value(true));
+    }
+
+    @Test
+    @DisplayName("상대가 읽기 전이면 내 메시지를 수정할 수 있고 수정됨으로 표시된다")
+    void 메시지_수정() throws Exception {
+        Long roomId = openRoom();
+        send(roomId, myCookie, "오타가 있는 메시지");
+        Long messageId = lastMessageId(roomId);
+
+        mockMvc.perform(put("/api/chats/messages/{id}", messageId)
+                        .cookie(myCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"고친 메시지\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value("고친 메시지"))
+                .andExpect(jsonPath("$.edited").value(true));
+    }
+
+    @Test
+    @DisplayName("삭제하면 내용은 비워지고 삭제 표시만 남는다")
+    void 메시지_삭제() throws Exception {
+        Long roomId = openRoom();
+        send(roomId, myCookie, "지울 메시지");
+        Long messageId = lastMessageId(roomId);
+
+        mockMvc.perform(delete("/api/chats/messages/{id}", messageId).cookie(myCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deleted").value(true))
+                .andExpect(jsonPath("$.content").value(""));
+    }
+
+    @Test
+    @DisplayName("상대가 읽은 뒤에는 수정도 삭제도 할 수 없다")
+    void 읽은_뒤에는_수정_삭제_불가() throws Exception {
+        Long roomId = openRoom();
+        send(roomId, myCookie, "이미 읽힌 메시지");
+        Long messageId = lastMessageId(roomId);
+
+        mockMvc.perform(post("/api/chats/{roomId}/read", roomId).cookie(otherCookie));
+
+        mockMvc.perform(put("/api/chats/messages/{id}", messageId)
+                        .cookie(myCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"바꿔보기\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("상대가 읽은 메시지는 수정하거나 삭제할 수 없습니다."));
+
+        mockMvc.perform(delete("/api/chats/messages/{id}", messageId).cookie(myCookie))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("남이 보낸 메시지는 수정할 수 없다")
+    void 남의_메시지는_수정_불가() throws Exception {
+        Long roomId = openRoom();
+        send(roomId, myCookie, "내 메시지");
+        Long messageId = lastMessageId(roomId);
+
+        mockMvc.perform(put("/api/chats/messages/{id}", messageId)
+                        .cookie(otherCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"가로채기\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("본인이 보낸 메시지만 수정하거나 삭제할 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("이미 삭제한 메시지는 다시 수정할 수 없다")
+    void 삭제된_메시지는_수정_불가() throws Exception {
+        Long roomId = openRoom();
+        send(roomId, myCookie, "지울 메시지");
+        Long messageId = lastMessageId(roomId);
+
+        mockMvc.perform(delete("/api/chats/messages/{id}", messageId).cookie(myCookie));
+
+        mockMvc.perform(put("/api/chats/messages/{id}", messageId)
+                        .cookie(myCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"되살리기\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("이미 삭제된 메시지입니다."));
     }
 
     @Test
