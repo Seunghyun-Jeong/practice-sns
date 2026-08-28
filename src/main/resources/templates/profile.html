@@ -42,17 +42,24 @@
                 <span class="stat-link" id="openFollowing"><b id="followingCount" th:text="${followingCount}">0</b> 팔로잉</span>
             </div>
 
-            <!-- 팔로우 버튼 (본인 프로필 · 정지 유저 · 비로그인 제외) -->
-            <button th:if="${username != null and profileUsername != currentUsername and !profileSuspended}"
-                    id="followBtn" class="follow-btn"
-                    th:classappend="${isFollowing} ? 'following' : ''"
-                    th:attr="data-user-id=${profileUserId}, data-following=${isFollowing}"
-                    th:text="${isFollowing} ? '팔로잉' : '팔로우'">팔로우</button>
+            <!--
+              버튼 영역은 버튼이 없어도 항상 자리를 차지한다.
+              그러지 않으면 세로 중앙 정렬 때문에 버튼 유무에 따라
+              닉네임과 통계의 위치가 달라진다.
+            -->
+            <div class="profile-actions">
+                <!-- 팔로우 버튼 (본인 프로필, 정지 유저, 비로그인 제외) -->
+                <button th:if="${username != null and profileUsername != currentUsername and !profileSuspended}"
+                        id="followBtn" class="follow-btn"
+                        th:classappend="${isFollowing} ? 'following' : ''"
+                        th:attr="data-user-id=${profileUserId}, data-following=${isFollowing}"
+                        th:text="${isFollowing} ? '팔로잉' : '팔로우'">팔로우</button>
 
-            <!-- 메시지 버튼 (팔로우 버튼과 같은 조건) -->
-            <button th:if="${username != null and profileUsername != currentUsername and !profileSuspended}"
-                    id="messageBtn" class="follow-btn message-btn"
-                    th:attr="data-user-id=${profileUserId}">메시지</button>
+                <!-- 메시지 버튼 (팔로우 버튼과 같은 조건) -->
+                <button th:if="${username != null and profileUsername != currentUsername and !profileSuspended}"
+                        id="messageBtn" class="follow-btn message-btn"
+                        th:attr="data-user-id=${profileUserId}">메시지</button>
+            </div>
 
         </div>
     </div>

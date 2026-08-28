@@ -2444,3 +2444,71 @@ body > h2,
     background: #e5e7eb;
     color: #111827;
 }
+
+/*
+ * 프로필 상단도 헤더·탭과 같은 층으로 어둡게 둔다.
+ * 흰색은 게시물(별)에만 쓰고, 껍데기는 어둡게 — 이 규칙이 서면 별이 더 도드라진다.
+ */
+.profile-header {
+    background: #1a1d26;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: none;
+}
+
+.profile-header #nicknameText {
+    color: #fff;
+}
+
+.profile-header .profile-stats {
+    color: #cbd0d8;
+}
+
+.profile-header .profile-img {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 어두운 카드에서는 검은 채움 버튼이 사라지므로 명암을 뒤집는다 */
+.profile-header .follow-btn {
+    background-color: #fff;
+    color: #111827;
+}
+
+.profile-header .follow-btn:hover {
+    background-color: #e5e7eb;
+}
+
+.profile-header .follow-btn.following {
+    background-color: transparent;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.profile-header .follow-btn.following:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.profile-header button.message-btn {
+    background-color: transparent;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.profile-header button.message-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/*
+ * 버튼 영역은 버튼이 없어도 같은 높이를 유지한다.
+ * 세로 중앙 정렬이라 이 높이가 달라지면 닉네임과 통계가 위아래로 움직인다.
+ * 상태 간 차이는 "버튼이 보이느냐"뿐이어야 한다.
+ */
+.profile-actions {
+    min-height: 43px;
+    display: flex;
+    align-items: center;
+}
+
+/* 여백은 래퍼가 책임지므로 버튼 자체의 위 여백은 없앤다 */
+.profile-actions .follow-btn {
+    margin-top: 0;
+}
