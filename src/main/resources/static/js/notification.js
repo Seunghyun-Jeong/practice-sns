@@ -140,5 +140,10 @@
     }
   });
 
+  // 웹소켓 푸시(chat.js가 전달)로 배지를 실시간 갱신한다
+  document.addEventListener('noti-badge', (e) => {
+    setBadge(e.detail.count);
+  });
+
   loadUnreadCount();
 })();

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.sns.config.PushSocketHandler;
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
@@ -32,6 +33,9 @@ class NotificationServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PushSocketHandler pushSocketHandler;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -90,6 +94,17 @@ class NotificationServiceTest {
         notificationService.notify(author, actor, Notification.Type.COMMENT, post, null);
 
         verify(notificationRepository, times(2)).save(any(Notification.class));
+    }
+
+    @Test
+    @DisplayName("알림이 만들어지면 받는 사람에게 배지 수를 밀어준다")
+    void 알림이_생기면_배지를_밀어준다() {
+        when(notificationRepository.findByRecipientAndActorAndTypeAndPost(author, actor, Notification.Type.POST_LIKE, post))
+                .thenReturn(List.of());
+
+        notificationService.notify(author, actor, Notification.Type.POST_LIKE, post);
+
+        verify(pushSocketHandler).pushToUser(org.mockito.ArgumentMatchers.eq(1L), any());
     }
 
     @Test

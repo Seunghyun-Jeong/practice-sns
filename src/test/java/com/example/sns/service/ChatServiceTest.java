@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.example.sns.config.ChatSocketHandler;
+import com.example.sns.config.PushSocketHandler;
 import com.example.sns.entity.ChatMessage;
 import com.example.sns.entity.ChatRoom;
 import com.example.sns.entity.User;
@@ -37,7 +37,7 @@ class ChatServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private ChatSocketHandler chatSocketHandler;
+    private PushSocketHandler pushSocketHandler;
 
     @InjectMocks
     private ChatService chatService;
@@ -152,7 +152,7 @@ class ChatServiceTest {
 
         chatService.markAsRead(2L, 10L);   // other(2L)가 읽는다
 
-        verify(chatSocketHandler).pushToUser(org.mockito.ArgumentMatchers.eq(1L), any());   // me(1L)에게 알림
+        verify(pushSocketHandler).pushToUser(org.mockito.ArgumentMatchers.eq(1L), any());   // me(1L)에게 알림
     }
 
     @Test
@@ -168,7 +168,7 @@ class ChatServiceTest {
 
         chatService.markAsRead(2L, 10L);
 
-        verify(chatSocketHandler, never()).pushToUser(org.mockito.ArgumentMatchers.eq(1L), any());
+        verify(pushSocketHandler, never()).pushToUser(org.mockito.ArgumentMatchers.eq(1L), any());
     }
 
     @Test

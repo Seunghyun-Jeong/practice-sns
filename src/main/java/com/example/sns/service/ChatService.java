@@ -1,6 +1,6 @@
 package com.example.sns.service;
 
-import com.example.sns.config.ChatSocketHandler;
+import com.example.sns.config.PushSocketHandler;
 import com.example.sns.dto.ChatMessageDto;
 import com.example.sns.dto.ChatMessagePageDto;
 import com.example.sns.dto.ChatRoomDto;
@@ -26,7 +26,7 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
-    private final ChatSocketHandler chatSocketHandler;
+    private final PushSocketHandler pushSocketHandler;
 
     /** 메시지 최대 길이 (컬럼 길이와 맞춘다) */
     private static final int MAX_CONTENT_LENGTH = 1000;
@@ -152,8 +152,8 @@ public class ChatService {
         // 상대가 접속 중이면 새 메시지와 갱신된 안읽음 수를 바로 밀어준다
         ChatMessageDto dto = toDto(message);
         User partner = room.getPartnerOf(myId);
-        chatSocketHandler.pushToUser(partner.getId(), Map.of("type", "chat-message", "message", dto));
-        chatSocketHandler.pushToUser(partner.getId(),
+        pushSocketHandler.pushToUser(partner.getId(), Map.of("type", "chat-message", "message", dto));
+        pushSocketHandler.pushToUser(partner.getId(),
                 Map.of("type", "chat-badge", "count", chatMessageRepository.countTotalUnread(partner)));
 
         return dto;
@@ -166,11 +166,11 @@ public class ChatService {
         User me = findUser(myId);
         int updated = chatMessageRepository.markAllAsRead(room, me);
         // 다른 탭에 떠 있는 내 배지도 함께 줄어들도록 밀어준다
-        chatSocketHandler.pushToUser(myId,
+        pushSocketHandler.pushToUser(myId,
                 Map.of("type", "chat-badge", "count", chatMessageRepository.countTotalUnread(me)));
         // 실제로 읽은 게 있으면, 보낸 사람 화면의 읽음 표시가 바로 켜지도록 알린다
         if (updated > 0) {
-            chatSocketHandler.pushToUser(room.getPartnerOf(myId).getId(),
+            pushSocketHandler.pushToUser(room.getPartnerOf(myId).getId(),
                     Map.of("type", "chat-read", "roomId", room.getId()));
         }
     }

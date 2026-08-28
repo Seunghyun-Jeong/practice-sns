@@ -86,6 +86,9 @@
         handleChatMessage(data.message);
       } else if (data.type === 'chat-read' && handleChatRead) {
         handleChatRead(data.roomId);
+      } else if (data.type === 'noti-badge') {
+        // 알림 배지는 notification.js 담당이라 문서 이벤트로 넘긴다
+        document.dispatchEvent(new CustomEvent('noti-badge', { detail: { count: data.count || 0 } }));
       }
     };
 

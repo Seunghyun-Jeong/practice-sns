@@ -22,11 +22,11 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 @EnableWebSocket
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketConfigurer {
-    private final ChatSocketHandler chatSocketHandler;
+    private final PushSocketHandler pushSocketHandler;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(chatSocketHandler, "/ws")
+        registry.addHandler(pushSocketHandler, "/ws")
                 .addInterceptors(new AuthHandshakeInterceptor());
     }
 
