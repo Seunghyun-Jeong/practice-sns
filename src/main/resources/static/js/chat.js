@@ -60,6 +60,8 @@
   let handleChatMessage = null;   // 페이지별 새 메시지 처리 (목록/대화방에서 등록)
   let handleChatRead = null;      // 상대가 읽었을 때 처리 (대화방에서 등록)
   let handleChatMessageUpdated = null;   // 상대가 메시지를 수정·삭제했을 때 (대화방에서 등록)
+  let handleResync = null;        // 소켓이 다시 열렸을 때 화면을 서버 상태로 맞추는 처리 (페이지별 등록)
+  let hasConnectedBefore = false; // 최초 연결과 재연결을 구분한다
 
   function socketOpen() {
     return socket && socket.readyState === WebSocket.OPEN;
@@ -73,6 +75,16 @@
     } catch (e) {
       return;
     }
+
+    socket.onopen = () => {
+      // 최초 연결 때는 페이지 로드가 이미 최신 데이터를 가져왔으므로 건너뛴다.
+      // 재연결이라면 끊겨 있던 동안의 변경(수정·삭제·읽음)을 놓쳤을 수 있어 따라잡는다.
+      if (hasConnectedBefore) {
+        loadChatBadge();
+        if (handleResync) handleResync();
+      }
+      hasConnectedBefore = true;
+    };
 
     socket.onmessage = (event) => {
       let data;
@@ -151,6 +163,7 @@
   if (roomList) {
     loadRooms();
     handleChatMessage = () => loadRooms();   // 새 메시지가 오면 목록을 다시 그린다
+    handleResync = () => loadRooms();        // 재연결 시에도 목록을 다시 맞춘다
   }
 
   // ---------- 대화방 페이지 ----------
@@ -167,6 +180,19 @@
   let oldestPage = 0;      // 지금까지 불러온 가장 오래된 페이지
   let hasPrev = false;     // 이전 페이지가 더 있는지
   let lastMessageId = 0;   // 폴링 보완용: 마지막으로 그린 메시지 id
+
+  // 화면에 그려둔 메시지의 상태 스냅샷 (id -> 내용과 플래그).
+  // 폴링으로 받아온 것과 비교해 "실제로 바뀐 것만" 다시 그리기 위해 둔다.
+  const rendered = new Map();
+
+  function remember(m) {
+    rendered.set(m.id, { content: m.content, read: m.read, edited: m.edited, deleted: m.deleted });
+  }
+
+  function isChanged(prev, m) {
+    return prev.content !== m.content || prev.read !== m.read
+        || prev.edited !== m.edited || prev.deleted !== m.deleted;
+  }
 
   function messageHtml(m) {
     const mine = m.senderId === myId;
@@ -193,6 +219,7 @@
     const el = messagesEl.querySelector(`.chat-msg[data-id="${m.id}"]`);
     if (!el) return;
     el.outerHTML = messageHtml(m);
+    remember(m);
   }
 
   function scrollToBottom() {
@@ -203,6 +230,7 @@
     if (list.length === 0) return;
     const nearBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 80;
     messagesEl.insertAdjacentHTML('beforeend', list.map(messageHtml).join(''));
+    list.forEach(remember);
     lastMessageId = Math.max(lastMessageId, list[list.length - 1].id);
     if (nearBottom) scrollToBottom();
   }
@@ -249,6 +277,7 @@
       const data = await fetchPage(0);
       const asc = data.messages.slice().reverse();
       loadPrevBtn.insertAdjacentHTML('afterend', asc.map(messageHtml).join(''));
+      asc.forEach(remember);
       hasPrev = data.hasNext;
       loadPrevBtn.style.display = hasPrev ? 'block' : 'none';
       if (asc.length > 0) lastMessageId = asc[asc.length - 1].id;
@@ -267,6 +296,7 @@
       const asc = data.messages.slice().reverse();
       const prevHeight = messagesEl.scrollHeight;
       loadPrevBtn.insertAdjacentHTML('afterend', asc.map(messageHtml).join(''));
+      asc.forEach(remember);
       hasPrev = data.hasNext;
       loadPrevBtn.style.display = hasPrev ? 'block' : 'none';
       // 붙인 만큼 스크롤을 보정해서 보던 위치를 유지한다
@@ -274,18 +304,41 @@
     } catch (e) { /* 실패 시 버튼을 다시 누르면 된다 */ }
   });
 
-  // 폴링 보완: 소켓이 끊겨 있는 동안만 최신 페이지를 다시 받아 빠진 메시지를 붙인다
-  async function pollNew() {
-    if (socketOpen()) return;
+  /**
+   * 서버 상태와 화면을 맞춘다.
+   * 새 메시지는 붙이고, 이미 그려둔 메시지는 내용·플래그가 바뀐 것만 다시 그린다.
+   * 수정·삭제·읽음은 id가 바뀌지 않으므로 "새 id만 붙이는" 방식으로는 잡히지 않는다.
+   */
+  async function resyncMessages() {
     try {
       const data = await fetchPage(0);
       const asc = data.messages.slice().reverse();
-      const fresh = asc.filter(m => m.id > lastMessageId);
-      if (fresh.length === 0) return;
-      appendMessages(fresh);
-      if (fresh.some(m => m.senderId !== myId)) markRead();
-    } catch (e) { /* 다음 폴링에서 다시 시도한다 */ }
+
+      const fresh = [];
+      for (const m of asc) {
+        const prev = rendered.get(m.id);
+        if (!prev) {
+          fresh.push(m);
+        } else if (isChanged(prev, m)) {
+          replaceMessage(m);
+        }
+      }
+
+      if (fresh.length > 0) {
+        appendMessages(fresh);
+        if (fresh.some(m => m.senderId !== myId)) markRead();
+      }
+    } catch (e) { /* 다음 기회에 다시 맞춘다 */ }
   }
+
+  // 소켓이 끊겨 있는 동안에만 폴링으로 대신 맞춘다
+  async function pollNew() {
+    if (socketOpen()) return;
+    await resyncMessages();
+  }
+
+  // 재연결 시에도 끊긴 동안의 변경을 따라잡는다
+  handleResync = resyncMessages;
 
   // ---------- 우클릭 메뉴 (수정·삭제) ----------
   const menu = document.getElementById('chatMsgMenu');
@@ -394,6 +447,7 @@
         return;
       }
       messagesEl.insertAdjacentHTML('beforeend', messageHtml(data));
+      remember(data);
       lastMessageId = Math.max(lastMessageId, data.id);
       input.value = '';
       scrollToBottom();
