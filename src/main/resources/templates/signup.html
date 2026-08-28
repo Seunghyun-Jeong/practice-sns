@@ -23,14 +23,7 @@
 </form>
 
 <script>
-    (function () {
-        const hb = document.getElementById('hamburgerBtn');
-        const dd = document.getElementById('dropdownMenu');
-        if (hb && dd) {
-            hb.addEventListener('click', (e) => { e.stopPropagation(); dd.style.display = dd.style.display === 'block' ? 'none' : 'block'; });
-            document.addEventListener('click', (e) => { if (!e.target.closest('.hamburger-menu')) dd.style.display = 'none'; });
-        }
-    })();
+    
 
     function validateForm() {
         const username = document.getElementById("username").value;

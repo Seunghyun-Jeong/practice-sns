@@ -577,15 +577,6 @@
         });
     }
 
-    function logout() {
-        fetch("/api/users/logout", {
-            method: "POST",
-            credentials: "include",
-        }).then(() => {
-            window.location.href = "/";
-        });
-    }
-
     function initCommentLikeButtons() {
         document.querySelectorAll('.comment-like-btn').forEach(btn => {
             btn.onclick = async (e) => {
@@ -633,11 +624,6 @@
         initFollowButton();
         initMessageButton();
         initFollowListModal();
-
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', logout);
-        }
     });
 
     // 팔로워 / 팔로잉 목록 모달
@@ -772,39 +758,6 @@
             }
         });
     }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const hamburgerBtn = document.getElementById('hamburgerBtn');
-        const dropdownMenu = document.getElementById('dropdownMenu');
-        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-
-        hamburgerBtn?.addEventListener('click', () => {
-            dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
-        });
-
-        deleteAccountBtn?.addEventListener('click', async () => {
-            const confirmDelete = await confirmDialog("정말로 회원 탈퇴하시겠습니까?", { okText: '탈퇴', danger: true });
-            if (!confirmDelete) return;
-
-            try {
-                const response = await fetch('/api/users/me', {
-                    method: 'DELETE',
-                    credentials: 'include',
-                });
-
-                if (response.ok) {
-                    toastAfterReload("회원 탈퇴가 완료되었습니다.");
-                    window.location.href = "/login";
-                } else {
-                    const data = await response.json();
-                    showToast(data.message || "회원 탈퇴에 실패했습니다.", 'error');
-                }
-            } catch (err) {
-                showToast("에러가 발생했습니다.", 'error');
-            }
-        });
-    });
-
 
     document.addEventListener('DOMContentLoaded', () => {
         const suspendMenu = document.getElementById('profileSuspendMenu');

@@ -96,21 +96,6 @@
         }
     });
 
-    // 헤더 햄버거 / 로그아웃 / 회원탈퇴
-    const hamburgerBtn = document.getElementById('hamburgerBtn');
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    hamburgerBtn?.addEventListener('click', () => {
-        dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
-    });
-    document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        fetch('/api/users/logout', { method: 'POST', credentials: 'include' })
-            .then(() => window.location.href = '/');
-    });
-    document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => {
-        if (!(await confirmDialog('정말로 회원 탈퇴하시겠습니까?', { okText: '탈퇴', danger: true }))) return;
-        const r = await fetch('/api/users/me', { method: 'DELETE', credentials: 'include' });
-        if (r.ok) { toastAfterReload('회원 탈퇴가 완료되었습니다.'); window.location.href = '/login'; }
-    });
 </script>
 </body>
 </html>
