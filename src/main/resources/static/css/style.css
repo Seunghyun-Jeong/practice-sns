@@ -130,7 +130,7 @@ button {
 }
 
 .login-btn {
-    background-color: #0095f6; /* 인스타그램 블루 */
+    background-color: #6366f1; /* 포인트 컬러: 스페이스 인디고 */
     color: white;
     border: none;
     padding: 8px 22px;
@@ -385,7 +385,7 @@ button {
 }
 
 .image-select-area:hover {
-    border-color: #0095f6;
+    border-color: #6366f1;
     background: #f0f8ff;
 }
 
@@ -485,7 +485,7 @@ button {
 
 .ce-input:focus {
     outline: none;
-    border-color: #0095f6;
+    border-color: #6366f1;
 }
 
 .ce-actions {
@@ -505,12 +505,12 @@ button {
 }
 
 .ce-save {
-    background: #0095f6;
+    background: #6366f1;
     color: #fff;
 }
 
 .ce-save:hover {
-    background: #0080d6;
+    background: #4f46e5;
 }
 
 .ce-cancel {
@@ -647,7 +647,7 @@ button {
 }
 
 .pd-menu-dropdown .edit-post-btn {
-    color: #0095f6; /* 댓글 수정 버튼과 동일 색상 */
+    color: #6366f1; /* 댓글 수정 버튼과 동일 색상 */
     font-weight: 600;
 }
 
@@ -738,7 +738,7 @@ button {
 
 .pd-meta .edit-comment-btn,
 .pd-meta .save-comment-btn {
-    color: #0095f6; /* "게시" 버튼과 동일 색상 */
+    color: #6366f1; /* "게시" 버튼과 동일 색상 */
 }
 
 .pd-meta .delete-comment-btn {
@@ -752,7 +752,7 @@ button {
 /* hover 시 파랑/빨강/회색 알약이 글자보다 크게 채워짐 */
 .pd-meta .edit-comment-btn:hover,
 .pd-meta .save-comment-btn:hover {
-    background-color: #0095f6;
+    background-color: #6366f1;
     color: #fff;
 }
 
@@ -891,7 +891,7 @@ button {
 .comment-submit-button {
     background: none;
     border: none;
-    color: #0095f6;
+    color: #6366f1;
     font-weight: 600;
     font-size: 14px;
     padding: 6px 2px;
@@ -1112,7 +1112,7 @@ button {
     padding: 6px 12px;
     font-size: 14px;
     margin-top: 5px;
-    background-color: #0095f6;
+    background-color: #6366f1;
     color: white;
     border: none;
     border-radius: 4px;
@@ -1313,12 +1313,12 @@ button {
 }
 
 .cm-ok {
-    background: #0095f6;
+    background: #6366f1;
     color: #fff;
 }
 
 .cm-ok:hover {
-    background: #0080d6;
+    background: #4f46e5;
 }
 
 .cm-ok.cm-danger {
@@ -1407,7 +1407,7 @@ button {
     padding: 7px 22px;
     border: none;
     border-radius: 8px;
-    background-color: #0095f6;
+    background-color: #6366f1;
     color: #fff;
     font-weight: 600;
     font-size: 14px;
@@ -1416,7 +1416,7 @@ button {
 }
 
 .follow-btn:hover {
-    background-color: #0080d6;
+    background-color: #4f46e5;
 }
 
 .follow-btn.following {
@@ -1832,7 +1832,7 @@ button {
 .tag-feed-back {
     font-size: 13px;
     font-weight: 600;
-    color: #0095f6;
+    color: #6366f1;
     text-decoration: none;
 }
 
@@ -2098,7 +2098,7 @@ button {
 }
 
 .chat-msg.mine .chat-bubble {
-    background: #0095f6;
+    background: #6366f1;
     color: #fff;
     border-bottom-right-radius: 4px;
 }
@@ -2140,7 +2140,7 @@ button {
 .chat-send-btn {
     border: none;
     background: none;
-    color: #0095f6;
+    color: #6366f1;
     font-weight: 700;
     font-size: 14px;
     cursor: pointer;
@@ -2148,7 +2148,7 @@ button {
 }
 
 .chat-send-btn:disabled {
-    color: #b3dbff;
+    color: #c7d2fe;
     cursor: default;
 }
 
@@ -2162,13 +2162,14 @@ button {
     }
 }
 
-.message-btn {
+/* .profile-info button 규칙보다 우선하도록 특이도를 맞춘다 */
+.profile-info button.message-btn {
     margin-left: 8px;
     background-color: #efefef;
     color: #262626;
 }
 
-.message-btn:hover {
+.profile-info button.message-btn:hover {
     background-color: #e0e0e0;
 }
 
@@ -2177,7 +2178,7 @@ button {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #0095f6;
+    background: #6366f1;
     display: none;
     align-items: center;
     justify-content: center;
