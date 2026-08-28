@@ -138,6 +138,16 @@
     }
   }
 
+  /**
+   * 목록 미리보기 문구.
+   * 삭제된 메시지는 내용이 비어 있어 "대화 없음"과 구분되지 않으므로 플래그로 판단한다.
+   */
+  function previewText(r) {
+    if (r.lastMessageDeleted) return '삭제된 메시지입니다.';
+    if (r.lastMessage) return escapeHtml(r.lastMessage);
+    return '대화를 시작해보세요';
+  }
+
   function renderRooms(rooms) {
     if (rooms.length === 0) {
       roomList.innerHTML = '<div class="chat-empty">아직 대화가 없습니다.<br>프로필에서 메시지 버튼을 눌러 대화를 시작해보세요.</div>';
@@ -152,7 +162,7 @@
             <span class="chat-room-time">${timeAgo(r.lastMessageAt)}</span>
           </div>
           <div class="chat-room-bottom">
-            <span class="chat-room-preview ${r.unreadCount > 0 ? 'unread' : ''}">${r.lastMessage ? escapeHtml(r.lastMessage) : '대화를 시작해보세요'}</span>
+            <span class="chat-room-preview ${r.unreadCount > 0 ? 'unread' : ''}">${previewText(r)}</span>
             ${r.unreadCount > 0 ? `<span class="chat-room-unread">${r.unreadCount > 99 ? '99+' : r.unreadCount}</span>` : ''}
           </div>
         </div>

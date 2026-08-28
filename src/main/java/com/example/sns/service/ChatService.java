@@ -90,6 +90,7 @@ public class ChatService {
                             partner.getUsername(),
                             partner.getProfileImageUrl(),
                             last != null ? last.getContent() : null,
+                            last != null && last.isDeleted(),
                             room.getLastMessageAt().toString(),
                             unreadCounts.getOrDefault(room.getId(), 0L)
                     );
@@ -107,6 +108,7 @@ public class ChatService {
                 partner.getUsername(),
                 partner.getProfileImageUrl(),
                 null,
+                false,
                 room.getLastMessageAt().toString(),
                 0
         );
