@@ -13,7 +13,7 @@
  * 값을 두 군데 적어두면 배경을 바꿀 때 한쪽만 고쳐져 어긋난다.
  */
 :root {
-    --page-bg: 240 241 243;
+    --page-bg: 230 232 235;
 }
 
 body {
@@ -21,7 +21,8 @@ body {
     /* 흰 카드가 떠 보이도록 배경만 한 톤 낮춘다 (무채색 컨셉) */
     background-color: rgb(var(--page-bg));
     margin: 0;
-    padding: 0 20px 20px;
+    /* 하단에 고정된 피드 탭이 마지막 게시글을 가리지 않도록 여백을 둔다 */
+    padding: 0 20px 90px;
 }
 
 /* 헤더 래퍼: 상단 고정 + gap(padding-top)으로 마진 병합 방지 → 스크롤해도 안 움직임 */
@@ -1361,33 +1362,53 @@ button {
 }
 
 /* ===== 피드 탭 (전체 / 팔로잉) ===== */
+/*
+ * 탭은 화면 하단에 띄운다.
+ * 상단에 두면 헤더 높이를 계산해 맞춰야 하고 좁은 화면에서 헤더가 커지면 어긋나는데,
+ * 하단은 겹칠 것이 없어 그런 계산이 필요 없다.
+ * 헤더가 검은 알약이라 같은 형태로 맞춰 위아래 짝을 이루게 했다.
+ */
 .feed-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 28px;
-    max-width: 600px;
-    margin: 0 auto 20px;
-    border-bottom: 1px solid #efefef;
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90;
+    display: inline-flex;
+    gap: 4px;
+    background: #111827;
+    border-radius: 30px;
+    padding: 5px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    max-width: none;
+    margin: 0;
+    border-bottom: none;
 }
 
 .feed-tab {
-    padding: 10px 4px 12px;
+    padding: 8px 22px;
     font-size: 14px;
     font-weight: 600;
-    color: #8e8e8e;
+    color: rgba(255, 255, 255, 0.6);
     text-decoration: none;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
+    border-radius: 24px;
+    border-bottom: none;
+    margin-bottom: 0;
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .feed-tab:hover {
-    color: #262626;
+    color: #fff;
 }
 
 .feed-tab.active {
-    color: #262626;
-    border-bottom-color: #262626;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    border-bottom-color: transparent;
 }
+
+
+
 
 .feed-empty {
     text-align: center;
@@ -1835,11 +1856,17 @@ button {
 }
 
 /* 해시태그로 걸러 보는 피드 상단 */
+/* 태그 피드 헤더도 탭과 같은 이유로 고정한다 */
 .tag-feed-header {
+    position: sticky;
+    top: 80px;
+    z-index: 50;
+    background: rgb(var(--page-bg));
     max-width: 600px;
     margin: 0 auto 20px;
+    padding-top: 6px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #efefef;
+    border-bottom: 1px solid #dcdee2;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
@@ -2285,4 +2312,135 @@ button {
 
 .chat-msg.theirs .chat-bubble.deleted {
     color: #5f6672 !important;
+}
+
+/* ===== 헤더 다크 (시험) =====
+ * 헤더 바만 검게 하고 내부 요소를 흰색 계열로 뒤집는다.
+ * 되돌리기 쉽도록 원래 규칙은 두고 여기서 덮어쓴다.
+ */
+.header-bar {
+    background-color: #111827;
+}
+
+.header-bar .logo-link,
+.header-bar .username,
+.header-bar .noti-btn,
+.header-bar #hamburgerBtn {
+    color: #fff;
+}
+
+/* 햄버거는 자체 스타일이 없어 버튼 기본값을 따라가므로 여기서 정리한다 */
+.header-bar #hamburgerBtn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* 로그아웃은 보조 동작이라 흰색보다 한 단계 낮춘다 */
+.header-bar .logout-btn {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.header-bar .logout-btn:hover {
+    color: #fff;
+}
+
+.header-bar .login-btn {
+    color: #fff;
+}
+
+.header-bar .login-btn:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* 검색창: 흰 덩어리로 튀지 않도록 바 위에 얹힌 반투명 필드로 */
+.header-bar .search-box .search-input {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #fff;
+}
+
+.header-bar .search-box .search-input::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.header-bar .search-box .search-input:focus {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* ===== 다크 배경 (우주 컨셉) =====
+ * 명도 3단계로 층을 만든다: 배경(가장 어두움) < 헤더/탭(한 단계 밝게) < 카드(흰색).
+ * 검은 배경에서는 그림자가 보이지 않으므로, 경계는 명도 차이와 미세한 흰 테두리로 만든다.
+ * 흰 피드 카드는 "어두운 우주에 떠 있는 별"로 의도한 대비다.
+ */
+:root {
+    --page-bg: 10 12 16;
+}
+
+/* 헤더: 배경보다 한 단계 밝게 + 테두리로 경계를 만든다 (그림자는 검은 배경에서 무용) */
+.header-bar {
+    background-color: #1a1d26;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: none;
+}
+
+/* 하단 탭도 같은 층위 */
+.feed-tabs {
+    background: #1a1d26;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/*
+ * 배경 위에 직접 놓인 제목만 밝게 뒤집는다.
+ * h2는 어두운 배경(로그인/회원가입/새 게시물/관리자 목록)과
+ * 흰 카드 안(채팅 제목, 프로필 닉네임) 양쪽에 쓰이므로
+ * 전역으로 바꾸면 카드 안 제목이 흰 배경에 묻힌다.
+ */
+body > h2,
+.post-create-title,
+.feed-container > h2 {
+    color: #e5e7eb;
+}
+
+.feed-empty {
+    color: #9aa2ad;
+}
+
+.tag-feed-header {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.tag-feed-name {
+    color: #e5e7eb;
+}
+
+.tag-feed-back {
+    color: #9aa2ad;
+}
+
+.tag-feed-back:hover {
+    color: #fff;
+}
+
+/*
+ * 업로드 버튼은 login-btn 클래스를 재사용하는데,
+ * 로그인/로그아웃을 텍스트만 남기면서 배경을 잃어 어두운 배경에 묻혔다.
+ * 글 작성의 주요 동작이므로 흰 알약으로 되살린다.
+ */
+.post-upload-btn {
+    background: #fff;
+    color: #111827;
+    padding: 10px 32px;
+    border-radius: 24px;
+    font-weight: 700;
+}
+
+.post-upload-btn:hover {
+    background: #e5e7eb;
+    color: #111827;
 }
