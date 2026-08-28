@@ -2100,7 +2100,8 @@ button {
 }
 
 .chat-msg.mine .chat-bubble {
-    background: #6366f1;
+    /* 상대 말풍선(#efefef)과 명확히 대비되도록 검정에 가까운 색을 쓴다 */
+    background: #111827;
     color: #fff;
     border-bottom-right-radius: 4px;
 }
@@ -2119,38 +2120,56 @@ button {
 
 .chat-send-form {
     display: flex;
+    align-items: center;   /* 입력칸과 보내기 버튼의 세로 중심을 맞춘다 */
     gap: 8px;
     padding: 12px 16px;
     border-top: 1px solid #efefef;
     flex-shrink: 0;
 }
 
-.chat-input {
+/*
+ * 전역 input[type="text"] 규칙(특이도 0-1-1)이 .chat-input(0-1-0)을 이기기 때문에
+ * 폼을 앞에 붙여 특이도를 올린다. 그러지 않으면 전역 규칙의
+ * border-radius: 4px 와 margin-bottom: 15px 가 그대로 적용되어
+ * 모서리가 각지고 보내기 버튼과 세로 중심이 어긋난다.
+ */
+.chat-send-form .chat-input {
     flex: 1;
-    border: 1px solid #dbdbdb;
-    border-radius: 20px;
-    padding: 9px 16px;
+    /* 테두리만 있으면 입력 필드로 읽히지 않아 옅은 배경을 깔고 알약 형태로 만든다 */
+    background: #f4f5f8;
+    border: 1px solid #e4e6eb;
+    border-radius: 22px;
+    padding: 11px 18px;
     font-size: 14px;
+    line-height: 1.4;
     outline: none;
-    margin-bottom: 0;
+    margin: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.chat-input:focus {
-    border-color: #a8a8a8;
+.chat-send-form .chat-input:focus {
+    background: #fff;
+    border-color: #111827;
 }
 
 .chat-send-btn {
     border: none;
     background: none;
-    color: #6366f1;
+    color: #111827;
     font-weight: 700;
     font-size: 14px;
     cursor: pointer;
-    padding: 0 6px;
+    padding: 8px 10px;
+    border-radius: 18px;
 }
 
+.chat-send-btn:not(:disabled):hover {
+    background: #f0f1f3;
+}
+
+/* 활성이 검정이므로 비활성도 인디고가 아닌 회색이어야 톤이 맞는다 */
 .chat-send-btn:disabled {
-    color: #c7d2fe;
+    color: #b0b3b8;
     cursor: default;
 }
 
@@ -2227,17 +2246,19 @@ button {
     border-top: 1px solid #efefef;
 }
 
-/* 삭제된 메시지: 내용 대신 안내 문구를 회색으로 */
+/*
+ * 삭제된 메시지: 말풍선 배경은 그대로 두고 글씨만 흐린 기울임으로 구분한다.
+ * 내 말풍선은 검은 바탕, 상대 말풍선은 밝은 바탕이라
+ * 같은 회색을 쓰면 한쪽이 반드시 안 읽힌다. 그래서 방향별로 나눈다.
+ */
 .chat-bubble.deleted {
-    background: transparent !important;
-    border: 1px solid #dbdbdb;
-    color: #8e8e8e !important;
     font-style: italic;
 }
 
-/* 수정 표시 */
-.chat-edited {
-    margin-left: 6px;
-    font-size: 11px;
-    opacity: 0.75;
+.chat-msg.mine .chat-bubble.deleted {
+    color: #9ca3af !important;
+}
+
+.chat-msg.theirs .chat-bubble.deleted {
+    color: #5f6672 !important;
 }

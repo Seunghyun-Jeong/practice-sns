@@ -204,13 +204,15 @@
       : '';
     const bubble = m.deleted
       ? `<div class="chat-bubble deleted">삭제된 메시지입니다.</div>`
-      : `<div class="chat-bubble">${escapeHtml(m.content)}${m.edited ? '<span class="chat-edited">수정됨</span>' : ''}</div>`;
+      : `<div class="chat-bubble">${escapeHtml(m.content)}</div>`;
+    // 수정 표시는 말풍선 안이 아니라 시간 뒤에 붙인다 (예: 오후 12:21 (수정됨))
+    const editedMark = (m.edited && !m.deleted) ? ' (수정됨)' : '';
     return `
       <div class="chat-msg ${mine ? 'mine' : 'theirs'}" data-id="${m.id}"
            data-read="${m.read}" data-deleted="${m.deleted}">
         ${bubble}
         ${readMark}
-        <span class="chat-msg-time">${timeShort(m.createdAt)}</span>
+        <span class="chat-msg-time">${timeShort(m.createdAt)}${editedMark}</span>
       </div>`;
   }
 
@@ -378,7 +380,7 @@
   document.getElementById('chatEditBtn').addEventListener('click', () => {
     const el = messagesEl.querySelector(`.chat-msg[data-id="${targetId}"] .chat-bubble`);
     if (!el) return;
-    editInput.value = el.textContent.replace(/수정됨$/, '').trim();
+    editInput.value = el.textContent;   // 수정 표시가 말풍선 밖으로 빠져서 그대로 쓰면 된다
     editModal.dataset.messageId = targetId;
     editModal.style.display = 'flex';
     closeMenu();
