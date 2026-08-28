@@ -1105,15 +1105,29 @@ button {
     margin-bottom: 10px;
 }
 
+/*
+ * 프로필 안 버튼의 공통 레이아웃만 정의한다.
+ * 색까지 여기서 강제하면 개별 버튼(.follow-btn 등)이 특이도에서 밀려
+ * 자기 색을 못 갖는다. 색은 각 버튼이 스스로 정한다.
+ */
 .profile-info button {
     padding: 6px 12px;
     font-size: 14px;
     margin-top: 5px;
-    background-color: #6366f1;
-    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+}
+
+/* 관리자 정지 버튼: 되돌리기 어려운 동작이라 경고색을 유지한다 */
+#suspendUserBtn {
+    background-color: #ed4956;
+    color: #fff;
+    font-weight: 600;
+}
+
+#suspendUserBtn:hover {
+    background-color: #c42f44;
 }
 
 .profile-posts {
@@ -1404,25 +1418,28 @@ button {
     padding: 7px 22px;
     border: none;
     border-radius: 8px;
-    background-color: #6366f1;
+    /* 주요 동작이므로 검정 채움. 보조인 메시지 버튼은 테두리만 둬서 위계를 만든다 */
+    background-color: #262626;
     color: #fff;
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .follow-btn:hover {
-    background-color: #4f46e5;
+    background-color: #000;
 }
 
+/* 이미 팔로우 중이면 강조할 이유가 없으므로 채움을 빼고 테두리만 남긴다 */
 .follow-btn.following {
-    background-color: #efefef;
+    background-color: transparent;
     color: #262626;
+    border: 1px solid #d4d4d4;
 }
 
 .follow-btn.following:hover {
-    background-color: #e0e0e0;
+    background-color: #f5f5f5;
 }
 
 .follow-btn:disabled {
@@ -2180,23 +2197,24 @@ button {
     }
 }
 
-/* .profile-info button 규칙보다 우선하도록 특이도를 맞춘다 */
+/* 보조 동작이라 채우지 않고 테두리만 (팔로우 버튼과 위계 구분) */
 .profile-info button.message-btn {
     margin-left: 8px;
-    background-color: #efefef;
+    background-color: transparent;
     color: #262626;
+    border: 1px solid #d4d4d4;
 }
 
 .profile-info button.message-btn:hover {
-    background-color: #e0e0e0;
+    background-color: #f5f5f5;
 }
 
-/* 읽음 표시: 파란 원 안의 흰 체크. 상대가 읽기 전에는 숨긴다 */
+/* 읽음 표시: 검은 원 안의 흰 체크. 상대가 읽기 전에는 숨긴다 */
 .chat-read-check {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #6366f1;
+    background: #262626;
     display: none;
     align-items: center;
     justify-content: center;
