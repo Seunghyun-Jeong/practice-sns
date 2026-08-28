@@ -129,42 +129,39 @@ button {
     transition: background-color 0.2s ease;
 }
 
-.login-btn {
-    background-color: #6366f1; /* 포인트 컬러: 스페이스 인디고 */
-    color: white;
+/*
+ * 로그인·로그아웃은 버튼 형태를 버리고 글씨만 남긴다 (무채색 컨셉).
+ * 두 색을 다르게 두는 이유:
+ * 로그아웃은 닉네임 바로 옆에 놓여서 같은 검정이면 한 덩어리로 뭉쳐 보이고,
+ * 로그인은 비로그인 화면에서 혼자 서 있는 주요 동작이라 또렷해야 한다.
+ */
+.login-btn,
+.logout-btn {
+    background: none;
     border: none;
-    padding: 8px 22px;
-    border-radius: 9999px; /* 완전 둥근 pill 모양 */
+    box-shadow: none;
+    padding: 4px 6px;
     font-weight: 600;
     font-size: 14px;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.02em;
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 149, 246, 0.4);
-    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+    transition: color 0.15s ease;
+}
+
+.login-btn {
+    color: #262626;
 }
 
 .login-btn:hover {
-    background-color: #007acc;
-    box-shadow: 0 4px 10px rgba(0, 122, 204, 0.6);
+    color: #6b7280;
 }
 
 .logout-btn {
-    background-color: #ed4956;
-    color: white;
-    border: none;
-    padding: 8px 22px;
-    border-radius: 9999px;
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: 0.03em;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(237, 73, 86, 0.5);
-    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+    color: #8e8e8e;
 }
 
 .logout-btn:hover {
-    background-color: #c42f44;
-    box-shadow: 0 4px 10px rgba(196, 47, 68, 0.7);
+    color: #262626;
 }
 
 .logo-link {
