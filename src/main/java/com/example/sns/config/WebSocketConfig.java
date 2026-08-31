@@ -3,6 +3,7 @@ package com.example.sns.config;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
  */
 @Configuration
 @EnableWebSocket
+@EnableScheduling   // 하트비트를 주기적으로 보내기 위해 필요하다
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketConfigurer {
     private final PushSocketHandler pushSocketHandler;

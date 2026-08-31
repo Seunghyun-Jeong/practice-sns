@@ -62,6 +62,22 @@
   let handleChatMessageUpdated = null;   // 상대가 메시지를 수정·삭제했을 때 (대화방에서 등록)
   let handleResync = null;        // 소켓이 다시 열렸을 때 화면을 서버 상태로 맞추는 처리 (페이지별 등록)
   let hasConnectedBefore = false; // 최초 연결과 재연결을 구분한다
+  let lastServerContact = 0;      // 서버에서 마지막으로 뭔가 받은 시각
+
+  /*
+   * 서버는 30초마다 하트비트를 보낸다.
+   * 한동안 아무것도 오지 않으면 연결이 실제로는 죽은 것이므로 직접 닫는다.
+   * 닫아야 onclose 가 불려 재연결이 시작되고, 그 사이 폴링도 다시 돈다.
+   * (브라우저가 연결을 살아 있다고 잘못 믿는 동안에는 폴링도 멈춰 있다)
+   */
+  const SERVER_SILENCE_LIMIT_MS = 100000;
+
+  setInterval(() => {
+    if (!socketOpen() || lastServerContact === 0) return;
+    if (Date.now() - lastServerContact > SERVER_SILENCE_LIMIT_MS) {
+      socket.close();
+    }
+  }, 30000);
 
   function socketOpen() {
     return socket && socket.readyState === WebSocket.OPEN;
@@ -84,6 +100,7 @@
         if (handleResync) handleResync();
       }
       hasConnectedBefore = true;
+      lastServerContact = Date.now();
     };
 
     socket.onmessage = (event) => {
@@ -93,6 +110,14 @@
       } catch (e) {
         return;
       }
+      lastServerContact = Date.now();
+
+      // 하트비트: 서버가 살아 있는지 확인하는 신호이므로 바로 답한다
+      if (data.type === 'ping') {
+        try { socket.send('{"type":"pong"}'); } catch (e) { /* 곧 끊길 소켓이다 */ }
+        return;
+      }
+
       if (data.type === 'chat-badge') {
         setBadgeCount(data.count || 0);
       } else if (data.type === 'chat-message' && handleChatMessage) {
