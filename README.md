@@ -153,7 +153,7 @@ RESTful API(`/api/**`)와 Thymeleaf 서버사이드 렌더링을 함께 사용�
 ./gradlew test
 ```
 
-- 총 **52개** (서비스 단위 테스트 24 / API 테스트 27 / 컨텍스트 로드 1)
+- 총 **58개** (서비스 단위 테스트 24 / API 테스트 27 / 컨텍스트 로드 1)
 - 서비스는 **Mockito**로, API는 **MockMvc**로 검증
 - 테스트는 `src/test/resources/application.properties`의 **H2 인메모리 DB**를 사용하므로 실서비스 DB(`sns_db`)에 영향을 주지 않음
   - H2에서는 `user`가 예약어라 JDBC URL에 `NON_KEYWORDS=USER`를 지정
