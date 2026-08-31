@@ -2512,3 +2512,87 @@ body > h2,
 .profile-actions .follow-btn {
     margin-top: 0;
 }
+
+/* ===== 드롭다운 다크 (헤더에서 나오는 껍데기) =====
+ * 헤더 위에 떠 있으므로 헤더(#1a1d26)보다 한 단계 밝게 둔다(elevation 규칙).
+ * 안읽음 표시는 연한 파랑을 쓰던 자리라 무채색에서는 명도로만 구분한다.
+ */
+.dropdown-content,
+.noti-dropdown,
+.search-dropdown {
+    background-color: #212530;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+}
+
+/* --- 햄버거 메뉴 --- */
+.dropdown-content > a:not(:last-child),
+.dropdown-content > button:not(:last-child) {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.dropdown-content .btn {
+    color: #e5e7eb;
+}
+
+.dropdown-content .btn:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* 회원탈퇴는 되돌릴 수 없는 동작이라 경고색을 유지하되 어두운 배경에 맞게 밝힌다 */
+.dropdown-content .delete-btn {
+    color: #ff6b78;
+}
+
+/* --- 알림 --- */
+.noti-header {
+    color: #fff;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.noti-row:not(:last-child) {
+    border-bottom-color: rgba(255, 255, 255, 0.07);
+}
+
+.noti-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* 안읽음: 색 대신 밝기로 구분한다 */
+.noti-row.unread {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.noti-row.unread:hover {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.noti-text {
+    color: #e5e7eb;
+}
+
+.noti-preview,
+.noti-time,
+.noti-empty {
+    color: #9aa2ad;
+}
+
+/* --- 검색 --- */
+.search-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.search-section,
+.search-sub,
+.search-empty {
+    color: #9aa2ad;
+}
+
+.search-name {
+    color: #e5e7eb;
+}
+
+.search-tag-icon {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e5e7eb;
+}
