@@ -76,6 +76,10 @@ public class User {
     @OneToMany(mappedBy = "actor", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Notification> sentNotifications = new ArrayList<>();
 
+    /** 기기별 로그인 기록 (탈퇴하면 남은 세션도 함께 사라진다) */
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<RefreshToken> refreshTokens = new ArrayList<>();
+
     @Column
     private LocalDateTime suspendedUntil;
 

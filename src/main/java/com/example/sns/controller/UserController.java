@@ -1,14 +1,15 @@
 package com.example.sns.controller;
 
+import com.example.sns.config.AuthTokenIssuer;
 import com.example.sns.config.MyUserDetails;
 import com.example.sns.dto.UserLoginRequest;
 import com.example.sns.dto.UserSignUpRequest;
 import com.example.sns.dto.UserUpdateRequestDto;
 import com.example.sns.entity.User;
 import com.example.sns.repository.UserRepository;
+import com.example.sns.service.RefreshTokenService;
 import com.example.sns.service.UserService;
-import com.example.sns.util.JwtUtil;
-import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.time.format.DateTimeFormatter;
@@ -40,7 +41,8 @@ public class UserController {
     private final UserService userService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+    private final AuthTokenIssuer authTokenIssuer;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/signup")
     public ResponseEntity<Map<String, String>> signUp(@ModelAttribute @Valid UserSignUpRequest request) {
@@ -73,15 +75,7 @@ public class UserController {
                     .body(Map.of("message", "로그인 하려는 계정은 현재 정지되었습니다. \n이용 정지 종료: " + user.getSuspendedUntil().format(formatter)));
         }
 
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole().name());
-
-        Cookie cookie = new Cookie("JWT_TOKEN", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(60 * 60 * 24);
-
-        response.addCookie(cookie);
+        authTokenIssuer.issueLogin(user, response);
 
         return ResponseEntity.ok(Map.of(
                 "message", "로그인 성공"
@@ -89,14 +83,12 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from("JWT_TOKEN", "")
-                .httpOnly(true)
-                .path("/")
-                .maxAge(0)
-                .build();
-
-        response.addHeader("Set-Cookie", cookie.toString());
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        // 쿠키만 지우면 브라우저에서만 사라지고 리프레시 토큰은 서버에 남는다.
+        // 남아 있으면 그 값을 가진 쪽은 계속 재발급을 받을 수 있으므로 DB에서도 지운다.
+        // 지우는 것은 이 기기의 것 하나뿐이라 다른 기기의 로그인은 유지된다.
+        refreshTokenService.revoke(AuthTokenIssuer.readCookie(request, AuthTokenIssuer.REFRESH_COOKIE));
+        authTokenIssuer.clear(response);
 
         return ResponseEntity.ok().build();
     }
@@ -105,14 +97,9 @@ public class UserController {
     public ResponseEntity<Map<String, String>> deleteCurrentUser(@AuthenticationPrincipal MyUserDetails user, HttpServletResponse response) {
         Map<String, String> res = new HashMap<>();
 
+        // 남아 있던 다른 기기의 리프레시 토큰까지 User의 cascade로 함께 지워진다
         userService.deleteUser(user.getUsername());
-
-        ResponseCookie expiredCookie = ResponseCookie.from("JWT_TOKEN", "")
-                .httpOnly(true)
-                .path("/")
-                .maxAge(0)
-                .build();
-        response.addHeader("Set-Cookie", expiredCookie.toString());
+        authTokenIssuer.clear(response);
 
         res.put("message", "회원 탈퇴가 완료되었습니다.");
         return ResponseEntity.ok(res);
@@ -162,16 +149,11 @@ public class UserController {
         try {
             userService.updateUsername(user.getUserId(), newUsername);
 
-            // 쿠키의 토큰에 예전 닉네임이 남으면 인증이 깨지므로 새로 발급한다
-            String newToken = jwtUtil.generateToken(user.getUserId(), newUsername, user.getRole());
-
-            Cookie cookie = new Cookie("JWT_TOKEN", newToken);
-            cookie.setHttpOnly(true);
-            cookie.setSecure(false);
-            cookie.setPath("/");
-            cookie.setMaxAge(60 * 60 * 24);
-
-            response.addCookie(cookie);
+            // 쿠키의 토큰에 예전 닉네임이 남으면 인증이 깨지므로 새로 발급한다.
+            // 리프레시 토큰은 닉네임이 아니라 유저를 가리키고 있어 그대로 둬도 된다.
+            User updated = userRepository.findById(user.getUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+            authTokenIssuer.writeAccessToken(updated, response);
 
             res.put("message", "닉네임이 수정되었습니다.");
             return ResponseEntity.ok(res);

@@ -7,12 +7,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.time.Duration;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
+    /**
+     * 액세스 토큰 수명.
+     * 만료되면 리프레시 토큰으로 자동 재발급되므로 짧아도 사용자가 다시 로그인할 일은 없다.
+     * 짧을수록 토큰이 새어나갔을 때 쓸 수 있는 시간도 짧아진다.
+     */
+    public static final Duration VALIDITY = Duration.ofMinutes(30);
+
     private final Key secretKey;
-    private final long expirationMillis = 1000 * 60 * 60;
 
     public JwtUtil(@Value("${jwt.secret}") String secret) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -20,7 +27,7 @@ public class JwtUtil {
 
     public String generateToken(Long userId, String username, String role) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationMillis);
+        Date expiryDate = new Date(now.getTime() + VALIDITY.toMillis());
 
         return Jwts.builder()
                 .setSubject(username)
