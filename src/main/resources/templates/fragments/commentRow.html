@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--
+  댓글 한 줄. 원 댓글과 답글이 같은 조각을 쓴다.
+  따로 만들면 한쪽만 고쳐져서 어긋나기 때문이다.
+-->
+<div th:fragment="commentRow(comment, postId, currentUserId, currentUserRole, isReply)"
+     class="comment"
+     th:classappend="${isReply} ? 'comment-reply' : ''"
+     th:attr="data-comment-id=${comment.id}, data-author=${comment.author}, data-parent-id=${comment.parentId}">
+
+    <div th:if="${comment.suspended}" class="comment-suspended"
+         style="color:#8e8e8e; font-style:italic; padding:8px 0;">
+        이용이 정지된 유저의 댓글입니다.
+    </div>
+
+    <div th:unless="${comment.suspended}" class="pd-row pd-comment-row">
+        <img class="pd-avatar-sm"
+             th:src="${comment.authorProfileImageUrl != null ? comment.authorProfileImageUrl : '/images/default-profile.svg'}"
+             alt="프로필" />
+        <div class="pd-row-content">
+            <div class="pd-row-text">
+                <span class="comment-author pd-username-inline" th:text="${comment.author}"
+                      th:attr="data-author-id=${comment.authorId}">댓글 작성자</span>
+                <span class="comment-text" th:text="${comment.content}"
+                      th:attr="data-mentions=${@mentionJson.toJson(comment.mentions)}"></span>
+            </div>
+
+            <div class="pd-meta">
+                <span class="post-time" th:attr="data-time=${comment.createdAt}"></span>
+                <span th:if="${comment.updatedAt != null}"> (수정됨)</span>
+                <span class="pd-meta-btns">
+                    <button class="reply-comment-btn"
+                            th:attr="data-comment-id=${comment.id}, data-author=${comment.author}">답글</button>
+                    <button class="edit-comment-btn" th:if="${comment.authorId == currentUserId}"
+                            th:attr="data-post-id=${postId}, data-comment-id=${comment.id}">수정</button>
+                    <button class="delete-comment-btn"
+                            th:if="${comment.authorId == currentUserId or currentUserRole == 'ADMIN'}"
+                            th:attr="data-post-id=${postId}, data-comment-id=${comment.id}">삭제</button>
+                </span>
+            </div>
+        </div>
+        <div class="pd-comment-like">
+            <span class="comment-like-btn icon-btn"
+                  th:classappend="${comment.likedByCurrentUser} ? 'liked' : ''"
+                  th:attr="data-post-id=${postId}, data-comment-id=${comment.id}">
+                <svg class="ic-heart" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </span>
+            <span class="comment-like-count" th:text="${comment.likeCount}">0</span>
+        </div>
+    </div>
+</div>
+</html>

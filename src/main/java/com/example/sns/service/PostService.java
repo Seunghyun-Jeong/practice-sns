@@ -2,10 +2,12 @@ package com.example.sns.service;
 
 import com.example.sns.dto.CommentDto;
 import com.example.sns.dto.FeedPageDto;
+import com.example.sns.dto.MentionDto;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.PostUpdateRequest;
+import com.example.sns.entity.Comment;
 import com.example.sns.entity.Follow;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
@@ -16,10 +18,13 @@ import com.example.sns.repository.PostLikeRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
@@ -38,8 +43,9 @@ public class PostService {
     private final FollowRepository followRepository;
     private final FileStorageService fileStorageService;
     private final HashtagService hashtagService;
+    private final MentionService mentionService;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FollowRepository followRepository, FileStorageService fileStorageService, HashtagService hashtagService) {
+    public PostService(PostRepository postRepository, UserRepository userRepository, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FollowRepository followRepository, FileStorageService fileStorageService, HashtagService hashtagService, MentionService mentionService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.postLikeRepository = postLikeRepository;
@@ -48,6 +54,7 @@ public class PostService {
         this.followRepository = followRepository;
         this.fileStorageService = fileStorageService;
         this.hashtagService = hashtagService;
+        this.mentionService = mentionService;
     }
 
     @Transactional
@@ -156,28 +163,8 @@ public class PostService {
 
         final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
 
-        List<CommentDto> commentDtos = post.getComments().stream()
-                .map(comment -> {
-                    long commentLikeCount = commentLikeRepository.countByComment(comment);
-                    boolean commentLikedByCurrentUser = false;
-                    if (currentUser != null) {
-                        commentLikedByCurrentUser = commentLikeRepository.existsByCommentAndUser(comment, currentUser);
-                    }
-                    boolean commentAuthorSuspended = comment.getAuthor().isSuspended();
-                    return new CommentDto(
-                            comment.getId(),
-                            commentAuthorSuspended ? null : comment.getAuthor().getUsername(),
-                            commentAuthorSuspended ? null : comment.getAuthor().getId(),
-                            commentAuthorSuspended ? null : comment.getAuthor().getProfileImageUrl(),
-                            commentAuthorSuspended ? null : comment.getContent(),
-                            comment.getCreatedAt().toString(),
-                            comment.getUpdatedAt() != null ? comment.getUpdatedAt().toString() : null,
-                            commentLikeCount,
-                            commentLikedByCurrentUser,
-                            commentAuthorSuspended
-                    );
-                })
-                .collect(Collectors.toList());
+        List<Comment> comments = post.getComments();
+        List<CommentDto> commentDtos = buildCommentTree(comments, currentUser);
 
         boolean postLikedByCurrentUser = false;
         if (currentUser != null) {
@@ -196,11 +183,102 @@ public class PostService {
                 post.getCreatedAt().toString(),
                 post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                 likeCount,
-                commentDtos.size(),
+                comments.size(),      // 답글도 댓글 수에 포함한다
                 commentDtos,
                 postLikedByCurrentUser,
                 postAuthorSuspended
         );
+    }
+
+    /**
+     * 원 댓글 아래에 답글을 붙여서 돌려준다.
+     *
+     * 좋아요 수와 내가 눌렀는지 여부는 댓글마다 조회하지 않고 두 번의 쿼리로 모아서 가져온다.
+     * 예전에 피드에서 게시글마다 조회하다가 쿼리가 59번 나갔던 것과 같은 모양인데,
+     * 답글이 생기면서 댓글 수가 늘어난 만큼 이쪽도 그대로 두면 더 커진다.
+     */
+    private List<CommentDto> buildCommentTree(List<Comment> comments, User currentUser) {
+        if (comments.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> commentIds = comments.stream().map(Comment::getId).toList();
+        Map<Long, Long> likeCounts = toCountMap(commentLikeRepository.countByCommentIds(commentIds));
+        Set<Long> likedByMe = currentUser == null
+                ? Set.of()
+                : new HashSet<>(commentLikeRepository.findLikedCommentIds(currentUser.getId(), commentIds));
+
+        // 멘션도 댓글마다 조회하면 같은 문제가 반복되므로, 모든 댓글의 @아이디를 모아 한 번에 찾는다
+        Map<String, MentionDto> mentionsByName = resolveMentions(comments);
+
+        Map<Long, CommentDto> dtoById = new LinkedHashMap<>();
+        for (Comment comment : comments) {
+            dtoById.put(comment.getId(), toCommentDto(comment, likeCounts, likedByMe, mentionsByName));
+        }
+
+        List<CommentDto> roots = new ArrayList<>();
+        for (Comment comment : comments) {
+            CommentDto dto = dtoById.get(comment.getId());
+            if (!comment.isReply()) {
+                roots.add(dto);
+                continue;
+            }
+
+            CommentDto parentDto = dtoById.get(comment.getParent().getId());
+            if (parentDto != null) {
+                parentDto.getReplies().add(dto);
+            } else {
+                // 부모가 목록에 없는 경우는 없지만, 있더라도 답글이 사라지지는 않게 둔다
+                roots.add(dto);
+            }
+        }
+        return roots;
+    }
+
+    /** 댓글 전체에 적힌 @아이디를 한 번에 조회해 아이디로 찾을 수 있게 만든다 */
+    private Map<String, MentionDto> resolveMentions(List<Comment> comments) {
+        Set<String> names = new HashSet<>();
+        for (Comment comment : comments) {
+            if (!comment.getAuthor().isSuspended()) {
+                names.addAll(mentionService.extractUsernames(comment.getContent()));
+            }
+        }
+        if (names.isEmpty()) {
+            return Map.of();
+        }
+
+        return mentionService.findByUsernames(names).stream()
+                .collect(Collectors.toMap(
+                        User::getUsername,
+                        user -> new MentionDto(user.getUsername(), user.getId())));
+    }
+
+    private CommentDto toCommentDto(Comment comment, Map<Long, Long> likeCounts, Set<Long> likedByMe,
+                                    Map<String, MentionDto> mentionsByName) {
+        boolean suspended = comment.getAuthor().isSuspended();
+
+        CommentDto dto = new CommentDto();
+        dto.setId(comment.getId());
+        dto.setAuthor(suspended ? null : comment.getAuthor().getUsername());
+        dto.setAuthorId(suspended ? null : comment.getAuthor().getId());
+        dto.setAuthorProfileImageUrl(suspended ? null : comment.getAuthor().getProfileImageUrl());
+        dto.setContent(suspended ? null : comment.getContent());
+        dto.setCreatedAt(comment.getCreatedAt().toString());
+        dto.setUpdatedAt(comment.getUpdatedAt() != null ? comment.getUpdatedAt().toString() : null);
+        dto.setLikeCount(likeCounts.getOrDefault(comment.getId(), 0L));
+        dto.setLikedByCurrentUser(likedByMe.contains(comment.getId()));
+        dto.setSuspended(suspended);
+        dto.setParentId(comment.isReply() ? comment.getParent().getId() : null);
+
+        // 정지된 사람의 댓글은 내용을 가리므로 멘션도 내려주지 않는다.
+        // 없는 아이디를 적었으면 여기서 걸러져 링크가 생기지 않는다.
+        if (!suspended) {
+            dto.setMentions(mentionService.extractUsernames(comment.getContent()).stream()
+                    .map(mentionsByName::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList()));
+        }
+        return dto;
     }
 
     @Transactional

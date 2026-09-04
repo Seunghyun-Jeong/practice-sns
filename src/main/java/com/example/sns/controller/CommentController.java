@@ -6,6 +6,7 @@ import com.example.sns.dto.CommentUpdateRequest;
 import com.example.sns.service.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,8 +26,13 @@ public class CommentController {
     @PostMapping
     public ResponseEntity<?> addComment(@PathVariable Long postId, @RequestBody CommentDto dto,
                                         @AuthenticationPrincipal MyUserDetails user) {
-        commentService.addComment(postId, dto, user.getUsername());
-        return ResponseEntity.ok("댓글이 등록되었습니다.");
+        try {
+            commentService.addComment(postId, dto, user.getUsername());
+            return ResponseEntity.ok("댓글이 등록되었습니다.");
+        } catch (IllegalArgumentException e) {
+            // 없는 게시글이나 엉뚱한 답글 대상은 잘못된 요청이지 서버 오류가 아니다
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")

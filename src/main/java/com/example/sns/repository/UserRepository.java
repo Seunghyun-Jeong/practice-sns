@@ -2,6 +2,7 @@ package com.example.sns.repository;
 
 import com.example.sns.entity.User;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,9 @@ import org.springframework.data.repository.query.Param;
 public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
     Optional<User> findByUsername(String username);
+
+    /** 멘션된 아이디들을 한 번에 조회한다 (아이디마다 조회하면 쿼리가 그 수만큼 나간다) */
+    List<User> findByUsernameIn(Collection<String> usernames);
     List<User> findBySuspendedUntilAfterOrderBySuspendedUntilAsc(LocalDateTime dateTime);
 
     /** 아이디로 유저 검색 (정지된 유저는 제외) */

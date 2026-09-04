@@ -110,6 +110,7 @@
 
     // 글 내용의 #태그를 링크로
     if (window.linkifyHashtags) window.linkifyHashtags(root);
+    if (window.linkifyMentions) window.linkifyMentions(root);
   }
 
   initPostCards(document);
@@ -202,6 +203,7 @@
 
       // 모달 안의 #태그도 링크로
       if (window.linkifyHashtags) window.linkifyHashtags(document.getElementById('modalContent'));
+      if (window.linkifyMentions) window.linkifyMentions(document.getElementById('modalContent'));
 
       initDeleteButton();
       initEditButton();
@@ -406,7 +408,7 @@
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ content })
+            body: JSON.stringify({ content, parentId: window.getReplyParentId ? window.getReplyParentId() : null })
           });
 
           if (!response.ok) {

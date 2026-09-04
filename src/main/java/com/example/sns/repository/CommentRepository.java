@@ -9,6 +9,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByPostIdOrderByCreatedAtAsc(Long postId);
+
+    /** 이 댓글에 달린 답글 (원 댓글을 지울 때 함께 지운다) */
+    List<Comment> findByParentId(Long parentId);
     List<Comment> findByAuthor_IdOrderByCreatedAtDesc(Long userId);
 
     /** 여러 게시글의 댓글 수를 한 번에 조회 → [postId, count] */

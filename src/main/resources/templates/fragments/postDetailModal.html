@@ -62,45 +62,19 @@
 
                 <!-- 댓글 -->
                 <div class="comment-list">
-                    <div th:each="comment : ${post.comments}"
-                         class="comment"
-                         th:attr="data-comment-id=${comment.id}, data-author=${comment.author}">
+                    <div th:each="comment : ${post.comments}" class="comment-thread">
 
-                        <div th:if="${comment.suspended}" class="comment-suspended"
-                             style="color:#8e8e8e; font-style:italic; padding:8px 0;">
-                            이용이 정지된 유저의 댓글입니다.
-                        </div>
+                        <!-- 원 댓글 -->
+                        <div th:replace="~{fragments/commentRow :: commentRow(${comment}, ${post.id}, ${currentUserId}, ${currentUserRole}, false)}"></div>
 
-                        <div th:unless="${comment.suspended}" class="pd-row pd-comment-row">
-                            <img class="pd-avatar-sm"
-                                 th:src="${comment.authorProfileImageUrl != null ? comment.authorProfileImageUrl : '/images/default-profile.svg'}"
-                                 alt="프로필" />
-                            <div class="pd-row-content">
-                                <div class="pd-row-text">
-                                    <span class="comment-author pd-username-inline" th:text="${comment.author}"
-                                          th:attr="data-author-id=${comment.authorId}">댓글 작성자</span>
-                                    <span class="comment-text" th:text="${comment.content}"></span>
-                                </div>
-
-                                <div class="pd-meta">
-                                    <span class="post-time" th:attr="data-time=${comment.createdAt}"></span>
-                                    <span th:if="${comment.updatedAt != null}"> (수정됨)</span>
-                                    <span class="pd-meta-btns">
-                                        <button class="edit-comment-btn" th:if="${comment.authorId == currentUserId}"
-                                                th:attr="data-post-id=${post.id}, data-comment-id=${comment.id}">수정</button>
-                                        <button class="delete-comment-btn"
-                                                th:if="${comment.authorId == currentUserId or currentUserRole == 'ADMIN'}"
-                                                th:attr="data-post-id=${post.id}, data-comment-id=${comment.id}">삭제</button>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="pd-comment-like">
-                                <span class="comment-like-btn icon-btn"
-                                      th:classappend="${comment.likedByCurrentUser} ? 'liked' : ''"
-                                      th:attr="data-post-id=${post.id}, data-comment-id=${comment.id}">
-                                    <svg class="ic-heart" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                                </span>
-                                <span class="comment-like-count" th:text="${comment.likeCount}">0</span>
+                        <!--
+                          답글 (한 단만 들어간다).
+                          반복과 조각 불러오기를 같은 태그에 두면 안 된다. th:replace 가 th:each 보다
+                          먼저 처리되어서, 반복 변수가 아직 없는 채로 조각이 불려간다.
+                        -->
+                        <div class="comment-replies" th:if="${!comment.replies.isEmpty()}">
+                            <div th:each="reply : ${comment.replies}">
+                                <div th:replace="~{fragments/commentRow :: commentRow(${reply}, ${post.id}, ${currentUserId}, ${currentUserRole}, true)}"></div>
                             </div>
                         </div>
 
@@ -127,12 +101,22 @@
 
             <!-- 댓글 입력 -->
             <div class="comment-form">
+                <!--
+                  답글을 쓰는 중이라는 표시.
+                  자리는 항상 잡아두고 보이기만 바꾼다. 입력창이 위아래로 흔들리지 않게 하기 위해서다.
+                -->
+                <div class="reply-target" id="replyTarget" style="visibility:hidden;">
+                    <span id="replyTargetText"></span>
+                    <button type="button" id="replyCancelBtn" aria-label="답글 취소">취소</button>
+                </div>
                 <div class="comment-input-wrapper">
                     <input type="text" id="commentInput" placeholder="댓글 달기..." />
+                    <input type="hidden" id="replyParentId" value="" />
                     <button id="submitCommentBtn" class="comment-submit-button" th:attr="data-post-id=${post.id}">게시</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 </html>

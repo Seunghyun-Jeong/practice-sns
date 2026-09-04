@@ -2596,3 +2596,78 @@ body > h2,
     background: rgba(255, 255, 255, 0.12);
     color: #e5e7eb;
 }
+
+/* ===== 대댓글과 멘션 ===== */
+
+/*
+ * 답글은 한 단만 들어간다. 답글의 답글도 같은 자리에 붙기 때문에
+ * 들여쓰기가 계속 깊어지는 일이 없다.
+ */
+.comment-replies {
+    margin-left: 42px;   /* 원 댓글의 프로필 사진 폭만큼 */
+}
+
+.comment-reply .pd-avatar-sm {
+    width: 24px;
+    height: 24px;
+}
+
+/* 멘션 링크. 해시태그와 같은 무게로 두어 한 문장 안에서 튀지 않게 한다 */
+.mention-link {
+    color: #00376b;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.mention-link:hover {
+    text-decoration: underline;
+}
+
+/* 답글 버튼도 수정/삭제와 같은 모양을 쓰되 색만 중립으로 */
+.pd-meta .reply-comment-btn {
+    background: none;
+    border: none;
+    padding: 2px 6px;
+    box-shadow: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    color: #8e8e8e;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pd-meta .reply-comment-btn:hover {
+    background-color: #8e8e8e;
+    color: #fff;
+}
+
+/*
+ * 답글 대상 표시.
+ * 자리는 항상 차지하고 visibility 로만 여닫는다. display 로 여닫으면
+ * 답글을 누를 때마다 입력창이 위아래로 움직인다.
+ */
+.reply-target {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px;
+    font-size: 12px;
+    color: #8e8e8e;
+}
+
+.reply-target button {
+    background: none;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8e8e8e;
+    cursor: pointer;
+}
+
+.reply-target button:hover {
+    color: #262626;
+}

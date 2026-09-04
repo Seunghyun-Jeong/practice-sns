@@ -47,10 +47,7 @@ public class NotificationService {
             return;   // 내 행동으로 나에게 알림이 오지 않게
         }
 
-        // 팔로우·좋아요는 껐다 켜는 동작이라 같은 알림이 쌓이면 안 된다.
-        // 댓글은 여러 번 달 수 있고 매번 알려야 하므로 중복으로 보지 않는다.
-        if (type != Notification.Type.COMMENT
-                && findExisting(recipient, actor, type, post).isPresent()) {
+        if (dedupes(type) && findExisting(recipient, actor, type, post).isPresent()) {
             return;
         }
 
@@ -130,6 +127,20 @@ public class NotificationService {
         );
     }
 
+    /**
+     * 같은 알림을 다시 만들지 않을 종류인지.
+     *
+     * 팔로우와 좋아요는 껐다 켤 수 있어서 그대로 두면 알림이 계속 쌓인다.
+     * 댓글과 멘션은 같은 사람이 같은 게시글에 몇 번이든 남길 수 있고 매번 알려야 한다.
+     *
+     * 예전에는 "댓글만 빼고 전부 중복 제거"로 적혀 있었다. 그러면 새 종류가 생길 때마다
+     * 아무도 정하지 않았는데 중복 제거 쪽으로 들어가버려서, 실제로 멘션을 추가할 때
+     * 두번째 멘션 알림이 사라질 뻔했다. 그래서 어느 쪽인지를 여기에 적어두는 방식으로 바꿨다.
+     */
+    private boolean dedupes(Notification.Type type) {
+        return type == Notification.Type.FOLLOW || type == Notification.Type.POST_LIKE;
+    }
+
     private String toMessage(Notification.Type type) {
         switch (type) {
             case FOLLOW:
@@ -138,6 +149,8 @@ public class NotificationService {
                 return "회원님의 게시글을 좋아합니다.";
             case COMMENT:
                 return "회원님의 게시글에 댓글을 남겼습니다.";
+            case MENTION:
+                return "댓글에서 회원님을 언급했습니다.";
             default:
                 return "";
         }
