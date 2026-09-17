@@ -58,6 +58,7 @@
         </button>
         <div id="dropdownMenu" class="dropdown-content" style="display: none;">
           <a th:if="${username != null}" href="/post"><button class="btn write-btn">게시글 작성</button></a>
+          <a th:if="${username != null and userRole == 'ADMIN'}" href="/admin/reports"><button class="btn">신고 확인</button></a>
           <a th:if="${username != null and userRole == 'ADMIN'}" href="/admin/suspended-users"><button class="btn">정지 유저 목록</button></a>
           <button th:if="${username != null}" id="deleteAccountBtn" class="btn delete-btn">회원탈퇴</button>
 

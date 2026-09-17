@@ -1195,7 +1195,9 @@ button {
 }
 
 /* 정지 유저 목록 */
-.suspended-user-item {
+/* 관리자 목록의 카드 한 줄. 정지 유저 목록과 신고 목록이 같이 쓴다. */
+.suspended-user-item,
+.admin-list-item {
     background-color: white;
     padding: 15px 20px;
     border-radius: 10px;
@@ -2670,4 +2672,362 @@ body > h2,
 
 .reply-target button:hover {
     color: #262626;
+}
+
+/* ===== 신고 =====
+ * 프로필의 ...메뉴는 게시글 상세의 .pd-menu 를 그대로 쓰고,
+ * 어두운 프로필 카드 위에 놓이기 때문에 색만 뒤집는다.
+ */
+.profile-actions .pd-menu {
+    margin-left: 4px;
+}
+
+.profile-actions .pd-menu-btn {
+    color: #e5e7eb;
+}
+
+/* 버튼이 카드 왼쪽에 있으므로 오른쪽이 아니라 왼쪽 기준으로 펼친다 */
+.profile-actions .pd-menu-dropdown {
+    left: 0;
+    right: auto;
+    background: #212530;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+}
+
+.profile-actions .pd-menu-dropdown .btn {
+    color: #e5e7eb;
+}
+
+.profile-actions .pd-menu-dropdown .btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* --- 신고 모달 (댓글 수정 모달의 .ce-* 를 확장) --- */
+.ce-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8e8e8e;
+    margin-bottom: 6px;
+}
+
+.ce-label + .ce-input,
+.ce-label + .ce-select {
+    margin-bottom: 14px;
+}
+
+.ce-select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    background: #fff;
+    color: #262626;
+    cursor: pointer;
+}
+
+.ce-select:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+/* --- 관리자 신고 목록 --- */
+.report-group {
+    text-decoration: none;
+    color: inherit;
+}
+
+.report-group-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.report-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.report-username {
+    font-weight: 700;
+    color: #262626;
+}
+
+.report-sub {
+    color: #8e8e8e;
+    font-size: 13px;
+}
+
+.report-group-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* 한 사람이 몇 번 신고당했는지. 목록을 줄 수로 늘리지 않고 이 숫자로만 표시한다. */
+.report-count {
+    min-width: 30px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    background: #111827;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    text-align: center;
+}
+
+.report-tag {
+    padding: 3px 9px;
+    border-radius: 9999px;
+    background: #ffe3e6;
+    color: #c0303c;
+    font-size: 12px;
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+/* --- 관리자 신고 상세 --- */
+.report-actions-bar {
+    justify-content: space-between;
+}
+
+.report-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.report-duration {
+    width: auto;
+}
+
+.report-link {
+    color: #262626;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.report-link:hover {
+    text-decoration: underline;
+}
+
+.report-row {
+    align-items: flex-start;
+}
+
+.report-row-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.report-row-top {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.report-reason {
+    font-size: 14px;
+    color: #262626;
+}
+
+.report-status {
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.report-status.pending {
+    background: #eef0fe;
+    color: #4f46e5;
+}
+
+.report-status.resolved {
+    background: #e7f3e9;
+    color: #2f7a3d;
+}
+
+.report-status.rejected {
+    background: #f0f1f3;
+    color: #6b7280;
+}
+
+.report-detail-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #262626;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.report-reject-btn {
+    background: none;
+    border: 1px solid #dbdbdb;
+    color: #262626;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.report-reject-btn:hover {
+    background: #f0f1f3;
+}
+
+/* 관리자 목록 탭.
+ * 피드 탭(.feed-tab)의 알약 모양과 활성 표시를 그대로 쓰고 컨테이너만 새로 둔다.
+ * .feed-tabs는 화면 하단 고정이라 목록 위에 놓을 수 없다.
+ */
+.admin-tabs {
+    align-self: center;
+    display: inline-flex;
+    gap: 4px;
+    padding: 5px;
+    border-radius: 30px;
+    background: #1a1d26;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+/* 처리가 끝난 건은 조치할 것이 없으므로 숫자를 눌러둔다 */
+.report-count.handled {
+    background: rgba(255, 255, 255, 0.12);
+    color: #cbd0d8;
+}
+
+/* 반려할 대기 신고가 없을 때. 자리는 그대로 두고 누를 수 없다는 것만 보여준다. */
+.report-reject-btn:disabled {
+    color: #b0b3b8;
+    border-color: #ededed;
+    cursor: default;
+}
+
+.report-reject-btn:disabled:hover {
+    background: none;
+}
+
+/* ===== 배경 별 =====
+ * z-index를 -1로 두는 것이 핵심이다. 0으로 두면 페인트 순서상
+ * positioned 요소가 피드 카드 같은 일반 블록보다 위에 그려져
+ * 흰 카드 위에 점이 찍힌다. body 배경은 캔버스로 승격되므로
+ * -1 레이어가 배경 위, 콘텐츠 아래에 정확히 들어간다.
+ *
+ * 움직임은 transform과 opacity만 쓴다. 둘 다 합성 단계에서 처리되어
+ * 레이아웃과 페인트를 다시 일으키지 않고, 탭이 가려지면 브라우저가 멈춘다.
+ */
+.starfield {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/*
+ * 아래 --값들은 별마다 달라야 해서 header.js가 인라인으로 덮어쓴다.
+ * 여기에 기본값을 선언해두는 이유는 두 가지다.
+ * 하나는 스크립트가 실행되기 전이나 실패했을 때도 값이 정해져 있게 하는 것이고,
+ * 다른 하나는 CSS만 읽는 도구(편집기 검사기)가 var()를 해석할 수 있게 하는 것이다.
+ */
+.starfield i {
+    --x: 50%;
+    --y: 50%;
+    --s: 1px;
+    --o: 0.3;
+    --mx: 0px;
+    --my: 0px;
+    --dt: 60s;
+    --dd: 0s;
+    --tt: 5s;
+    --td: 0s;
+
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--s);
+    height: var(--s);
+    border-radius: 50%;
+    background: #fff;
+    opacity: var(--o);
+    will-change: transform;
+    animation: star-drift var(--dt) ease-in-out var(--dd) infinite alternate;
+}
+
+/* 떠다님은 transform, 반짝임은 opacity. 속성이 겹치면 나중 것이 이긴다. */
+.starfield i.twinkle {
+    animation: star-drift var(--dt) ease-in-out var(--dd) infinite alternate,
+               star-twinkle var(--tt) ease-in-out var(--td) infinite;
+}
+
+@keyframes star-drift {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(var(--mx), var(--my), 0); }
+}
+
+/* 대부분의 구간은 기본 밝기로 두고 짧게 올려야 "가끔 반짝"으로 보인다 */
+@keyframes star-twinkle {
+    0%, 80%, 100% { opacity: var(--o); }
+    88%           { opacity: 1; }
+}
+
+/* 움직이는 배경은 어지럼증을 유발할 수 있다. 별은 남기고 움직임만 멈춘다. */
+@media (prefers-reduced-motion: reduce) {
+    .starfield i,
+    .starfield i.twinkle {
+        animation: none;
+    }
+}
+
+/* 별자리(이스터에그).
+ * 래퍼가 통째로 떠다니고 개별 별은 반짝이기만 한다.
+ * 별마다 따로 움직이면 시간이 지날수록 모양이 일그러져 알아볼 수 없게 된다.
+ */
+.starfield .cst {
+    --x: 0px;
+    --y: 0px;
+    --w: 180px;
+    --h: 140px;
+    --mx: 0px;
+    --my: 0px;
+    --dt: 100s;
+    --dd: 0s;
+
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--w);
+    height: var(--h);
+    will-change: transform;
+    animation: star-drift var(--dt) ease-in-out var(--dd) infinite alternate;
+}
+
+/* 상위의 별 드리프트를 끈다 (특이도 0-2-1 > 0-1-1) */
+.starfield .cst i {
+    animation: none;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.45);
+}
+
+/* 반짝임만 남긴다 (0-3-1 > 0-2-1) */
+.starfield .cst i.twinkle {
+    animation: star-twinkle var(--tt) ease-in-out var(--td) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .starfield .cst,
+    .starfield .cst i.twinkle {
+        animation: none;
+    }
 }
