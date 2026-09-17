@@ -552,7 +552,6 @@ button {
     margin: 0;
 }
 
-/* ===== 인스타식 상세 모달 ===== */
 /* 왼쪽: 이미지 전용 (검은 배경에 사진 contain) */
 .post-detail-media {
     width: 62%;
@@ -1234,7 +1233,6 @@ button {
     box-shadow: 0 4px 10px rgba(196, 47, 68, 0.7);
 }
 
-/* ===== 토스트 알림 ===== */
 .toast-container {
     position: fixed;
     bottom: 28px;
@@ -1282,7 +1280,6 @@ button {
     background-color: #262626;
 }
 
-/* ===== 확인 모달 ===== */
 .cm-backdrop {
     position: fixed;
     inset: 0;
@@ -1352,7 +1349,6 @@ button {
     background: #d43d4a;
 }
 
-/* ===== 성공 시 요소 녹색 반짝 ===== */
 @keyframes flashSuccess {
     0% { background-color: rgba(47, 158, 96, 0.28); }
     100% { background-color: transparent; }
@@ -1363,7 +1359,6 @@ button {
     border-radius: 6px;
 }
 
-/* ===== 피드 탭 (전체 / 팔로잉) ===== */
 /*
  * 탭은 화면 하단에 띄운다.
  * 상단에 두면 헤더 높이를 계산해 맞춰야 하고 좁은 화면에서 헤더가 커지면 어긋나는데,
@@ -1410,8 +1405,6 @@ button {
 }
 
 
-
-
 .feed-empty {
     text-align: center;
     color: #8e8e8e;
@@ -1432,7 +1425,6 @@ button {
     height: 1px;
 }
 
-/* ===== 프로필 통계 / 팔로우 버튼 ===== */
 .profile-stats {
     display: flex;
     gap: 26px;
@@ -1488,7 +1480,6 @@ button {
     color: #8e8e8e;
 }
 
-/* ===== 팔로워 / 팔로잉 목록 모달 ===== */
 .fl-backdrop {
     position: fixed;
     inset: 0;
@@ -1573,7 +1564,6 @@ button {
     color: #8e8e8e;
     font-size: 14px;
 }
-/* ===== 알림 (헤더 종 아이콘 + 드롭다운) ===== */
 .noti-menu {
     position: relative;
     display: inline-flex;
@@ -1742,7 +1732,6 @@ button {
     }
 }
 
-/* ===== 검색 (헤더 입력창 + 드롭다운) ===== */
 .search-box {
     position: relative;
     flex: 0 1 240px;
@@ -1847,7 +1836,6 @@ button {
     font-size: 14px;
 }
 
-/* ===== 해시태그 ===== */
 .hashtag-link {
     color: #00376b;
     text-decoration: none;
@@ -1938,7 +1926,6 @@ button {
     }
 }
 
-/* ===== 채팅 ===== */
 .chat-header-link {
     text-decoration: none;
 }
@@ -2316,7 +2303,7 @@ button {
     color: #5f6672 !important;
 }
 
-/* ===== 헤더 다크 (시험) =====
+/* 헤더 다크 (시험)
  * 헤더 바만 검게 하고 내부 요소를 흰색 계열로 뒤집는다.
  * 되돌리기 쉽도록 원래 규칙은 두고 여기서 덮어쓴다.
  */
@@ -2374,7 +2361,7 @@ button {
     border-color: rgba(255, 255, 255, 0.35);
 }
 
-/* ===== 다크 배경 (우주 컨셉) =====
+/* 다크 배경 (우주 컨셉)
  * 명도 3단계로 층을 만든다: 배경(가장 어두움) < 헤더/탭(한 단계 밝게) < 카드(흰색).
  * 검은 배경에서는 그림자가 보이지 않으므로, 경계는 명도 차이와 미세한 흰 테두리로 만든다.
  * 흰 피드 카드는 "어두운 우주에 떠 있는 별"로 의도한 대비다.
@@ -2515,7 +2502,7 @@ body > h2,
     margin-top: 0;
 }
 
-/* ===== 드롭다운 다크 (헤더에서 나오는 껍데기) =====
+/* 드롭다운 다크 (헤더에서 나오는 껍데기)
  * 헤더 위에 떠 있으므로 헤더(#1a1d26)보다 한 단계 밝게 둔다(elevation 규칙).
  * 안읽음 표시는 연한 파랑을 쓰던 자리라 무채색에서는 명도로만 구분한다.
  */
@@ -2599,7 +2586,6 @@ body > h2,
     color: #e5e7eb;
 }
 
-/* ===== 대댓글과 멘션 ===== */
 
 /*
  * 답글은 한 단만 들어간다. 답글의 답글도 같은 자리에 붙기 때문에
@@ -2674,7 +2660,7 @@ body > h2,
     color: #262626;
 }
 
-/* ===== 신고 =====
+/* 신고
  * 프로필의 ...메뉴는 게시글 상세의 .pd-menu 를 그대로 쓰고,
  * 어두운 프로필 카드 위에 놓이기 때문에 색만 뒤집는다.
  */
@@ -2919,7 +2905,7 @@ body > h2,
     background: none;
 }
 
-/* ===== 배경 별 =====
+/* 배경 별
  * z-index를 -1로 두는 것이 핵심이다. 0으로 두면 페인트 순서상
  * positioned 요소가 피드 카드 같은 일반 블록보다 위에 그려져
  * 흰 카드 위에 점이 찍힌다. body 배경은 캔버스로 승격되므로
