@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Outplanetton</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="feed-container" style="margin-top: 30px;">
+    <h2 style="margin-bottom: 4px;">신고 확인</h2>
+
+    <!-- 탭 상태는 주소에 남긴다. 그래야 뒤로가기와 새로고침이 그대로 동작한다. -->
+    <div class="admin-tabs">
+        <a href="/admin/reports" class="feed-tab"
+           th:classappend="${tab != 'handled'} ? 'active' : ''">대기 중</a>
+        <a href="/admin/reports?tab=handled" class="feed-tab"
+           th:classappend="${tab == 'handled'} ? 'active' : ''">처리 완료</a>
+    </div>
+
+    <div th:if="${reportGroups.isEmpty()}"
+         style="color: #9aa2ad; padding: 40px 0; text-align: center;"
+         th:text="${tab == 'handled'} ? '처리한 신고가 없습니다.' : '대기 중인 신고가 없습니다.'">
+    </div>
+
+    <!--
+      한 줄이 신고 한 건이 아니라 피신고자 한 명이다.
+      N명이 한 사람을 신고하면 N줄이 아니라 한 줄에 N으로 묶인다.
+    -->
+    <a th:each="g : ${reportGroups}" class="admin-list-item report-group"
+       th:href="@{'/admin/reports/users/' + ${g.targetUserId}}">
+        <div class="report-group-user">
+            <img class="report-avatar"
+                 th:src="${(g.profileImageUrl != null and g.profileImageUrl != '') ? g.profileImageUrl : '/images/default-profile.svg'}"
+                 alt="프로필 이미지" />
+            <div>
+                <div class="report-username" th:text="${g.username}">username</div>
+
+                <div class="report-sub" th:if="${tab != 'handled'}">
+                    마지막 신고 <span class="report-time" th:attr="data-time=${g.lastActivityAt}"></span>
+                </div>
+
+                <!--
+                  집계 단위는 신고 건수다. 여러 건을 한 번에 처리할 수 있으므로
+                  "제재 N건"이라고 쓰면 제재를 N번 한 것처럼 읽힌다.
+                -->
+                <div class="report-sub" th:if="${tab == 'handled'}">
+                    인정 <b th:text="${g.resolvedCount}">0</b>건, 반려 <b th:text="${g.rejectedCount}">0</b>건,
+                    마지막 처리 <span class="report-time" th:attr="data-time=${g.lastActivityAt}"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-group-right">
+            <span th:if="${g.suspended}" class="report-tag">정지 중</span>
+            <span class="report-count" th:classappend="${tab == 'handled'} ? 'handled' : ''"
+                  th:text="${g.reportCount}">0</span>
+        </div>
+    </a>
+</div>
+
+<script>
+    function timeAgo(iso) {
+        if (!iso) return '';
+        const then = new Date(iso);
+        if (isNaN(then.getTime())) return '';
+        const diff = (Date.now() - then.getTime()) / 1000;
+        if (diff < 60) return '방금 전';
+        if (diff < 3600) return Math.floor(diff / 60) + '분 전';
+        if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
+        if (diff < 604800) return Math.floor(diff / 86400) + '일 전';
+        if (diff < 2592000) return Math.floor(diff / 604800) + '주 전';
+        return then.getFullYear() + '.' + String(then.getMonth() + 1).padStart(2, '0') + '.' + String(then.getDate()).padStart(2, '0');
+    }
+
+    document.querySelectorAll('.report-time').forEach(el => {
+        el.textContent = timeAgo(el.getAttribute('data-time'));
+    });
+</script>
+
+</body>
+</html>

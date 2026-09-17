@@ -80,6 +80,14 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<RefreshToken> refreshTokens = new ArrayList<>();
 
+    /** 내가 넣은 신고 */
+    @OneToMany(mappedBy = "reporter", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Report> reportsMade = new ArrayList<>();
+
+    /** 내가 받은 신고 */
+    @OneToMany(mappedBy = "targetUser", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Report> reportsReceived = new ArrayList<>();
+
     @Column
     private LocalDateTime suspendedUntil;
 

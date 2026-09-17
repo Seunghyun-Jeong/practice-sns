@@ -59,6 +59,20 @@
                 <button th:if="${username != null and profileUsername != currentUsername and !profileSuspended}"
                         id="messageBtn" class="follow-btn message-btn"
                         th:attr="data-user-id=${profileUserId}">메시지</button>
+
+                <!--
+                  더보기 메뉴. 게시글 상세 모달의 ...메뉴(.pd-menu)를 그대로 쓴다.
+                  같은 목적의 UI에 스타일이 두 벌 생기면 한쪽만 고쳐져 어긋난다.
+                -->
+                <div class="pd-menu"
+                     th:if="${username != null and profileUsername != currentUsername and !profileSuspended}">
+                    <button type="button" class="pd-menu-btn" id="profileMoreBtn" aria-label="더보기">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+                    </button>
+                    <div class="pd-menu-dropdown" id="profileMoreDropdown" style="display:none;">
+                        <button type="button" class="btn report-user-btn">신고하기</button>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -129,6 +143,27 @@
             </button>
         </div>
         <div id="followListBody" class="fl-body"></div>
+    </div>
+</div>
+
+<!-- 유저 신고 모달 -->
+<div id="reportModal" class="ce-backdrop" style="display:none;"
+     th:if="${username != null and profileUsername != currentUsername and !profileSuspended}">
+    <div class="ce-box">
+        <div class="ce-title"><span th:text="${profileUsername}">username</span> 신고</div>
+
+        <label class="ce-label" for="reportReason">사유</label>
+        <select id="reportReason" class="ce-select">
+            <option th:each="r : ${reportReasons}" th:value="${r.name()}" th:text="${r.label}">사유</option>
+        </select>
+
+        <label class="ce-label" for="reportDetail">상세 내용</label>
+        <textarea id="reportDetail" class="ce-input" rows="4" maxlength="500"></textarea>
+
+        <div class="ce-actions">
+            <button type="button" id="reportCancel" class="ce-btn ce-cancel">취소</button>
+            <button type="button" id="reportSubmit" class="ce-btn ce-save">신고</button>
+        </div>
     </div>
 </div>
 
@@ -797,6 +832,71 @@
             } catch (err) {
                 console.error(err);
                 showToast('이용 정지 실패', 'error');
+            }
+        });
+    });
+
+    // 더보기 메뉴 → 신고 모달
+    document.addEventListener('DOMContentLoaded', () => {
+        const moreBtn = document.getElementById('profileMoreBtn');
+        const dropdown = document.getElementById('profileMoreDropdown');
+        const modal = document.getElementById('reportModal');
+        if (!moreBtn || !dropdown || !modal) return;
+
+        const reasonSelect = document.getElementById('reportReason');
+        const detailInput = document.getElementById('reportDetail');
+        const submitBtn = document.getElementById('reportSubmit');
+        const targetUserId = document.getElementById('profileUserId').value;
+
+        const closeDropdown = () => { dropdown.style.display = 'none'; };
+
+        moreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // 바깥을 누르면 닫힌다 (헤더 메뉴와 같은 동작)
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && !moreBtn.contains(e.target)) closeDropdown();
+        });
+
+        const closeModal = () => { modal.style.display = 'none'; };
+
+        document.querySelector('.report-user-btn').addEventListener('click', () => {
+            closeDropdown();
+            reasonSelect.selectedIndex = 0;
+            detailInput.value = '';
+            modal.style.display = 'flex';
+            detailInput.focus();
+        });
+
+        document.getElementById('reportCancel').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        submitBtn.addEventListener('click', async () => {
+            submitBtn.disabled = true;
+            try {
+                const response = await fetch(`/api/users/${targetUserId}/report`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reason: reasonSelect.value,
+                        detail: detailInput.value.trim()
+                    })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    closeModal();
+                    showToast(data.message);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('신고 처리 중 오류가 발생했습니다.', 'error');
+            } finally {
+                submitBtn.disabled = false;
             }
         });
     });

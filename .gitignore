@@ -41,5 +41,7 @@ secrets.properties
 # 업로드된 파일 (프로필 이미지 등)
 uploads/
 
+.claude/
+
 ### macOS ###
 .DS_Store

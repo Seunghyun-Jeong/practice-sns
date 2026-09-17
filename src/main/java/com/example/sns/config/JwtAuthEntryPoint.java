@@ -27,6 +27,12 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
+        // 페이지 요청(관리자 페이지)은 JSON 대신 홈으로 돌려보낸다.
+        if (!AuthFailureResponder.isApiRequest(request)) {
+            AuthFailureResponder.redirectHome(response);
+            return;
+        }
+
         String message = "로그인이 필요합니다.";
         int status = HttpServletResponse.SC_UNAUTHORIZED;
 
@@ -35,10 +41,7 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
             status = HttpServletResponse.SC_FORBIDDEN;
         }
 
-        response.setStatus(status);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        response.getWriter().write("{\"message\":\"" + message + "\"}");
+        AuthFailureResponder.sendJson(response, status, message);
     }
 
     /**

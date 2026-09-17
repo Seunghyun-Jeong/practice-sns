@@ -35,7 +35,13 @@ public class SecurityConfig {
                         // 비로그인도 배지를 0으로 받아야 하므로 열어둔다 (컨트롤러에서 0 반환)
                         .requestMatchers("/api/notifications/unread-count").permitAll()
                         // 관리자 전용
+                        // 페이지(/admin/**)까지 여기서 선언한다. 컨트롤러마다 권한을 검사하면
+                        // 관리자 페이지를 새로 만들 때 빠뜨려도 아무도 모르는 채로 열린다.
+                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/users/suspend/**", "/api/users/unsuspend/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/reports/**").hasAuthority("ADMIN")
+                        // 로그인 필요: 유저 신고
+                        .requestMatchers(HttpMethod.POST, "/api/users/*/report").authenticated()
                         // 로그인 필요: 게시글/댓글/좋아요 쓰기, 내 좋아요 여부 조회
                         .requestMatchers(HttpMethod.POST, "/api/posts", "/api/posts/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/posts/**").authenticated()

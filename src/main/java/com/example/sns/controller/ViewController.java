@@ -4,11 +4,14 @@ import com.example.sns.config.MyUserDetails;
 import com.example.sns.dto.FeedPageDto;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostSummaryDto;
+import com.example.sns.dto.ReportDetailDto;
 import com.example.sns.dto.UserProfileDto;
+import com.example.sns.entity.Report;
 import com.example.sns.service.ChatService;
 import com.example.sns.service.CommentService;
 import com.example.sns.service.FollowService;
 import com.example.sns.service.PostService;
+import com.example.sns.service.ReportService;
 import com.example.sns.service.UserService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,7 @@ public class ViewController {
     private final CommentService commentService;
     private final ChatService chatService;
     private final FollowService followService;
+    private final ReportService reportService;
 
     /** 피드 한 페이지에 보여줄 게시글 수 */
     private static final int FEED_PAGE_SIZE = 10;
@@ -143,27 +147,63 @@ public class ViewController {
         model.addAttribute("followingCount", followService.countFollowing(userId));
         model.addAttribute("isFollowing", followService.isFollowing(currentUserId, userId));
 
+        // 신고 모달의 사유 드롭다운
+        model.addAttribute("reportReasons", Report.Reason.values());
+
         return "profile";
     }
 
+    /*
+     * 아래 /admin 페이지들은 권한 검사를 여기서 하지 않는다.
+     * SecurityConfig가 /admin/** 을 ADMIN 전용으로 선언하고 있고,
+     * 컨트롤러마다 같은 검사를 복사해두면 새 페이지에서 빠뜨려도 드러나지 않는다.
+     */
     @GetMapping("/admin/suspended-users")
-    public String suspendedUsersPage(Model model,
-                                     @AuthenticationPrincipal MyUserDetails user) {
-        if (user == null || !"ADMIN".equals(user.getRole())) {
-            return "redirect:/";
-        }
-
+    public String suspendedUsersPage(Model model) {
         model.addAttribute("suspendedUsers", userService.getSuspendedUsers());
         return "suspended-users";
     }
 
-    @GetMapping("/admin/users/{userId}/content")
-    public String adminUserContent(@PathVariable Long userId, Model model,
-                                   @AuthenticationPrincipal MyUserDetails user) {
-        if (user == null || !"ADMIN".equals(user.getRole())) {
-            return "redirect:/";
-        }
+    /**
+     * 관리자 신고 목록: 신고 한 건이 아니라 피신고자 한 명이 한 줄이다.
+     * 대기 중과 처리 완료는 탭으로 나누고, 탭 상태는 쿼리에 남겨
+     * 뒤로가기와 새로고침이 그대로 동작하게 한다.
+     */
+    @GetMapping("/admin/reports")
+    public String reportsPage(Model model,
+                              @RequestParam(value = "tab", required = false, defaultValue = "pending") String tab) {
+        boolean handledTab = "handled".equals(tab);
+        model.addAttribute("tab", handledTab ? "handled" : "pending");
+        model.addAttribute("reportGroups",
+                handledTab ? reportService.getHandledGroups() : reportService.getPendingGroups());
+        return "admin-reports";
+    }
 
+    /** 관리자 신고 상세: 그 유저가 받은 신고를 한 건씩 */
+    @GetMapping("/admin/reports/users/{userId}")
+    public String reportDetailPage(@PathVariable Long userId, Model model) {
+        UserProfileDto profile = userService.getProfileById(userId);
+        List<ReportDetailDto> reports = reportService.getReportsAgainst(userId);
+
+        model.addAttribute("targetUsername", profile.getUsername());
+        model.addAttribute("targetUserId", userId);
+        model.addAttribute("targetSuspended", profile.isSuspended());
+        model.addAttribute("reports", reports);
+        model.addAttribute("historyDays", reportService.getReporterHistoryDays());
+
+        /*
+         * 전체 반려는 대기 중인 신고를 대상으로 하므로 대기 건이 없으면 할 일이 없다.
+         * 숨기지 않고 비활성화하는 이유는 버튼을 빼면 오른쪽 묶음이 짧아지면서
+         * 옆의 정지 버튼 위치가 화면마다 달라지기 때문이다.
+         * 정지는 대기 건과 무관하게(정지 기간이 끝난 유저를 다시 정지) 쓸 수 있어 그대로 둔다.
+         */
+        model.addAttribute("hasPending", reports.stream().anyMatch(ReportDetailDto::isPending));
+
+        return "admin-report-detail";
+    }
+
+    @GetMapping("/admin/users/{userId}/content")
+    public String adminUserContent(@PathVariable Long userId, Model model) {
         UserProfileDto profile = userService.getProfileById(userId);
         model.addAttribute("targetUsername", profile.getUsername());
         model.addAttribute("targetUserId", userId);

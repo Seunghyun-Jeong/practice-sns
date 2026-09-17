@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Outplanetton</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+<input type="hidden" id="targetUserId" th:value="${targetUserId}">
+
+<div class="feed-container" style="margin-top: 30px;">
+    <h2 style="margin-bottom: 4px;">
+        <span th:text="${targetUsername}">username</span> 신고 내역
+        <span th:if="${targetSuspended}" class="report-tag">정지 중</span>
+    </h2>
+
+    <div class="admin-list-item report-actions-bar">
+        <a th:href="@{'/admin/users/' + ${targetUserId} + '/content'}" class="report-link">게시글과 댓글 보기</a>
+        <div class="report-actions-right">
+            <select id="suspendDuration" class="ce-select report-duration">
+                <option value="1d">1일</option>
+                <option value="3d">3일</option>
+                <option value="7d">7일</option>
+                <option value="30d">30일</option>
+                <option value="90d">90일</option>
+                <option value="forever">영구정지</option>
+            </select>
+            <button type="button" id="resolveAllBtn" class="unsuspend-btn">정지</button>
+
+            <!--
+              대기 중인 신고가 없으면 반려할 대상이 없다.
+              버튼을 숨기지 않고 비활성화해서 옆 버튼들의 위치가 바뀌지 않게 한다.
+            -->
+            <button type="button" id="rejectAllBtn" class="report-reject-btn"
+                    th:disabled="${!hasPending}">전체 반려</button>
+        </div>
+    </div>
+
+    <div th:if="${reports.isEmpty()}"
+         style="color: #9aa2ad; padding: 40px 0; text-align: center;">
+        이 유저에 대한 신고가 없습니다.
+    </div>
+
+    <div th:each="r : ${reports}" class="admin-list-item report-row">
+        <div class="report-row-main">
+            <div class="report-row-top">
+                <a th:href="@{'/profile/' + ${r.reporterId}}" class="report-link" th:text="${r.reporterUsername}">신고자</a>
+                <span class="report-reason" th:text="${r.reasonLabel}">사유</span>
+                <span class="report-status" th:classappend="${r.status.toLowerCase()}"
+                      th:text="${r.status == 'PENDING' ? '대기' : (r.status == 'RESOLVED' ? '인정' : '반려')}">대기</span>
+                <span class="report-sub report-time" th:attr="data-time=${r.createdAt}"></span>
+            </div>
+
+            <div class="report-detail-text" th:if="${r.detail != null}" th:text="${r.detail}">상세 내용</div>
+
+            <!--
+              신고 건수만으로는 악성 신고자를 가려낼 수 없다.
+              나쁜 유저를 잘 찾아내는 사람도 건수가 높기 때문에 반려 수를 같이 본다.
+            -->
+            <div class="report-sub">
+                이 신고자 최근 <span th:text="${historyDays}">30</span>일
+                <b th:text="${r.reporterRecentCount}">0</b>건 중 반려 <b th:text="${r.reporterRejectedCount}">0</b>건
+            </div>
+        </div>
+
+        <button type="button" th:if="${r.pending}" class="report-reject-btn reject-one-btn"
+                th:attr="data-report-id=${r.id}">반려</button>
+    </div>
+</div>
+
+<script>
+    function timeAgo(iso) {
+        if (!iso) return '';
+        const then = new Date(iso);
+        if (isNaN(then.getTime())) return '';
+        const diff = (Date.now() - then.getTime()) / 1000;
+        if (diff < 60) return '방금 전';
+        if (diff < 3600) return Math.floor(diff / 60) + '분 전';
+        if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
+        if (diff < 604800) return Math.floor(diff / 86400) + '일 전';
+        if (diff < 2592000) return Math.floor(diff / 604800) + '주 전';
+        return then.getFullYear() + '.' + String(then.getMonth() + 1).padStart(2, '0') + '.' + String(then.getDate()).padStart(2, '0');
+    }
+
+    document.querySelectorAll('.report-time').forEach(el => {
+        el.textContent = timeAgo(el.getAttribute('data-time'));
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const targetUserId = document.getElementById('targetUserId').value;
+
+        async function send(url, confirmMessage, okText) {
+            if (!(await confirmDialog(confirmMessage, { okText }))) return;
+            try {
+                const response = await fetch(url, { method: 'PATCH', credentials: 'include' });
+                const data = await response.json();
+                if (response.ok) {
+                    toastAfterReload(data.message);
+                    location.reload();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('처리 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        document.getElementById('resolveAllBtn').addEventListener('click', () => {
+            const duration = document.getElementById('suspendDuration').value;
+            send(`/api/reports/users/${targetUserId}/resolve?duration=${duration}`,
+                 '이 유저를 정지하고 대기 중인 신고를 모두 처리하시겠습니까?', '정지');
+        });
+
+        document.getElementById('rejectAllBtn').addEventListener('click', () => {
+            send(`/api/reports/users/${targetUserId}/reject`,
+                 '대기 중인 신고를 모두 반려하시겠습니까?', '반려');
+        });
+
+        document.querySelectorAll('.reject-one-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const reportId = btn.getAttribute('data-report-id');
+                send(`/api/reports/${reportId}/reject`, '이 신고를 반려하시겠습니까?', '반려');
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
