@@ -2922,6 +2922,25 @@ body > h2,
     pointer-events: none;
 }
 
+/* 스크롤에 맞춰 header.js가 위로 미는 띠. 하늘 두 장을 세로로 이어 붙여 화면 높이만큼 밀면 되감는다. */
+.starfield .sky-strip {
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+}
+
+.starfield .sky {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.starfield .sky + .sky {
+    top: 100%;
+}
+
 /*
  * 아래 --값들은 별마다 달라야 해서 header.js가 인라인으로 덮어쓴다.
  * 여기에 기본값을 선언해두는 이유는 두 가지다.

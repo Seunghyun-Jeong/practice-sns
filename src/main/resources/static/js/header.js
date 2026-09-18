@@ -15,6 +15,15 @@
   const TWINKLE_RATIO = 0.25;
 
   /*
+   * 스크롤 패럴랙스. 피드가 움직이는데 별만 붙박이면 배경이 벽지처럼 보인다.
+   * 피드의 1/20 속도로 따라간다.
+   * 하늘을 두 장 세로로 이어 붙여 고리처럼 돌린다. 한 장이 화면 위로 완전히 빠져나가면
+   * 그 장을 아래로 보내면서 별과 별자리를 새로 채운다. 화면 밖에서 바꾸므로 보이지 않고,
+   * 같은 장면이 반복되지 않는다.
+   */
+  const PARALLAX_RATIO = 0.05;
+
+  /*
    * 이스터에그. 페이지를 열 때마다 하나를 골라 배경 어딘가에 놓는다.
    * 이름표도 연결선도 그리지 않는다. 선을 그으면 별자리가 아니라 도형이 되고,
    * 배경을 보다가 알아채는 순간이 이 기능의 전부다.
@@ -56,8 +65,9 @@
    * 별마다 따로 움직이면 시간이 지날수록 모양이 일그러져 알아볼 수 없게 된다.
    * 래퍼가 통째로 움직이고 개별 별은 반짝이기만 한다.
    */
-  function buildConstellation() {
-    const data = pick(CONSTELLATIONS);
+  function buildConstellation(avoidNames) {
+    // 다른 장에 떠 있는 것과 이 장에 방금까지 있던 것은 빼고 뽑아, 같은 별자리가 연달아 나오지 않게 한다
+    const data = pick(CONSTELLATIONS.filter(c => !avoidNames.includes(c.name)));
     const width = rand(150, 260);
     const height = width * data.ratio;
 
@@ -114,12 +124,15 @@
     return box;
   }
 
-  function buildStarfield() {
-    if (document.querySelector('.starfield')) return;
+  function constellationName(sky) {
+    const cst = sky.querySelector('.cst');
+    return cst ? cst.dataset.name : null;
+  }
 
-    const layer = document.createElement('div');
-    layer.className = 'starfield';
-    layer.setAttribute('aria-hidden', 'true');
+  // 하늘 한 장을 별 70개와 별자리 하나로 (다시) 채운다. other는 그대로 남는 다른 장.
+  function fillSky(sky, other) {
+    const avoidNames = [constellationName(sky), other ? constellationName(other) : null];
+    sky.replaceChildren();
 
     const stars = document.createDocumentFragment();
 
@@ -149,9 +162,88 @@
       stars.appendChild(star);
     }
 
-    layer.appendChild(stars);
-    layer.appendChild(buildConstellation());
+    sky.appendChild(stars);
+    sky.appendChild(buildConstellation(avoidNames));
+  }
+
+  function buildStarfield() {
+    if (document.querySelector('.starfield')) return;
+
+    const layer = document.createElement('div');
+    layer.className = 'starfield';
+    layer.setAttribute('aria-hidden', 'true');
+
+    const strip = document.createElement('div');
+    strip.className = 'sky-strip';
+
+    const first = document.createElement('div');
+    first.className = 'sky';
+    fillSky(first, null);
+
+    const second = document.createElement('div');
+    second.className = 'sky';
+    fillSky(second, first);
+
+    strip.appendChild(first);
+    strip.appendChild(second);
+    layer.appendChild(strip);
     document.body.insertBefore(layer, document.body.firstChild);
+    bindParallax(layer, strip);
+  }
+
+  /*
+   * 별은 스크롤 위치가 아니라 스크롤한 양을 따라간다.
+   * 위치에 묶으면 탭 전환처럼 코드가 스크롤을 맨 위로 되돌릴 때 별도 같이 처음으로 튄다.
+   * 사용자가 실제로 굴린 만큼만 누적하고, 코드가 스크롤을 옮길 때는 기준점만 옮긴다.
+   */
+  function bindParallax(layer, strip) {
+    // 움직이는 배경을 꺼둔 사용자에게는 스크롤 연동도 걸지 않는다
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let offset = 0;
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    function apply() {
+      ticking = false;
+      const cycle = layer.clientHeight;
+      // 탭이 가려져 높이가 0이면 아래 while이 끝나지 않는다
+      if (cycle <= 0) return;
+
+      const y = window.scrollY;
+      offset += (y - lastY) * PARALLAX_RATIO;
+      lastY = y;
+
+      // 위 장이 화면 밖으로 다 나갔으면 아래로 돌려 보내며 새로 채운다.
+      // 형제 순서가 곧 위아래 위치라 DOM에서 옮기기만 하면 된다. 같은 프레임이라 화면은 그대로.
+      while (offset >= cycle) {
+        const top = strip.firstElementChild;
+        fillSky(top, strip.lastElementChild);
+        strip.appendChild(top);
+        offset -= cycle;
+      }
+      // 위로 굴려 아래 장이 다 나갔으면 반대로
+      while (offset < 0) {
+        const bottom = strip.lastElementChild;
+        fillSky(bottom, strip.firstElementChild);
+        strip.prepend(bottom);
+        offset += cycle;
+      }
+
+      strip.style.transform = 'translate3d(0, ' + (-offset).toFixed(1) + 'px, 0)';
+    }
+    // 스크롤 이벤트마다 스타일을 만지지 않고 프레임당 한 번만 반영한다
+    window.addEventListener('scroll', function () {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(apply);
+    }, { passive: true });
+
+    // scrollTo 직후에 부르면 된다. scrollY는 그 자리에서 바뀌고 scroll 이벤트는 다음 프레임에 오므로,
+    // 기준점을 먼저 옮겨두면 그 이벤트에서 계산되는 변화량이 0이 된다.
+    window.starfieldRebase = function () {
+      lastY = window.scrollY;
+    };
   }
 
   document.addEventListener('DOMContentLoaded', function () {

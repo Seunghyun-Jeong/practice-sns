@@ -10,9 +10,10 @@
 
 <div style="height: 20px;"></div>
 
+<!-- href는 JS가 없을 때의 대비. 평소에는 아래 스크립트가 클릭을 가로채 피드만 바꾼다. -->
 <div class="feed-tabs" th:if="${username != null and tag == null}">
-  <a href="/" class="feed-tab" th:classappend="${tab != 'following'} ? 'active' : ''">전체</a>
-  <a href="/?tab=following" class="feed-tab" th:classappend="${tab == 'following'} ? 'active' : ''">팔로잉</a>
+  <a href="/" class="feed-tab" data-tab="all" th:classappend="${tab != 'following'} ? 'active' : ''">전체</a>
+  <a href="/?tab=following" class="feed-tab" data-tab="following" th:classappend="${tab == 'following'} ? 'active' : ''">팔로잉</a>
 </div>
 
 <!-- 해시태그로 걸러 보는 중 -->
@@ -22,10 +23,6 @@
 </div>
 
 <div class="feed-container" id="feedContainer" th:attr="data-tab=${tab}, data-tag=${tag}, data-has-next=${hasNext}">
-  <div th:if="${tab == 'following' and tag == null and #lists.isEmpty(posts)}" class="feed-empty">
-    아직 팔로우한 사람이 없습니다.<br />
-    관심 있는 유저를 팔로우하면 여기에 게시글이 보입니다.
-  </div>
   <div th:if="${tag != null and #lists.isEmpty(posts)}" class="feed-empty">
     이 해시태그가 달린 게시글이 없습니다.
   </div>
@@ -115,7 +112,8 @@
 
   initPostCards(document);
 
-  // ===== 무한 스크롤 =====
+  // 무한 스크롤과 탭 전환.
+  // 둘 다 /feed 조각을 받아 카드를 채우는 일이라 한 클로저에서 같은 상태(page, hasNext, tab)를 다룬다.
   (function () {
     const container = document.getElementById('feedContainer');
     const sentinel = document.getElementById('feedSentinel');
@@ -124,23 +122,32 @@
 
     let page = 0;
     let hasNext = container.getAttribute('data-has-next') === 'true';
-    const tab = container.getAttribute('data-tab') || 'all';
+    let tab = container.getAttribute('data-tab') || 'all';
     const tag = container.getAttribute('data-tag') || '';
     let isLoading = false;
+
+    // 탭을 바꿀 때마다 올라간다. 요청을 보낼 때 값을 잡아두고 응답이 왔을 때 달라져 있으면 버린다.
+    // 이게 없으면 이전 탭의 다음 페이지나 먼저 누른 탭의 응답이 늦게 도착해 새 탭에 섞인다.
+    let seq = 0;
+
+    async function fetchFeed(pageNo) {
+      const tagParam = tag ? '&tag=' + encodeURIComponent(tag) : '';
+      const response = await fetch(`/feed?tab=${tab}${tagParam}&page=${pageNo}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('failed to load feed page');
+      const temp = document.createElement('div');
+      temp.innerHTML = await response.text();
+      return temp;
+    }
 
     async function loadNextPage() {
       if (isLoading || !hasNext) return;
       isLoading = true;
       loading.style.display = 'block';
+      const mySeq = seq;
 
       try {
-        const tagParam = tag ? '&tag=' + encodeURIComponent(tag) : '';
-        const response = await fetch(`/feed?tab=${tab}${tagParam}&page=${page + 1}`, { credentials: 'include' });
-        if (!response.ok) throw new Error('failed to load feed page');
-
-        const html = await response.text();
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
+        const temp = await fetchFeed(page + 1);
+        if (mySeq !== seq) return;
 
         const cards = [...temp.querySelectorAll('.post-summary')];
         if (cards.length === 0) {
@@ -157,12 +164,68 @@
         hasNext = meta ? meta.getAttribute('data-has-next') === 'true' : false;
       } catch (err) {
         console.error(err);
-        hasNext = false;
+        if (mySeq === seq) hasNext = false;
       } finally {
-        isLoading = false;
-        loading.style.display = 'none';
+        if (mySeq === seq) {
+          isLoading = false;
+          loading.style.display = 'none';
+        }
       }
     }
+
+    // 피드 컨테이너만 첫 페이지로 갈아 끼운다. 페이지 전체를 다시 불러오지 않는다.
+    async function switchTab(nextTab, pushHistory) {
+      if (nextTab === tab) return;
+      seq += 1;
+      const mySeq = seq;
+      tab = nextTab;
+      page = 0;
+      hasNext = false;
+      isLoading = true;
+      loading.style.display = 'block';
+
+      document.querySelectorAll('.feed-tab').forEach(el => {
+        el.classList.toggle('active', el.getAttribute('data-tab') === nextTab);
+      });
+      if (pushHistory) {
+        history.pushState({ tab: nextTab }, '', nextTab === 'following' ? '/?tab=following' : '/');
+      }
+      window.scrollTo(0, 0);
+      // 스크롤을 코드로 되돌린 것이라 배경 별은 따라오지 않게 한다
+      if (window.starfieldRebase) window.starfieldRebase();
+
+      try {
+        const temp = await fetchFeed(0);
+        if (mySeq !== seq) return;
+
+        initPostCards(temp);
+        container.replaceChildren(...temp.childNodes);
+        const meta = container.querySelector('.feed-page-meta');
+        hasNext = meta ? meta.getAttribute('data-has-next') === 'true' : false;
+      } catch (err) {
+        console.error(err);
+        if (mySeq === seq) showToast('피드를 불러오지 못했습니다.', 'error');
+      } finally {
+        if (mySeq === seq) {
+          isLoading = false;
+          loading.style.display = 'none';
+          checkNearBottom();   // 새 첫 페이지가 짧으면 바로 다음 페이지를 채운다
+        }
+      }
+    }
+
+    document.querySelectorAll('.feed-tab[data-tab]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchTab(el.getAttribute('data-tab'), true);
+      });
+    });
+
+    // 뒤로 가기/앞으로 가기도 리로드 없이 같은 경로로 처리한다
+    window.addEventListener('popstate', () => {
+      const wanted = new URLSearchParams(location.search).get('tab') === 'following' ? 'following' : 'all';
+      switchTab(wanted, false);
+    });
 
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) loadNextPage();

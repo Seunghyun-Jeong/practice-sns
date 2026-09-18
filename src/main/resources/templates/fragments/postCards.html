@@ -9,6 +9,12 @@
   <!-- 무한 스크롤이 다음 페이지 존재 여부를 읽어가는 표시 (화면에는 보이지 않음) -->
   <div class="feed-page-meta" th:attr="data-has-next=${hasNext}" style="display:none;"></div>
 
+  <!-- 팔로잉 탭이 비었을 때의 안내. 탭 전환이 이 조각을 통째로 갈아 끼우므로 안내문도 여기 있어야 한다. -->
+  <div th:if="${firstPage and tab == 'following' and tag == null and #lists.isEmpty(posts)}" class="feed-empty">
+    아직 팔로우한 사람이 없습니다.<br />
+    관심 있는 유저를 팔로우하면 여기에 게시글이 보입니다.
+  </div>
+
   <div th:each="post : ${posts}" class="post-summary"
        th:onclick="'openPostModal(' + ${post.id} + ')'"
        style="cursor:pointer;">

@@ -82,10 +82,15 @@ public class ViewController {
         model.addAttribute("hasNext", feed.isHasNext());
         model.addAttribute("tab", followingTab ? "following" : "all");
         model.addAttribute("tag", tagFeed ? tag.trim().toLowerCase() : null);
+        model.addAttribute("firstPage", true);
         return "main";
     }
 
-    /** 무한 스크롤: 다음 페이지의 게시글 카드만 HTML 조각으로 반환 */
+    /**
+     * 게시글 카드만 HTML 조각으로 반환.
+     * 무한 스크롤의 다음 페이지와, 탭 전환 시 첫 페이지(page=0) 교체에 같이 쓴다.
+     * 탭 전환이 페이지 전체를 다시 불러오면 배경 별자리까지 새로 뽑히기 때문에 피드만 바꾼다.
+     */
     @GetMapping("/feed")
     public String feedPage(Model model,
                            @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
@@ -108,6 +113,10 @@ public class ViewController {
 
         model.addAttribute("posts", feed.getPosts());
         model.addAttribute("hasNext", feed.isHasNext());
+        model.addAttribute("tab", followingTab ? "following" : "all");
+        model.addAttribute("tag", tagFeed ? tag.trim().toLowerCase() : null);
+        // 빈 안내문은 첫 페이지에만. 다음 페이지가 비어 있는 것은 끝에 닿은 것이지 팔로우가 없는 게 아니다.
+        model.addAttribute("firstPage", page == 0);
         return "fragments/postCards :: cards";
     }
 

@@ -1,7 +1,10 @@
 package com.example.sns.controller;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -122,5 +125,32 @@ class FollowApiTest {
     void 비로그인_알림조회는_401() throws Exception {
         mockMvc.perform(get("/api/notifications"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // 탭 전환은 페이지를 다시 불러오지 않고 /feed 조각의 첫 페이지로 컨테이너를 갈아 끼운다.
+    // 그래서 팔로잉 빈 안내문이 조각의 첫 페이지에 실려 와야 한다.
+
+    @Test
+    @DisplayName("팔로우가 없으면 팔로잉 피드 조각의 첫 페이지에 안내문이 실린다")
+    void 팔로잉_조각_첫페이지_빈안내문() throws Exception {
+        mockMvc.perform(get("/feed").param("tab", "following").param("page", "0").cookie(myCookie))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("아직 팔로우한 사람이 없습니다")));
+    }
+
+    @Test
+    @DisplayName("다음 페이지가 비어 있는 것은 끝에 닿은 것이라 안내문을 싣지 않는다")
+    void 팔로잉_조각_다음페이지는_안내문없음() throws Exception {
+        mockMvc.perform(get("/feed").param("tab", "following").param("page", "1").cookie(myCookie))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("아직 팔로우한 사람이 없습니다"))));
+    }
+
+    @Test
+    @DisplayName("전체 탭 조각에는 팔로잉 안내문이 실리지 않는다")
+    void 전체_조각은_안내문없음() throws Exception {
+        mockMvc.perform(get("/feed").param("tab", "all").param("page", "0").cookie(myCookie))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("아직 팔로우한 사람이 없습니다"))));
     }
 }

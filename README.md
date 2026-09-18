@@ -48,6 +48,7 @@ RESTful API(`/api/**`)와 Thymeleaf 서버사이드 렌더링을 함께 사용�
 - 프로필에서 팔로우 / 언팔로우 (토글)
 - 팔로워 · 팔로잉 수 표시, 숫자를 누르면 목록 모달로 확인
 - 피드 상단 **전체 / 팔로잉** 탭 — 팔로잉 탭은 내가 팔로우한 사용자의 게시물만 표시
+  - 탭 전환은 페이지를 다시 불러오지 않고 무한 스크롤용 `/feed` 조각의 첫 페이지로 피드 영역만 교체. 주소창과 뒤로 가기는 `history.pushState`로 맞춤
 - 자기 자신, 정지된 사용자는 팔로우할 수 없음
 - `(follower, following)` 복합 유니크 제약으로 중복 팔로우를 DB에서 차단
 
@@ -205,7 +206,7 @@ RESTful API(`/api/**`)와 Thymeleaf 서버사이드 렌더링을 함께 사용�
 ./gradlew test
 ```
 
-- 총 **135개** (서비스 단위 테스트 60 / API 테스트 74 / 컨텍스트 로드 1)
+- 총 **137개** (서비스 단위 테스트 59 / API 테스트 77 / 컨텍스트 로드 1)
 - 서비스는 **Mockito**로, API는 **MockMvc**로 검증
 - 테스트는 `src/test/resources/application.properties`의 **H2 인메모리 DB**를 사용하므로 실서비스 DB(`sns_db`)에 영향을 주지 않음
   - H2에서는 `user`가 예약어라 JDBC URL에 `NON_KEYWORDS=USER`를 지정
