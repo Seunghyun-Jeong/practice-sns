@@ -200,13 +200,23 @@ RESTful API(`/api/**`)와 Thymeleaf 서버사이드 렌더링을 함께 사용�
 
 ---
 
+## 🧯 실패 응답
+
+- 서비스는 상황에 맞는 예외를 던지고, `GlobalExceptionHandler`가 그것을 응답 코드로 옮김
+  - `NotFoundException` → **404** (대상이 없음)
+  - `ForbiddenException` → **403** (로그인은 했지만 그 대상에는 할 수 없는 일)
+  - `IllegalArgumentException` → **400** (값이 규칙에 안 맞거나, 지금 상태에서는 할 수 없는 일)
+- 응답 본문은 전부 `{"message": "..."}` 한 가지 모양
+- 컨트롤러에는 `try-catch`를 두지 않음. 예전에는 컨트롤러마다 같은 catch를 반복하면서 같은 상황이 화면마다 다른 코드로 나갔고, catch를 빠뜨린 경로는 500이 나갔음
+- 화면을 그리는 `ViewController`는 JSON을 줄 수 없어 이 핸들러의 대상에서 빼고, 목록이나 로그인으로 되돌림
+
 ## 🧪 테스트
 
 ```bash
 ./gradlew test
 ```
 
-- 총 **137개** (서비스 단위 테스트 59 / API 테스트 77 / 컨텍스트 로드 1)
+- 총 **143개** (서비스 단위 테스트 59 / API 테스트 83 / 컨텍스트 로드 1)
 - 서비스는 **Mockito**로, API는 **MockMvc**로 검증
 - 테스트는 `src/test/resources/application.properties`의 **H2 인메모리 DB**를 사용하므로 실서비스 DB(`sns_db`)에 영향을 주지 않음
   - H2에서는 `user`가 예약어라 JDBC URL에 `NON_KEYWORDS=USER`를 지정
