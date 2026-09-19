@@ -132,12 +132,12 @@ class ChatApiTest {
 
     @Test
     @DisplayName("참여자가 아닌 사람은 방의 메시지를 볼 수 없다")
-    void 남의_방은_400() throws Exception {
+    void 남의_방은_403() throws Exception {
         Long roomId = openRoom();
         User stranger = createUser("tester3");
 
         mockMvc.perform(get("/api/chats/{roomId}/messages", roomId).cookie(createCookie(stranger)))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("참여 중인 채팅방이 아닙니다."));
     }
 
@@ -239,7 +239,7 @@ class ChatApiTest {
                         .cookie(otherCookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"가로채기\"}"))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("본인이 보낸 메시지만 수정하거나 삭제할 수 있습니다."));
     }
 

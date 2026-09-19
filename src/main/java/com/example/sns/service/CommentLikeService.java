@@ -3,6 +3,7 @@ package com.example.sns.service;
 import com.example.sns.entity.Comment;
 import com.example.sns.entity.CommentLike;
 import com.example.sns.entity.User;
+import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.CommentLikeRepository;
 import com.example.sns.repository.CommentRepository;
 import com.example.sns.repository.UserRepository;
@@ -19,10 +20,10 @@ public class CommentLikeService {
 
     public boolean toggleLike(Long commentId, String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("댓글을 찾을 수 없습니다."));
 
         Optional<CommentLike> existingLike = commentLikeRepository.findByCommentAndUser(comment, user);
 
@@ -40,15 +41,15 @@ public class CommentLikeService {
 
     public long countLikes(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("댓글을 찾을 수 없습니다."));
         return commentLikeRepository.countByComment(comment);
     }
 
     public boolean hasUserLikedComment(Long commentId, String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다"));
+                .orElseThrow(() -> new NotFoundException("댓글을 찾을 수 없습니다."));
         return commentLikeRepository.existsByCommentAndUser(comment, user);
     }
 }

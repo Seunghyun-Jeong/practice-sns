@@ -22,35 +22,23 @@ public class FollowController {
     @PostMapping("/follow")
     public ResponseEntity<?> toggleFollow(@PathVariable Long userId,
                                           @AuthenticationPrincipal MyUserDetails user) {
-        try {
-            boolean following = followService.toggleFollow(user.getUsername(), userId);
-            return ResponseEntity.ok(Map.of(
-                    "following", following,
-                    "followerCount", followService.countFollowers(userId)
-            ));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        }
+        boolean following = followService.toggleFollow(user.getUsername(), userId);
+        return ResponseEntity.ok(Map.of(
+                "following", following,
+                "followerCount", followService.countFollowers(userId)
+        ));
     }
 
     /** 나를 팔로우하는 사람 목록 */
     @GetMapping("/followers")
     public ResponseEntity<?> getFollowers(@PathVariable Long userId) {
-        try {
-            return ResponseEntity.ok(Map.of("users", followService.getFollowers(userId)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        }
+        return ResponseEntity.ok(Map.of("users", followService.getFollowers(userId)));
     }
 
     /** 내가 팔로우하는 사람 목록 */
     @GetMapping("/following")
     public ResponseEntity<?> getFollowingList(@PathVariable Long userId) {
-        try {
-            return ResponseEntity.ok(Map.of("users", followService.getFollowingList(userId)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        }
+        return ResponseEntity.ok(Map.of("users", followService.getFollowingList(userId)));
     }
 
     /** 팔로워 / 팔로잉 수 + 내가 팔로우 중인지 (비로그인도 조회 가능) */
@@ -59,14 +47,10 @@ public class FollowController {
                                            @AuthenticationPrincipal MyUserDetails user) {
         Long currentUserId = user != null ? user.getUserId() : null;
 
-        try {
-            return ResponseEntity.ok(Map.of(
-                    "followerCount", followService.countFollowers(userId),
-                    "followingCount", followService.countFollowing(userId),
-                    "following", followService.isFollowing(currentUserId, userId)
-            ));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        }
+        return ResponseEntity.ok(Map.of(
+                "followerCount", followService.countFollowers(userId),
+                "followingCount", followService.countFollowing(userId),
+                "following", followService.isFollowing(currentUserId, userId)
+        ));
     }
 }

@@ -4,6 +4,7 @@ import com.example.sns.dto.FollowUserDto;
 import com.example.sns.entity.Follow;
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.User;
+import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.UserRepository;
 import java.util.List;
@@ -28,10 +29,10 @@ public class FollowService {
     @Transactional
     public boolean toggleFollow(String followerUsername, Long targetUserId) {
         User follower = userRepository.findByUsername(followerUsername)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         User target = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new IllegalArgumentException("팔로우할 유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("팔로우할 유저를 찾을 수 없습니다."));
 
         if (follower.getId().equals(target.getId())) {
             throw new IllegalArgumentException("자기 자신은 팔로우할 수 없습니다.");
@@ -61,21 +62,21 @@ public class FollowService {
     /** 나를 팔로우하는 사람 수 */
     public long countFollowers(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
         return followRepository.countByFollowing(user);
     }
 
     /** 내가 팔로우하는 사람 수 */
     public long countFollowing(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
         return followRepository.countByFollower(user);
     }
 
     /** 나를 팔로우하는 사람 목록 (정지 유저 제외) */
     public List<FollowUserDto> getFollowers(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         return followRepository.findAllByFollowingOrderByFollowedAtDesc(user).stream()
                 .map(Follow::getFollower)
@@ -87,7 +88,7 @@ public class FollowService {
     /** 내가 팔로우하는 사람 목록 (정지 유저 제외) */
     public List<FollowUserDto> getFollowingList(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         return followRepository.findAllByFollowerOrderByFollowedAtDesc(user).stream()
                 .map(Follow::getFollowing)

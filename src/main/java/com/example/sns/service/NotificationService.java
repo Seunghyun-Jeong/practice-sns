@@ -6,6 +6,7 @@ import com.example.sns.entity.Comment;
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
+import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.NotificationRepository;
 import com.example.sns.repository.UserRepository;
 import java.util.List;
@@ -90,7 +91,7 @@ public class NotificationService {
 
     public List<NotificationDto> getRecent(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         return notificationRepository.findRecent(user, PageRequest.of(0, RECENT_SIZE)).stream()
                 .filter(n -> !n.getActor().isSuspended())   // 정지된 유저의 알림은 가린다
@@ -100,14 +101,14 @@ public class NotificationService {
 
     public long getUnreadCount(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
         return notificationRepository.countByRecipientAndIsReadFalse(user);
     }
 
     @Transactional
     public void markAllAsRead(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
         notificationRepository.markAllAsRead(user);
     }
 

@@ -11,6 +11,7 @@ import com.example.sns.config.PushSocketHandler;
 import com.example.sns.entity.ChatMessage;
 import com.example.sns.entity.ChatRoom;
 import com.example.sns.entity.User;
+import com.example.sns.exception.ForbiddenException;
 import com.example.sns.repository.ChatMessageRepository;
 import com.example.sns.repository.ChatRoomRepository;
 import com.example.sns.repository.UserRepository;
@@ -123,7 +124,7 @@ class ChatServiceTest {
         when(chatRoomRepository.findById(10L)).thenReturn(Optional.of(room));
 
         assertThatThrownBy(() -> chatService.sendMessage(99L, 10L, "안녕"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("참여 중인 채팅방이 아닙니다");
 
         verify(chatMessageRepository, never()).save(any(ChatMessage.class));

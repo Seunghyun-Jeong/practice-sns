@@ -6,6 +6,7 @@ import com.example.sns.dto.UserLoginRequest;
 import com.example.sns.dto.UserSignUpRequest;
 import com.example.sns.dto.UserUpdateRequestDto;
 import com.example.sns.entity.User;
+import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.service.RefreshTokenService;
 import com.example.sns.service.UserService;
@@ -13,7 +14,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -46,17 +46,12 @@ public class UserController {
 
     @PostMapping("/signup")
     public ResponseEntity<Map<String, String>> signUp(@ModelAttribute @Valid UserSignUpRequest request) {
-        Map<String, String> response = new HashMap<>();
+        userService.signup(request);
 
-        try {
-            userService.signup(request);
-            response.put("message", "회원가입이 완료되었습니다.");
-            response.put("redirectUrl", "/login");
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
+        return ResponseEntity.ok(Map.of(
+                "message", "회원가입이 완료되었습니다.",
+                "redirectUrl", "/login"
+        ));
     }
 
     @PostMapping("/login")
@@ -95,88 +90,57 @@ public class UserController {
 
     @DeleteMapping("/me")
     public ResponseEntity<Map<String, String>> deleteCurrentUser(@AuthenticationPrincipal MyUserDetails user, HttpServletResponse response) {
-        Map<String, String> res = new HashMap<>();
-
         // 남아 있던 다른 기기의 리프레시 토큰까지 User의 cascade로 함께 지워진다
         userService.deleteUser(user.getUsername());
         authTokenIssuer.clear(response);
 
-        res.put("message", "회원 탈퇴가 완료되었습니다.");
-        return ResponseEntity.ok(res);
+        return ResponseEntity.ok(Map.of("message", "회원 탈퇴가 완료되었습니다."));
     }
 
     @PatchMapping("/suspend/{userId}")
     public ResponseEntity<Map<String, String>> suspendUser(@PathVariable Long userId, @RequestParam String duration) {
         // 관리자 권한 검사는 SecurityConfig의 hasAuthority("ADMIN")가 담당한다.
-        Map<String, String> res = new HashMap<>();
+        userService.suspendUser(userId, duration);
 
-        try {
-            userService.suspendUser(userId, duration);
-            res.put("message", "사용자가 이용 정지가 되었습니다.");
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            res.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(res);
-        }
+        return ResponseEntity.ok(Map.of("message", "사용자가 이용 정지가 되었습니다."));
     }
 
     @PatchMapping("/unsuspend/{userId}")
     public ResponseEntity<Map<String, String>> unsuspendUser(@PathVariable Long userId) {
         // 관리자 권한 검사는 SecurityConfig의 hasAuthority("ADMIN")가 담당한다.
-        Map<String, String> res = new HashMap<>();
+        userService.unsuspendUser(userId);
 
-        try {
-            userService.unsuspendUser(userId);
-            res.put("message", "이용 정지가 해제되었습니다.");
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            res.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(res);
-        }
+        return ResponseEntity.ok(Map.of("message", "이용 정지가 해제되었습니다."));
     }
 
     @PutMapping("/username")
     public ResponseEntity<Map<String, String>> updateUsername(@Valid @RequestBody UserUpdateRequestDto requestDto, @AuthenticationPrincipal MyUserDetails user, HttpServletResponse response) {
-        Map<String, String> res = new HashMap<>();
-
         String newUsername = requestDto.getUsername();
 
         if (newUsername == null || newUsername.trim().isEmpty()) {
-            res.put("message", "새 닉네임을 입력해주세요.");
-            return ResponseEntity.badRequest().body(res);
+            throw new IllegalArgumentException("새 닉네임을 입력해주세요.");
         }
 
-        try {
-            userService.updateUsername(user.getUserId(), newUsername);
+        userService.updateUsername(user.getUserId(), newUsername);
 
-            // 쿠키의 토큰에 예전 닉네임이 남으면 인증이 깨지므로 새로 발급한다.
-            // 리프레시 토큰은 닉네임이 아니라 유저를 가리키고 있어 그대로 둬도 된다.
-            User updated = userRepository.findById(user.getUserId())
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-            authTokenIssuer.writeAccessToken(updated, response);
+        // 쿠키의 토큰에 예전 닉네임이 남으면 인증이 깨지므로 새로 발급한다.
+        // 리프레시 토큰은 닉네임이 아니라 유저를 가리키고 있어 그대로 둬도 된다.
+        User updated = userRepository.findById(user.getUserId())
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 사용자입니다."));
+        authTokenIssuer.writeAccessToken(updated, response);
 
-            res.put("message", "닉네임이 수정되었습니다.");
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            res.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(res);
-        }
+        return ResponseEntity.ok(Map.of("message", "닉네임이 수정되었습니다."));
     }
 
     @PostMapping("/profile-image")
     public ResponseEntity<Map<String, String>> updateProfileImage(
             @RequestParam("profileImage") MultipartFile file,
             @AuthenticationPrincipal MyUserDetails user) {
-        Map<String, String> res = new HashMap<>();
+        String imageUrl = userService.updateProfileImage(user.getUsername(), file);
 
-        try {
-            String imageUrl = userService.updateProfileImage(user.getUsername(), file);
-            res.put("message", "프로필 이미지가 변경되었습니다.");
-            res.put("imageUrl", imageUrl);
-            return ResponseEntity.ok(res);
-        } catch (IllegalArgumentException e) {
-            res.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(res);
-        }
+        return ResponseEntity.ok(Map.of(
+                "message", "프로필 이미지가 변경되었습니다.",
+                "imageUrl", imageUrl
+        ));
     }
 }

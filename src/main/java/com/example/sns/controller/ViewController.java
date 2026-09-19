@@ -7,6 +7,8 @@ import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.ReportDetailDto;
 import com.example.sns.dto.UserProfileDto;
 import com.example.sns.entity.Report;
+import com.example.sns.exception.ForbiddenException;
+import com.example.sns.exception.NotFoundException;
 import com.example.sns.service.ChatService;
 import com.example.sns.service.CommentService;
 import com.example.sns.service.FollowService;
@@ -238,8 +240,9 @@ public class ViewController {
         }
         try {
             model.addAttribute("room", chatService.getRoom(user.getUserId(), roomId));
-        } catch (IllegalArgumentException e) {
-            // 없는 방이거나 내 방이 아니면 목록으로 돌려보낸다
+        } catch (NotFoundException | ForbiddenException e) {
+            // 없는 방이거나 내 방이 아니면 목록으로 돌려보낸다.
+            // 화면 요청이라 JSON을 줄 수 없으니 여기서만 직접 잡는다.
             return "redirect:/chat";
         }
         return "chatRoom";

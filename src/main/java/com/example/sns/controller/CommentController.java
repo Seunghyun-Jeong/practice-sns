@@ -4,9 +4,8 @@ import com.example.sns.config.MyUserDetails;
 import com.example.sns.dto.CommentDto;
 import com.example.sns.dto.CommentUpdateRequest;
 import com.example.sns.service.CommentService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,32 +25,21 @@ public class CommentController {
     @PostMapping
     public ResponseEntity<?> addComment(@PathVariable Long postId, @RequestBody CommentDto dto,
                                         @AuthenticationPrincipal MyUserDetails user) {
-        try {
-            commentService.addComment(postId, dto, user.getUsername());
-            return ResponseEntity.ok("댓글이 등록되었습니다.");
-        } catch (IllegalArgumentException e) {
-            // 없는 게시글이나 엉뚱한 답글 대상은 잘못된 요청이지 서버 오류가 아니다
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        }
+        commentService.addComment(postId, dto, user.getUsername());
+        return ResponseEntity.ok(Map.of("message", "댓글이 등록되었습니다."));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateComment(@PathVariable Long id, @RequestBody CommentUpdateRequest request,
                                            @AuthenticationPrincipal MyUserDetails user) {
         commentService.updateComment(id, request, user.getUsername());
-        return ResponseEntity.ok("댓글이 수정되었습니다.");
+        return ResponseEntity.ok(Map.of("message", "댓글이 수정되었습니다."));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteComment(@PathVariable Long id,
                                            @AuthenticationPrincipal MyUserDetails user) {
-        try {
-            commentService.deleteComment(id, user.getUsername(), user.getRole());
-            return ResponseEntity.ok("댓글이 삭제외었습니다.");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (SecurityException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        }
+        commentService.deleteComment(id, user.getUsername(), user.getRole());
+        return ResponseEntity.ok(Map.of("message", "댓글이 삭제되었습니다."));
     }
 }

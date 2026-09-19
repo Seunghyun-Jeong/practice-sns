@@ -7,10 +7,11 @@ import com.example.sns.entity.Comment;
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
+import com.example.sns.exception.ForbiddenException;
+import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.CommentRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
-import org.springframework.security.access.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,9 +31,9 @@ public class CommentService {
 
     public void addComment(Long postId, CommentDto dto, String username) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("해당 게시글이 존재하지 않습니다."));
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("해당 유저가 존재하지 않습니다."));
 
         Comment parent = resolveParent(dto.getParentId(), post);
 
@@ -70,7 +71,7 @@ public class CommentService {
         }
 
         Comment parent = commentRepository.findById(parentId)
-                .orElseThrow(() -> new IllegalArgumentException("답글을 달 댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("답글을 달 댓글이 존재하지 않습니다."));
 
         if (!parent.getPost().getId().equals(post.getId())) {
             throw new IllegalArgumentException("다른 게시글의 댓글에는 답글을 달 수 없습니다.");
@@ -100,10 +101,10 @@ public class CommentService {
 
     public void updateComment(Long commentId, CommentUpdateRequest request, String username) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("댓글이 존재하지 않습니다."));
 
         if (!comment.getAuthor().getUsername().equals(username)) {
-            throw new AccessDeniedException("본인이 작성한 댓글만 수정할 수 있습니다.");
+            throw new ForbiddenException("본인이 작성한 댓글만 수정할 수 있습니다.");
         }
 
         comment.setContent(request.getContent());
@@ -126,10 +127,10 @@ public class CommentService {
 
     public void deleteComment(Long commentId, String username, String role) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글을 삭제할 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("댓글이 존재하지 않습니다."));
 
         if (!comment.getAuthor().getUsername().equals(username) && !"ADMIN".equals(role)) {
-            throw new SecurityException("댓글 삭제 권한이 없습니다.");
+            throw new ForbiddenException("댓글 삭제 권한이 없습니다.");
         }
 
         // 답글을 먼저 지운다. 부모가 없어진 답글은 누구에게 한 말인지 알 수 없다.

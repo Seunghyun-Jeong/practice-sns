@@ -5,6 +5,7 @@ import com.example.sns.dto.ReportGroupDto;
 import com.example.sns.dto.ReporterStatsDto;
 import com.example.sns.entity.Report;
 import com.example.sns.entity.User;
+import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.ReportRepository;
 import com.example.sns.repository.UserRepository;
 import java.time.LocalDateTime;
@@ -55,9 +56,9 @@ public class ReportService {
         }
 
         User reporter = userRepository.findById(reporterId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
         User target = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new IllegalArgumentException("신고할 유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("신고할 유저를 찾을 수 없습니다."));
 
         Report report = new Report();
         report.setReporter(reporter);
@@ -158,7 +159,7 @@ public class ReportService {
     @Transactional
     public void rejectOne(Long reportId) {
         Report report = reportRepository.findById(reportId)
-                .orElseThrow(() -> new IllegalArgumentException("신고를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("신고를 찾을 수 없습니다."));
         if (report.getStatus() != Report.Status.PENDING) {
             throw new IllegalArgumentException("이미 처리된 신고입니다.");
         }

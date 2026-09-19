@@ -11,6 +11,8 @@ import com.example.sns.entity.Comment;
 import com.example.sns.entity.Follow;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
+import com.example.sns.exception.ForbiddenException;
+import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.CommentLikeRepository;
 import com.example.sns.repository.CommentRepository;
 import com.example.sns.repository.FollowRepository;
@@ -64,7 +66,7 @@ public class PostService {
         }
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
 
         Post post = new Post();
         post.setContent(content);
@@ -157,7 +159,7 @@ public class PostService {
 
     public PostDetailDto getPostDetail(Long postId, Long currentUserId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글 없음"));
+                .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다."));
 
         long likeCount = postLikeRepository.countByPost(post);
 
@@ -284,10 +286,10 @@ public class PostService {
     @Transactional
     public void deletePost(Long postId, String username, String role) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다."));
 
         if (!post.getAuthor().getUsername().equals(username) && !"ADMIN".equals(role)) {
-            throw new SecurityException("게시글 삭제 권한이 없습니다.");
+            throw new ForbiddenException("게시글 삭제 권한이 없습니다.");
         }
 
         postRepository.delete(post);
@@ -296,10 +298,10 @@ public class PostService {
     @Transactional
     public void updatePost(Long postId, PostUpdateRequest request, String username) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다."));
 
         if (!post.getAuthor().getUsername().equals(username)) {
-            throw new SecurityException("게시글 수정 권한이 없습니다.");
+            throw new ForbiddenException("게시글 수정 권한이 없습니다.");
         }
 
         post.setContent(request.getContent());

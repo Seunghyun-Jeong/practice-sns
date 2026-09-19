@@ -7,6 +7,8 @@ import com.example.sns.dto.ChatRoomDto;
 import com.example.sns.entity.ChatMessage;
 import com.example.sns.entity.ChatRoom;
 import com.example.sns.entity.User;
+import com.example.sns.exception.ForbiddenException;
+import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.ChatMessageRepository;
 import com.example.sns.repository.ChatRoomRepository;
 import com.example.sns.repository.UserRepository;
@@ -206,10 +208,10 @@ public class ChatService {
      */
     private ChatMessage findModifiableMessage(Long myId, Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("메시지를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("메시지를 찾을 수 없습니다."));
 
         if (!message.getSender().getId().equals(myId)) {
-            throw new IllegalArgumentException("본인이 보낸 메시지만 수정하거나 삭제할 수 있습니다.");
+            throw new ForbiddenException("본인이 보낸 메시지만 수정하거나 삭제할 수 있습니다.");
         }
         if (message.isDeleted()) {
             throw new IllegalArgumentException("이미 삭제된 메시지입니다.");
@@ -250,16 +252,16 @@ public class ChatService {
     /** 방을 찾고, 내가 참여자가 아니면 거부한다 */
     private ChatRoom findRoomOf(Long myId, Long roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("채팅방을 찾을 수 없습니다."));
         if (!room.hasParticipant(myId)) {
-            throw new IllegalArgumentException("참여 중인 채팅방이 아닙니다.");
+            throw new ForbiddenException("참여 중인 채팅방이 아닙니다.");
         }
         return room;
     }
 
     private User findUser(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
     }
 
     private ChatMessageDto toDto(ChatMessage m) {
