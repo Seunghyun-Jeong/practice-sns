@@ -5,19 +5,6 @@
   const list = document.getElementById('notiList');
   if (!btn || !dropdown || !list) return;   // 비로그인 상태에는 알림 영역이 없다
 
-  function timeAgo(iso) {
-    if (!iso) return '';
-    const then = new Date(iso);
-    if (isNaN(then.getTime())) return '';
-    const diff = (Date.now() - then.getTime()) / 1000;
-    if (diff < 60) return '방금 전';
-    if (diff < 3600) return Math.floor(diff / 60) + '분 전';
-    if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
-    if (diff < 604800) return Math.floor(diff / 86400) + '일 전';
-    if (diff < 2592000) return Math.floor(diff / 604800) + '주 전';
-    return then.getFullYear() + '.' + String(then.getMonth() + 1).padStart(2, '0') + '.' + String(then.getDate()).padStart(2, '0');
-  }
-
   async function loadUnreadCount() {
     try {
       const res = await fetch('/api/notifications/unread-count', { credentials: 'include' });

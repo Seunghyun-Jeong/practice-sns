@@ -3,18 +3,6 @@
 (function () {
   'use strict';
 
-  function timeAgo(iso) {
-    if (!iso) return '';
-    const then = new Date(iso);
-    if (isNaN(then.getTime())) return '';
-    const diff = (Date.now() - then.getTime()) / 1000;
-    if (diff < 60) return '방금 전';
-    if (diff < 3600) return Math.floor(diff / 60) + '분 전';
-    if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
-    if (diff < 604800) return Math.floor(diff / 86400) + '일 전';
-    return then.getFullYear() + '.' + String(then.getMonth() + 1).padStart(2, '0') + '.' + String(then.getDate()).padStart(2, '0');
-  }
-
   function timeShort(iso) {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';

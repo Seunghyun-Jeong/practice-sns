@@ -117,4 +117,18 @@
       else document.addEventListener('DOMContentLoaded', run);
     }
   } catch (e) {}
+
+  // 상대 시간 표시 (몇 분 전 / 몇 시간 전 ...)
+  window.timeAgo = function (iso) {
+    if (!iso) return '';
+    var then = new Date(iso);
+    if (isNaN(then.getTime())) return '';
+    var diff = (Date.now() - then.getTime()) / 1000;
+    if (diff < 60) return '방금 전';
+    if (diff < 3600) return Math.floor(diff / 60) + '분 전';
+    if (diff < 86400) return Math.floor(diff / 3600) + '시간 전';
+    if (diff < 604800) return Math.floor(diff / 86400) + '일 전';
+    if (diff < 2592000) return Math.floor(diff / 604800) + '주 전';
+    return then.getFullYear() + '.' + String(then.getMonth() + 1).padStart(2, '0') + '.' + String(then.getDate()).padStart(2, '0');
+  };
 })();
