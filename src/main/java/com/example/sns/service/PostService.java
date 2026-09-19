@@ -66,7 +66,7 @@ public class PostService {
         }
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         Post post = new Post();
         post.setContent(content);

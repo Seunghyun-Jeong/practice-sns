@@ -93,7 +93,7 @@ class ErrorResponseApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"고쳐보기\"}"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("댓글이 존재하지 않습니다."));
+                .andExpect(jsonPath("$.message").value("댓글을 찾을 수 없습니다."));
     }
 
     @Test

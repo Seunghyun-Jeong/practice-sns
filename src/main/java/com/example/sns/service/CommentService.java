@@ -31,9 +31,9 @@ public class CommentService {
 
     public void addComment(Long postId, CommentDto dto, String username) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new NotFoundException("해당 게시글이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다."));
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("해당 유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         Comment parent = resolveParent(dto.getParentId(), post);
 
@@ -71,7 +71,7 @@ public class CommentService {
         }
 
         Comment parent = commentRepository.findById(parentId)
-                .orElseThrow(() -> new NotFoundException("답글을 달 댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("답글을 달 댓글을 찾을 수 없습니다."));
 
         if (!parent.getPost().getId().equals(post.getId())) {
             throw new IllegalArgumentException("다른 게시글의 댓글에는 답글을 달 수 없습니다.");
@@ -101,7 +101,7 @@ public class CommentService {
 
     public void updateComment(Long commentId, CommentUpdateRequest request, String username) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new NotFoundException("댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("댓글을 찾을 수 없습니다."));
 
         if (!comment.getAuthor().getUsername().equals(username)) {
             throw new ForbiddenException("본인이 작성한 댓글만 수정할 수 있습니다.");
@@ -127,7 +127,7 @@ public class CommentService {
 
     public void deleteComment(Long commentId, String username, String role) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new NotFoundException("댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("댓글을 찾을 수 없습니다."));
 
         if (!comment.getAuthor().getUsername().equals(username) && !"ADMIN".equals(role)) {
             throw new ForbiddenException("댓글 삭제 권한이 없습니다.");

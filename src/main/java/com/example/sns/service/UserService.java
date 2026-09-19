@@ -41,7 +41,7 @@ public class UserService {
     @Transactional
     public void deleteUser(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         userRepository.delete(user);
     }
@@ -49,7 +49,7 @@ public class UserService {
     @Transactional
     public void suspendUser(Long userId, String duration) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("해당 사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         if (user.getRole() == User.Role.ADMIN) {
             throw new IllegalArgumentException("관리자는 정지할 수 없습니다.");
@@ -75,7 +75,7 @@ public class UserService {
 
     public UserProfileDto getProfileById(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("해당 사용자가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         return new UserProfileDto(
                 user.getUsername(),
@@ -100,7 +100,7 @@ public class UserService {
     @Transactional
     public void unsuspendUser(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("해당 사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         user.setSuspendedUntil(null);
     }
@@ -112,7 +112,7 @@ public class UserService {
         }
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         String url = fileStorageService.storeImage(file, "profile_" + user.getId());
         user.setProfileImageUrl(url);
@@ -126,7 +126,7 @@ public class UserService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         user.updateUsername(newUsername);
     }

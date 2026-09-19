@@ -126,7 +126,7 @@ public class UserController {
         // 쿠키의 토큰에 예전 닉네임이 남으면 인증이 깨지므로 새로 발급한다.
         // 리프레시 토큰은 닉네임이 아니라 유저를 가리키고 있어 그대로 둬도 된다.
         User updated = userRepository.findById(user.getUserId())
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
         authTokenIssuer.writeAccessToken(updated, response);
 
         return ResponseEntity.ok(Map.of("message", "닉네임이 수정되었습니다."));
