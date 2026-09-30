@@ -12,6 +12,7 @@ import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.ChatMessageRepository;
 import com.example.sns.repository.ChatRoomRepository;
 import com.example.sns.repository.UserRepository;
+import com.example.sns.util.TextContent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,6 @@ public class ChatService {
     private final PushSocketHandler pushSocketHandler;
 
     /** 메시지 최대 길이 (컬럼 길이와 맞춘다) */
-    private static final int MAX_CONTENT_LENGTH = 1000;
 
     /**
      * 상대와의 방을 연다. 이미 있으면 그 방을, 없으면 새로 만들어 돌려준다.
@@ -133,12 +133,7 @@ public class ChatService {
     /** 메시지 전송. 참여자만 보낼 수 있고, 정지된 상대에게는 보낼 수 없다 */
     @Transactional
     public ChatMessageDto sendMessage(Long myId, Long roomId, String content) {
-        if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("메시지 내용을 입력해주세요.");
-        }
-        if (content.length() > MAX_CONTENT_LENGTH) {
-            throw new IllegalArgumentException("메시지는 " + MAX_CONTENT_LENGTH + "자 이하여야 합니다.");
-        }
+        String text = TextContent.require(content, ChatMessage.MAX_CONTENT_LENGTH);
 
         ChatRoom room = findRoomOf(myId, roomId);
         if (room.getPartnerOf(myId).isSuspended()) {
@@ -148,7 +143,7 @@ public class ChatService {
         ChatMessage message = new ChatMessage();
         message.setRoom(room);
         message.setSender(findUser(myId));
-        message.setContent(content.trim());
+        message.setContent(text);
         chatMessageRepository.save(message);
 
         room.setLastMessageAt(message.getCreatedAt());
@@ -169,15 +164,10 @@ public class ChatService {
      */
     @Transactional
     public ChatMessageDto editMessage(Long myId, Long messageId, String content) {
-        if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("메시지 내용을 입력해주세요.");
-        }
-        if (content.length() > MAX_CONTENT_LENGTH) {
-            throw new IllegalArgumentException("메시지는 " + MAX_CONTENT_LENGTH + "자 이하여야 합니다.");
-        }
+        String text = TextContent.require(content, ChatMessage.MAX_CONTENT_LENGTH);
 
         ChatMessage message = findModifiableMessage(myId, messageId);
-        message.setContent(content.trim());
+        message.setContent(text);
         message.setEdited(true);
 
         ChatMessageDto dto = toDto(message);

@@ -12,6 +12,7 @@ import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.CommentRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
+import com.example.sns.util.TextContent;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -40,7 +41,7 @@ public class CommentService {
         Comment comment = new Comment();
         comment.setPost(post);
         comment.setAuthor(user);
-        comment.setContent(dto.getContent());
+        comment.setContent(TextContent.require(dto.getContent(), Comment.MAX_CONTENT_LENGTH));
         comment.setParent(parent);
         comment.setCreatedAt(LocalDateTime.now());
 
@@ -107,7 +108,7 @@ public class CommentService {
             throw new ForbiddenException("본인이 작성한 댓글만 수정할 수 있습니다.");
         }
 
-        comment.setContent(request.getContent());
+        comment.setContent(TextContent.require(request.getContent(), Comment.MAX_CONTENT_LENGTH));
         comment.setUpdatedAt(LocalDateTime.now());
         commentRepository.save(comment);
     }

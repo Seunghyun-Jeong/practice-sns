@@ -21,6 +21,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @Table(name = "chat_message")
 public class ChatMessage {
+    public static final int MAX_CONTENT_LENGTH = 1000;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,7 +35,7 @@ public class ChatMessage {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false, length = MAX_CONTENT_LENGTH)
     private String content;
 
     /** 상대방이 읽었는지 (안읽음 수 계산에 사용) */

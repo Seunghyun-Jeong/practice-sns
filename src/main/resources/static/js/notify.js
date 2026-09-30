@@ -1,5 +1,5 @@
 (function () {
-  // ===== 토스트 =====
+  // 토스트
   function ensureToastContainer() {
     var c = document.getElementById('toastContainer');
     if (!c) {
@@ -35,7 +35,7 @@
     }
   };
 
-  // ===== 확인 모달 (Promise<boolean>) =====
+  // 확인 모달 (Promise<boolean>)
   function ensureConfirmModal() {
     var m = document.getElementById('confirmModal');
     if (!m) {
@@ -90,7 +90,7 @@
     });
   };
 
-  // ===== 요소를 잠깐 녹색으로 반짝 (성공 강조) =====
+  // 요소를 잠깐 녹색으로 반짝 (성공 강조)
   window.flashSuccess = function (el) {
     if (!el) return;
     el.classList.remove('flash-success');
@@ -99,7 +99,7 @@
     setTimeout(function () { el.classList.remove('flash-success'); }, 900);
   };
 
-  // ===== 새로고침/이동 후에 표시할 토스트 (reload로 지워지지 않게) =====
+  // 새로고침/이동 후에 표시할 토스트 (reload로 지워지지 않게)
   window.toastAfterReload = function (message, type) {
     try {
       sessionStorage.setItem('pendingToast', JSON.stringify({ m: message, t: type || 'success' }));

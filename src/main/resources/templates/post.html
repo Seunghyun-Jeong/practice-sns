@@ -25,7 +25,7 @@
     </div>
 
     <!-- 2. 내용 작성 -->
-    <textarea id="content" rows="4" placeholder="문구를 입력하세요..." required></textarea>
+    <textarea id="content" rows="4" placeholder="문구를 입력하세요..." required th:maxlength="${T(com.example.sns.entity.Post).MAX_CONTENT_LENGTH}"></textarea>
 
     <!-- 3. 업로드 -->
     <button type="button" id="submitPostBtn" class="btn login-btn post-upload-btn">업로드</button>

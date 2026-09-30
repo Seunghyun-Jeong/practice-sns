@@ -171,7 +171,7 @@
 <div id="commentEditModal" class="ce-backdrop" style="display:none;">
     <div class="ce-box">
         <div class="ce-title">댓글 수정</div>
-        <textarea id="commentEditInput" class="ce-input" rows="3"></textarea>
+        <textarea id="commentEditInput" class="ce-input" rows="3" th:maxlength="${T(com.example.sns.entity.Comment).MAX_CONTENT_LENGTH}"></textarea>
         <div class="ce-actions">
             <button id="commentEditCancel" class="ce-btn ce-cancel">취소</button>
             <button id="commentEditSave" class="ce-btn ce-save">저장</button>

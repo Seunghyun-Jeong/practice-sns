@@ -26,6 +26,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class Post {
+    /** 인스타그램 캡션 한도와 같다. TEXT 칸(65,535바이트)에 한글로 채워도 한참 남는다 */
+    public static final int MAX_CONTENT_LENGTH = 2200;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

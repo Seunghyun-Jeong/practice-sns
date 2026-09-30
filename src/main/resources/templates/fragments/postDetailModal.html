@@ -51,7 +51,7 @@
                                   th:attr="data-author-id=${post.authorId}">작성자</span>
                             <span class="post-content" th:text="${post.content}">내용</span>
                         </div>
-                        <textarea class="edit-content-input" style="display:none;">[[${post.content}]]</textarea>
+                        <textarea class="edit-content-input" style="display:none;" th:maxlength="${T(com.example.sns.entity.Post).MAX_CONTENT_LENGTH}">[[${post.content}]]</textarea>
                         <button class="save-post-btn" th:attr="data-post-id=${post.id}" style="display:none;">저장</button>
                         <div class="pd-meta">
                             <span class="post-time" th:attr="data-time=${post.createdAt}"></span>
@@ -110,7 +110,7 @@
                     <button type="button" id="replyCancelBtn" aria-label="답글 취소">취소</button>
                 </div>
                 <div class="comment-input-wrapper">
-                    <input type="text" id="commentInput" placeholder="댓글 달기..." />
+                    <input type="text" id="commentInput" placeholder="댓글 달기..." th:maxlength="${T(com.example.sns.entity.Comment).MAX_CONTENT_LENGTH}" />
                     <input type="hidden" id="replyParentId" value="" />
                     <button id="submitCommentBtn" class="comment-submit-button" th:attr="data-post-id=${post.id}">게시</button>
                 </div>

@@ -1,5 +1,6 @@
 package com.example.sns.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -137,6 +138,75 @@ class ErrorResponseApiTest {
         mockMvc.perform(post("/api/users/{id}/follow", 없는_ID).cookie(authorCookie))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("팔로우할 유저를 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("공백만 있는 댓글은 400을 준다")
+    void 빈_댓글은_400() throws Exception {
+        mockMvc.perform(post("/api/posts/{postId}/comments", post.getId())
+                        .cookie(authorCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("내용을 입력해주세요."));
+    }
+
+    @Test
+    @DisplayName("댓글은 칸 크기까지는 등록되고, 한 글자라도 넘으면 DB까지 가지 않고 400을 준다")
+    void 댓글_길이_경계() throws Exception {
+        mockMvc.perform(post("/api/posts/{postId}/comments", post.getId())
+                        .cookie(authorCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(contentJson("가".repeat(Comment.MAX_CONTENT_LENGTH))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/posts/{postId}/comments", post.getId())
+                        .cookie(authorCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(contentJson("가".repeat(Comment.MAX_CONTENT_LENGTH + 1))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("내용은 " + Comment.MAX_CONTENT_LENGTH + "자까지 쓸 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("길이는 앞뒤 공백을 뺀 뒤에 센다")
+    void 댓글_앞뒤_공백은_길이에서_빠진다() throws Exception {
+        String padded = "  " + "가".repeat(Comment.MAX_CONTENT_LENGTH) + "  ";
+
+        mockMvc.perform(put("/api/posts/{postId}/comments/{id}", post.getId(), comment.getId())
+                        .cookie(authorCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(contentJson(padded)))
+                .andExpect(status().isOk());
+
+        Comment saved = commentRepository.findById(comment.getId()).orElseThrow();
+        assertThat(saved.getContent()).isEqualTo(padded.trim());
+    }
+
+    @Test
+    @DisplayName("게시글 본문을 비워서 수정하면 400을 준다")
+    void 게시글_본문을_비우면_400() throws Exception {
+        mockMvc.perform(put("/api/posts/{id}", post.getId())
+                        .cookie(authorCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("내용을 입력해주세요."));
+    }
+
+    @Test
+    @DisplayName("게시글 본문이 한도를 넘으면 400을 준다")
+    void 게시글_본문_한도_초과는_400() throws Exception {
+        mockMvc.perform(put("/api/posts/{id}", post.getId())
+                        .cookie(authorCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(contentJson("가".repeat(Post.MAX_CONTENT_LENGTH + 1))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("내용은 " + Post.MAX_CONTENT_LENGTH + "자까지 쓸 수 있습니다."));
+    }
+
+    private String contentJson(String content) {
+        return "{\"content\":\"" + content + "\"}";
     }
 
     private User createUser(String username) {

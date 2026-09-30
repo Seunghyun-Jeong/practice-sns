@@ -145,7 +145,8 @@
 
     saveBtn.onclick = async function () {
       const postId = this.getAttribute('data-post-id');
-      const updatedContent = contentInput.value;
+      const updatedContent = contentInput.value.trim();
+      if (!updatedContent) { showToast('내용을 입력해주세요.', 'error'); return; }
 
       try {
         const response = await fetch('/api/posts/' + postId, {

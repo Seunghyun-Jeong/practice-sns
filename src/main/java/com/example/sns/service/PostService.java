@@ -19,6 +19,7 @@ import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.PostLikeRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
+import com.example.sns.util.TextContent;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,12 +65,13 @@ public class PostService {
         if (image == null || image.isEmpty()) {
             throw new IllegalArgumentException("사진을 선택해주세요.");
         }
+        String text = TextContent.require(content, Post.MAX_CONTENT_LENGTH);
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
 
         Post post = new Post();
-        post.setContent(content);
+        post.setContent(text);
         post.setImageUrl(fileStorageService.storeImage(image, "post_" + user.getId()));
         post.setAuthor(user);
 
@@ -304,7 +306,7 @@ public class PostService {
             throw new ForbiddenException("게시글 수정 권한이 없습니다.");
         }
 
-        post.setContent(request.getContent());
+        post.setContent(TextContent.require(request.getContent(), Post.MAX_CONTENT_LENGTH));
         post.setUpdatedAt(LocalDateTime.now());
         hashtagService.syncTags(post);   // 본문이 바뀌었으니 태그도 다시 계산
     }

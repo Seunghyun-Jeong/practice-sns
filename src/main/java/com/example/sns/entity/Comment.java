@@ -22,11 +22,14 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class Comment {
+    /** 칸 크기(VARCHAR 255) 그대로. 늘리려면 운영 DB에 ALTER TABLE이 따로 필요하다 */
+    public static final int MAX_CONTENT_LENGTH = 255;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = MAX_CONTENT_LENGTH)
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)

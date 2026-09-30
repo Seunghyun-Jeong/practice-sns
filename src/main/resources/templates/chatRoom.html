@@ -38,7 +38,7 @@
     </div>
 
     <form id="chatSendForm" class="chat-send-form" autocomplete="off">
-        <input type="text" id="chatInput" class="chat-input" placeholder="메시지 입력..." maxlength="1000" />
+        <input type="text" id="chatInput" class="chat-input" placeholder="메시지 입력..." th:maxlength="${T(com.example.sns.entity.ChatMessage).MAX_CONTENT_LENGTH}" />
         <button type="submit" id="chatSendBtn" class="chat-send-btn" disabled>보내기</button>
     </form>
 </div>
@@ -47,7 +47,7 @@
 <div id="chatEditModal" class="ce-backdrop" style="display:none;">
     <div class="ce-box">
         <div class="ce-title">메시지 수정</div>
-        <textarea id="chatEditInput" class="ce-input" rows="3" maxlength="1000"></textarea>
+        <textarea id="chatEditInput" class="ce-input" rows="3" th:maxlength="${T(com.example.sns.entity.ChatMessage).MAX_CONTENT_LENGTH}"></textarea>
         <div class="ce-actions">
             <button id="chatEditCancel" class="ce-btn ce-cancel">취소</button>
             <button id="chatEditSave" class="ce-btn ce-save">저장</button>
