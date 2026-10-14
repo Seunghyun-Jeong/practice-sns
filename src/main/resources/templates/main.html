@@ -52,6 +52,7 @@
 </div>
 
 <script src="/js/postCards.js"></script>
+<script src="/js/feedList.js"></script>
 <script src="/js/postModal.js"></script>
 <script>
   // 무한 스크롤 페이지는 브라우저의 스크롤 복원을 끈다.
@@ -63,112 +64,32 @@
 
   initPostCards(document);
 
-  // 무한 스크롤, 탭 전환, 새 글 확인.
-  // 모두 /feed 조각을 받아 카드를 채우거나 지금 카드를 기준으로 묻는 일이라 한 클로저에서 같은 상태(hasNext, tab)를 다룬다.
+  // 탭 전환과 새 글 확인. 카드를 받아 채우는 일은 프로필과 같이 쓰는 feedList.js가 한다.
   (function () {
     const container = document.getElementById('feedContainer');
     const sentinel = document.getElementById('feedSentinel');
-    const loading = document.getElementById('feedLoading');
     if (!container || !sentinel) return;
 
-    let hasNext = container.getAttribute('data-has-next') === 'true';
     let tab = container.getAttribute('data-tab') || 'all';
     const tag = container.getAttribute('data-tag') || '';
-    let isLoading = false;
+    const newPostsBtn = document.getElementById('newPostsBtn');
 
-    // 탭을 바꿀 때마다 올라간다. 요청을 보낼 때 값을 잡아두고 응답이 왔을 때 달라져 있으면 버린다.
-    // 이게 없으면 이전 탭의 다음 페이지나 먼저 누른 탭의 응답이 늦게 도착해 새 탭에 섞인다.
-    let seq = 0;
-
-    // 지금 보고 있는 피드(탭, 태그)
+    // 지금 보고 있는 피드(탭, 태그). 카드 받기와 새 글 확인이 같은 조건으로 묻는다
     function feedParams() {
       return `tab=${tab}` + (tag ? '&tag=' + encodeURIComponent(tag) : '');
     }
 
-    // 카드 하나의 자리 (작성 시각, id). prefix는 before(다음 묶음) 또는 after(새 글 확인)
-    function cardCursor(prefix, card) {
-      return card
-        ? `&${prefix}At=${encodeURIComponent(card.dataset.createdAt)}&${prefix}Id=${card.dataset.postId}`
-        : '';
-    }
+    const feed = createFeedList({
+      container,
+      sentinel,
+      loading: document.getElementById('feedLoading'),
+      params: feedParams
+    });
 
-    // lastCard가 없으면 첫 묶음, 있으면 그 카드의 (작성 시각, id)보다 먼저 쓴 글부터 받는다.
-    // 페이지 번호로 받으면 보는 사이 새 글이 올라왔을 때 밀려서 본 글이 다시 나온다.
-    async function fetchFeed(lastCard) {
-      const response = await fetch(`/feed?${feedParams()}${cardCursor('before', lastCard)}`, { credentials: 'include' });
-      if (!response.ok) throw new Error('failed to load feed page');
-      const temp = document.createElement('div');
-      temp.innerHTML = await response.text();
-      return temp;
-    }
-
-    async function loadNextPage() {
-      if (isLoading || !hasNext) return;
-      isLoading = true;
-      loading.style.display = 'block';
-      const mySeq = seq;
-
-      try {
-        const shown = container.querySelectorAll('.post-summary');
-        const temp = await fetchFeed(shown[shown.length - 1]);
-        if (mySeq !== seq) return;
-
-        const cards = [...temp.querySelectorAll('.post-summary')];
-        if (cards.length === 0) {
-          hasNext = false;
-          return;
-        }
-
-        // 이벤트는 새 카드에만 연결한다 (붙이기 전에 연결해도 이동 후 그대로 유지됨)
-        initPostCards(temp);
-        cards.forEach(card => container.appendChild(card));
-
-        const meta = temp.querySelector('.feed-page-meta');
-        hasNext = meta ? meta.getAttribute('data-has-next') === 'true' : false;
-      } catch (err) {
-        console.error(err);
-        if (mySeq === seq) hasNext = false;
-      } finally {
-        if (mySeq === seq) {
-          isLoading = false;
-          loading.style.display = 'none';
-          feedEnd.check();   // 붙인 페이지가 짧아 끝이 여전히 보이면 이어서 채운다
-        }
-      }
-    }
-
-    // 피드 컨테이너만 첫 묶음으로 갈아 끼운다. 페이지 전체를 다시 불러오지 않는다.
-    // 탭을 바꿀 때와 새 게시물 버튼을 눌렀을 때 같이 쓴다.
-    async function reloadFeed() {
-      seq += 1;
-      const mySeq = seq;
-      hasNext = false;
-      isLoading = true;
-      loading.style.display = 'block';
+    // 피드를 첫 묶음으로 새로 받는다. 탭을 바꿀 때와 새 게시물 버튼을 눌렀을 때 같이 쓴다.
+    function reloadFeed() {
       newPostsBtn.hidden = true;
-
-      window.scrollTo(0, 0);
-      // 스크롤을 코드로 되돌린 것이라 배경 별은 따라오지 않게 한다
-      if (window.starfieldRebase) window.starfieldRebase();
-
-      try {
-        const temp = await fetchFeed(null);
-        if (mySeq !== seq) return;
-
-        initPostCards(temp);
-        container.replaceChildren(...temp.childNodes);
-        const meta = container.querySelector('.feed-page-meta');
-        hasNext = meta ? meta.getAttribute('data-has-next') === 'true' : false;
-      } catch (err) {
-        console.error(err);
-        if (mySeq === seq) showToast('피드를 불러오지 못했습니다.', 'error');
-      } finally {
-        if (mySeq === seq) {
-          isLoading = false;
-          loading.style.display = 'none';
-          feedEnd.check();   // 새 첫 묶음이 짧으면 바로 다음 묶음을 채운다
-        }
-      }
+      feed.reload();
     }
 
     function switchTab(nextTab, pushHistory) {
@@ -188,18 +109,17 @@
     // 피드가 안 보이는 동안(다른 탭, 다른 앱)은 묻지 않고, 돌아오면 바로 한 번 묻는다.
     // 버튼이 이미 떠 있으면 더 물을 필요가 없다.
     const NEW_POSTS_CHECK_MS = 60 * 1000;
-    const newPostsBtn = document.getElementById('newPostsBtn');
 
     async function checkNewPosts() {
-      if (document.hidden || isLoading || !newPostsBtn.hidden) return;
-      const mySeq = seq;
+      if (document.hidden || feed.isLoading() || !newPostsBtn.hidden) return;
+      const mySeq = feed.seq();
       try {
-        const top = container.querySelector('.post-summary');
-        const response = await fetch(`/api/feed/new?${feedParams()}${cardCursor('after', top)}`, { credentials: 'include' });
+        const response = await fetch(`/api/feed/new?${feedParams()}${feed.cardCursor('after', feed.firstCard())}`,
+            { credentials: 'include' });
         if (!response.ok) return;
         const data = await response.json();
         // 묻는 사이 탭을 바꿨으면 이전 탭에 대한 답이다
-        if (mySeq === seq && data.hasNew) newPostsBtn.hidden = false;
+        if (mySeq === feed.seq() && data.hasNew) newPostsBtn.hidden = false;
       } catch (err) {
         console.error(err);
       }
@@ -223,9 +143,6 @@
       const wanted = new URLSearchParams(location.search).get('tab') === 'following' ? 'following' : 'all';
       switchTab(wanted, false);
     });
-
-    const feedEnd = watchListEnd(sentinel, loadNextPage);
-    feedEnd.check();   // 첫 화면이 짧아 스크롤이 없을 때도 채운다
   })();
 
 </script>
