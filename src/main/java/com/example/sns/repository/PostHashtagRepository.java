@@ -10,8 +10,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface PostHashtagRepository extends JpaRepository<PostHashtag, Long> {
 
-    /** 게시글에 달린 태그 연결 (수정 시 다시 계산하기 위해 사용) */
-    List<PostHashtag> findByPost(Post post);
+    /** 게시글에 지금 달린 태그 연결. 태그 이름으로 비교하므로 태그까지 함께 읽는다 */
+    @Query("SELECT ph FROM PostHashtag ph JOIN FETCH ph.hashtag WHERE ph.post = :post")
+    List<PostHashtag> findByPostWithHashtag(@Param("post") Post post);
 
     /** 여러 게시글의 태그를 한 번에 조회 → [postId, 태그이름] */
     @Query("SELECT ph.post.id, ph.hashtag.name FROM PostHashtag ph "
