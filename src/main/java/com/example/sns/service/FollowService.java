@@ -1,5 +1,6 @@
 package com.example.sns.service;
 
+import com.example.sns.dto.FollowPageDto;
 import com.example.sns.dto.FollowUserDto;
 import com.example.sns.entity.Follow;
 import com.example.sns.entity.Notification;
@@ -7,16 +8,20 @@ import com.example.sns.entity.User;
 import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.UserRepository;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class FollowService {
+    /** 팔로워 / 팔로잉 목록을 한 번에 불러오는 사람 수 */
+    private static final int FOLLOW_PAGE_SIZE = 20;
+
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
@@ -73,32 +78,38 @@ public class FollowService {
         return followRepository.countByFollower(user);
     }
 
-    /** 나를 팔로우하는 사람 목록 (정지 유저 제외) */
-    public List<FollowUserDto> getFollowers(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
-
-        return followRepository.findAllByFollowingOrderByFollowedAtDesc(user).stream()
-                .map(Follow::getFollower)
-                .filter(u -> !u.isSuspended())
-                .map(this::toFollowUserDto)
-                .collect(Collectors.toList());
+    /**
+     * 나를 팔로우하는 사람 한 묶음 (최근에 팔로우한 순, 정지 유저 제외).
+     * beforeAt, beforeId가 없으면 첫 묶음이고, 있으면 그 사람보다 먼저 팔로우한 사람부터 이어서 준다.
+     */
+    public FollowPageDto getFollowers(Long userId, LocalDateTime beforeAt, Long beforeId) {
+        requireUser(userId);
+        LocalDateTime now = LocalDateTime.now();
+        Slice<FollowUserDto> slice = beforeAt == null
+                ? followRepository.findFollowers(userId, now, followPage())
+                : followRepository.findFollowersBefore(userId, now, beforeAt, beforeId, followPage());
+        return new FollowPageDto(slice.getContent(), slice.hasNext());
     }
 
-    /** 내가 팔로우하는 사람 목록 (정지 유저 제외) */
-    public List<FollowUserDto> getFollowingList(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
-
-        return followRepository.findAllByFollowerOrderByFollowedAtDesc(user).stream()
-                .map(Follow::getFollowing)
-                .filter(u -> !u.isSuspended())
-                .map(this::toFollowUserDto)
-                .collect(Collectors.toList());
+    /** 내가 팔로우하는 사람 한 묶음 (최근에 팔로우한 순, 정지 유저 제외) */
+    public FollowPageDto getFollowingList(Long userId, LocalDateTime beforeAt, Long beforeId) {
+        requireUser(userId);
+        LocalDateTime now = LocalDateTime.now();
+        Slice<FollowUserDto> slice = beforeAt == null
+                ? followRepository.findFollowing(userId, now, followPage())
+                : followRepository.findFollowingBefore(userId, now, beforeAt, beforeId, followPage());
+        return new FollowPageDto(slice.getContent(), slice.hasNext());
     }
 
-    private FollowUserDto toFollowUserDto(User user) {
-        return new FollowUserDto(user.getId(), user.getUsername(), user.getProfileImageUrl());
+    /** 없는 사람의 목록은 빈 목록이 아니라 404로 알린다. 엔티티는 필요 없으므로 있는지만 본다 */
+    private void requireUser(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new NotFoundException("유저를 찾을 수 없습니다.");
+        }
+    }
+
+    private PageRequest followPage() {
+        return PageRequest.of(0, FOLLOW_PAGE_SIZE);
     }
 
     /** currentUserId 가 targetUserId 를 팔로우 중인지 */

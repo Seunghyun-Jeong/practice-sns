@@ -8,10 +8,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.sns.entity.Follow;
 import com.example.sns.entity.User;
+import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.util.JwtUtil;
+import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +40,9 @@ class FollowApiTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private FollowRepository followRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -104,6 +111,39 @@ class FollowApiTest {
         mockMvc.perform(get("/api/users/{id}/followers", other.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.users[0].username").value("tester1"));
+    }
+
+    @Test
+    @DisplayName("팔로워 목록은 20명씩 받고, 받은 마지막 사람을 넘기면 이어서 받는다")
+    void 팔로워_목록을_이어서_받는다() throws Exception {
+        LocalDateTime base = LocalDateTime.now();
+        for (int i = 0; i < 21; i++) {
+            User follower = new User();
+            follower.setUsername("fan" + i);
+            follower.setPassword("password");
+            follower.setRole(User.Role.USER);
+            Follow follow = new Follow();
+            follow.setFollower(userRepository.save(follower));
+            follow.setFollowing(other);
+            follow.setFollowedAt(base.plusSeconds(i));
+            followRepository.save(follow);
+        }
+
+        String first = mockMvc.perform(get("/api/users/{id}/followers", other.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.users.length()").value(20))
+                .andExpect(jsonPath("$.users[0].username").value("fan20"))
+                .andExpect(jsonPath("$.hasNext").value(true))
+                .andReturn().getResponse().getContentAsString();
+
+        // 화면이 하는 그대로, 응답에 담긴 마지막 사람의 값을 다음 요청에 넘긴다
+        mockMvc.perform(get("/api/users/{id}/followers", other.getId())
+                        .param("beforeAt", JsonPath.<String>read(first, "$.users[19].followedAt"))
+                        .param("beforeId", String.valueOf(JsonPath.<Integer>read(first, "$.users[19].followId"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.users.length()").value(1))
+                .andExpect(jsonPath("$.users[0].username").value("fan0"))
+                .andExpect(jsonPath("$.hasNext").value(false));
     }
 
     @Test

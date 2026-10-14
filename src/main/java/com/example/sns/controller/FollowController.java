@@ -1,15 +1,19 @@
 package com.example.sns.controller;
 
 import com.example.sns.config.MyUserDetails;
+import com.example.sns.dto.FollowPageDto;
 import com.example.sns.service.FollowService;
+import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -29,16 +33,22 @@ public class FollowController {
         ));
     }
 
-    /** 나를 팔로우하는 사람 목록 */
+    /** 나를 팔로우하는 사람 한 묶음. 다음 묶음은 받은 마지막 사람의 followedAt, followId를 넘겨 받는다 */
     @GetMapping("/followers")
-    public ResponseEntity<?> getFollowers(@PathVariable Long userId) {
-        return ResponseEntity.ok(Map.of("users", followService.getFollowers(userId)));
+    public ResponseEntity<FollowPageDto> getFollowers(@PathVariable Long userId,
+                                                      @RequestParam(required = false)
+                                                      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeAt,
+                                                      @RequestParam(required = false) Long beforeId) {
+        return ResponseEntity.ok(followService.getFollowers(userId, beforeAt, beforeId));
     }
 
-    /** 내가 팔로우하는 사람 목록 */
+    /** 내가 팔로우하는 사람 한 묶음 */
     @GetMapping("/following")
-    public ResponseEntity<?> getFollowingList(@PathVariable Long userId) {
-        return ResponseEntity.ok(Map.of("users", followService.getFollowingList(userId)));
+    public ResponseEntity<FollowPageDto> getFollowingList(@PathVariable Long userId,
+                                                          @RequestParam(required = false)
+                                                          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeAt,
+                                                          @RequestParam(required = false) Long beforeId) {
+        return ResponseEntity.ok(followService.getFollowingList(userId, beforeAt, beforeId));
     }
 
     /** 팔로워 / 팔로잉 수 + 내가 팔로우 중인지 (비로그인도 조회 가능) */

@@ -206,62 +206,102 @@
         modal.addEventListener('click', (e) => { if (e.target === modal) closeFollowList(); });
     }
 
+    // 목록은 20명씩 받고, 끝에 닿으면 다음 20명을 이어서 받는다
+    let followListEnd = null;
+    // 목록을 새로 열 때마다 올라간다. 팔로워를 열었다가 바로 팔로잉을 열면 늦게 온 팔로워 응답은 버린다
+    let followListSeq = 0;
+
     function closeFollowList() {
+        if (followListEnd) followListEnd.stop();
+        followListEnd = null;
+        followListSeq += 1;
         const modal = document.getElementById('followListModal');
         if (modal) modal.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
 
-    async function openFollowList(type, userId) {
+    function openFollowList(type, userId) {
         const modal = document.getElementById('followListModal');
         const body = document.getElementById('followListBody');
         document.getElementById('followListTitle').textContent = type === 'followers' ? '팔로워' : '팔로잉';
-        body.innerHTML = '<div class="fl-empty">불러오는 중...</div>';
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
 
-        try {
-            const response = await fetch(`/api/users/${userId}/${type}`, { credentials: 'include' });
-            const data = await response.json();
+        if (followListEnd) followListEnd.stop();
+        const mySeq = ++followListSeq;
 
-            if (!response.ok) {
-                body.innerHTML = '';
-                showToast(data.message || '목록을 불러오지 못했습니다.', 'error');
+        const status = document.createElement('div');
+        status.className = 'fl-empty';
+        status.textContent = '불러오는 중...';
+        const rows = document.createElement('div');
+        const sentinel = document.createElement('div');
+        body.replaceChildren(status, rows, sentinel);
+
+        // 다음 묶음의 기준: 이미 보여준 마지막 사람의 (팔로우한 시각, follow id)
+        let last = null;
+        let hasNext = true;
+        let loading = false;
+
+        async function loadMore() {
+            if (loading || !hasNext) return;
+            loading = true;
+            try {
+                const query = last
+                    ? `?beforeAt=${encodeURIComponent(last.followedAt)}&beforeId=${last.followId}`
+                    : '';
+                const response = await fetch(`/api/users/${userId}/${type}${query}`, { credentials: 'include' });
+                const data = await response.json();
+                if (mySeq !== followListSeq) return;
+
+                if (!response.ok) {
+                    showToast(data.message || '목록을 불러오지 못했습니다.', 'error');
+                    closeFollowList();
+                    return;
+                }
+
+                if (!last && data.users.length === 0) {
+                    status.textContent = type === 'followers' ? '아직 팔로워가 없습니다.' : '아직 팔로우한 사람이 없습니다.';
+                    hasNext = false;
+                    return;
+                }
+
+                status.remove();
+                data.users.forEach(u => rows.appendChild(followRow(u)));
+                hasNext = data.hasNext;
+                last = data.users[data.users.length - 1] || last;
+            } catch (err) {
+                console.error(err);
+                if (mySeq !== followListSeq) return;
+                showToast('목록을 불러오는 중 오류가 발생했습니다.', 'error');
                 closeFollowList();
                 return;
+            } finally {
+                loading = false;
             }
-
-            if (!data.users || data.users.length === 0) {
-                body.innerHTML = '<div class="fl-empty">' +
-                    (type === 'followers' ? '아직 팔로워가 없습니다.' : '아직 팔로우한 사람이 없습니다.') + '</div>';
-                return;
-            }
-
-            body.innerHTML = '';
-            data.users.forEach(u => {
-                const row = document.createElement('div');
-                row.className = 'fl-row';
-
-                const img = document.createElement('img');
-                img.className = 'fl-avatar';
-                img.src = u.profileImageUrl || '/images/default-profile.svg';
-                img.alt = '프로필';
-
-                const name = document.createElement('span');
-                name.className = 'fl-username';
-                name.textContent = u.username;
-
-                row.appendChild(img);
-                row.appendChild(name);
-                row.addEventListener('click', () => { window.location.href = '/profile/' + u.id; });
-                body.appendChild(row);
-            });
-        } catch (err) {
-            console.error(err);
-            body.innerHTML = '';
-            showToast('목록을 불러오는 중 오류가 발생했습니다.', 'error');
-            closeFollowList();
+            if (mySeq === followListSeq && followListEnd) followListEnd.check();
         }
+
+        followListEnd = watchListEnd(sentinel, loadMore, { root: body });
+        loadMore();
+    }
+
+    function followRow(u) {
+        const row = document.createElement('div');
+        row.className = 'fl-row';
+
+        const img = document.createElement('img');
+        img.className = 'fl-avatar';
+        img.src = u.profileImageUrl || '/images/default-profile.svg';
+        img.alt = '프로필';
+
+        const name = document.createElement('span');
+        name.className = 'fl-username';
+        name.textContent = u.username;
+
+        row.appendChild(img);
+        row.appendChild(name);
+        row.addEventListener('click', () => { window.location.href = '/profile/' + u.id; });
+        return row;
     }
 
     // 메시지: 방을 열고(없으면 생성) 대화방으로 이동
