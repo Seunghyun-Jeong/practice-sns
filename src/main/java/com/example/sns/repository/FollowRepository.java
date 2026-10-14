@@ -4,7 +4,6 @@ import com.example.sns.dto.FollowUserDto;
 import com.example.sns.entity.Follow;
 import com.example.sns.entity.User;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -22,8 +21,6 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     /** 나를 팔로우하는 수 */
     long countByFollowing(User following);
 
-    /** 내가 팔로우하는 사람들 */
-    List<Follow> findAllByFollower(User follower);
 
     /*
      * 팔로워 / 팔로잉 목록은 화면에 필요한 칸(id, 아이디, 프로필 사진)만 바로 꺼낸다.

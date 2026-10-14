@@ -9,14 +9,12 @@ import com.example.sns.dto.PostResponse;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.PostUpdateRequest;
 import com.example.sns.entity.Comment;
-import com.example.sns.entity.Follow;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
 import com.example.sns.exception.ForbiddenException;
 import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.CommentLikeRepository;
 import com.example.sns.repository.CommentRepository;
-import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.PostLikeRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
@@ -37,6 +35,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class PostService {
+    /** 피드에서 한 번에 불러오는 게시글 수 */
+    private static final int FEED_PAGE_SIZE = 10;
+
     /** 게시글 상세에서 댓글을 한 번에 불러오는 개수 (원 댓글, 답글 모두) */
     private static final int COMMENT_PAGE_SIZE = 20;
 
@@ -45,18 +46,16 @@ public class PostService {
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final CommentRepository commentRepository;
-    private final FollowRepository followRepository;
     private final FileStorageService fileStorageService;
     private final HashtagService hashtagService;
     private final MentionService mentionService;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FollowRepository followRepository, FileStorageService fileStorageService, HashtagService hashtagService, MentionService mentionService) {
+    public PostService(PostRepository postRepository, UserRepository userRepository, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FileStorageService fileStorageService, HashtagService hashtagService, MentionService mentionService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.postLikeRepository = postLikeRepository;
         this.commentLikeRepository = commentLikeRepository;
         this.commentRepository = commentRepository;
-        this.followRepository = followRepository;
         this.fileStorageService = fileStorageService;
         this.hashtagService = hashtagService;
         this.mentionService = mentionService;
@@ -82,39 +81,49 @@ public class PostService {
         return new PostResponse(saved.getId(), saved.getContent(), saved.getImageUrl(), user.getUsername(), saved.getCreatedAt());
     }
 
-    /** 전체 피드 한 페이지 */
-    public FeedPageDto getFeedPage(Long currentUserId, int page, int size) {
-        final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
-        Slice<Post> slice = postRepository.findFeed(LocalDateTime.now(), PageRequest.of(page, size));
-        return new FeedPageDto(toSummaryDtos(slice.getContent(), currentUser), page, slice.hasNext());
+    /**
+     * 전체 피드 한 묶음. beforeAt, beforeId가 없으면 첫 묶음이고,
+     * 있으면 그 글보다 먼저 쓴 글부터 이어서 준다.
+     */
+    public FeedPageDto getFeedPage(Long currentUserId, LocalDateTime beforeAt, Long beforeId) {
+        LocalDateTime now = LocalDateTime.now();
+        Slice<Post> slice = beforeAt == null
+                ? postRepository.findFeed(now, feedPage())
+                : postRepository.findFeedBefore(now, beforeAt, beforeId, feedPage());
+        return toFeedPage(slice, currentUserId);
     }
 
     /**
-     * 내가 팔로우한 사람들의 게시글 한 페이지 (본인 글 포함).
+     * 내가 팔로우한 사람들의 게시글 한 묶음 (본인 글 포함).
      * 팔로우한 사람이 없으면 본인 글만 나온다.
      */
-    public FeedPageDto getFollowingFeedPage(Long currentUserId, int page, int size) {
-        User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
-        if (currentUser == null) {
-            return new FeedPageDto(List.of(), page, false);
+    public FeedPageDto getFollowingFeedPage(Long currentUserId, LocalDateTime beforeAt, Long beforeId) {
+        if (currentUserId == null) {
+            return new FeedPageDto(List.of(), false);
         }
-
-        List<User> authors = followRepository.findAllByFollower(currentUser).stream()
-                .map(Follow::getFollowing)
-                .collect(Collectors.toList());
-        authors.add(currentUser);
-
-        Slice<Post> slice = postRepository.findFeedByAuthors(authors, LocalDateTime.now(), PageRequest.of(page, size));
-        return new FeedPageDto(toSummaryDtos(slice.getContent(), currentUser), page, slice.hasNext());
+        LocalDateTime now = LocalDateTime.now();
+        Slice<Post> slice = beforeAt == null
+                ? postRepository.findFollowingFeed(currentUserId, now, feedPage())
+                : postRepository.findFollowingFeedBefore(currentUserId, now, beforeAt, beforeId, feedPage());
+        return toFeedPage(slice, currentUserId);
     }
 
-    /** 특정 해시태그가 달린 게시글 한 페이지 */
-    public FeedPageDto getFeedPageByTag(String tag, Long currentUserId, int page, int size) {
-        final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
+    /** 특정 해시태그가 달린 게시글 한 묶음 */
+    public FeedPageDto getFeedPageByTag(String tag, Long currentUserId, LocalDateTime beforeAt, Long beforeId) {
         String normalized = tag == null ? "" : tag.trim().toLowerCase();
+        LocalDateTime now = LocalDateTime.now();
+        Slice<Post> slice = beforeAt == null
+                ? postRepository.findFeedByTag(normalized, now, feedPage())
+                : postRepository.findFeedByTagBefore(normalized, now, beforeAt, beforeId, feedPage());
+        return toFeedPage(slice, currentUserId);
+    }
 
-        Slice<Post> slice = postRepository.findFeedByTag(normalized, LocalDateTime.now(), PageRequest.of(page, size));
-        return new FeedPageDto(toSummaryDtos(slice.getContent(), currentUser), page, slice.hasNext());
+    private PageRequest feedPage() {
+        return PageRequest.of(0, FEED_PAGE_SIZE);
+    }
+
+    private FeedPageDto toFeedPage(Slice<Post> slice, Long currentUserId) {
+        return new FeedPageDto(toSummaryDtos(slice.getContent(), currentUserId), slice.hasNext());
     }
 
     /**
@@ -122,7 +131,7 @@ public class PostService {
      * 게시글마다 좋아요 수·댓글 수·좋아요 여부를 따로 조회하면 N+1이 되므로,
      * 세 가지를 각각 한 번의 쿼리로 모아서 가져온 뒤 메모리에서 붙인다.
      */
-    private List<PostSummaryDto> toSummaryDtos(List<Post> posts, User currentUser) {
+    private List<PostSummaryDto> toSummaryDtos(List<Post> posts, Long currentUserId) {
         if (posts.isEmpty()) {
             return List.of();
         }
@@ -131,9 +140,9 @@ public class PostService {
 
         Map<Long, Long> likeCounts = toCountMap(postLikeRepository.countByPostIds(postIds));
         Map<Long, Long> commentCounts = toCountMap(commentRepository.countByPostIds(postIds));
-        Set<Long> likedPostIds = currentUser == null
+        Set<Long> likedPostIds = currentUserId == null
                 ? Set.of()
-                : new HashSet<>(postLikeRepository.findLikedPostIds(currentUser.getId(), postIds));
+                : new HashSet<>(postLikeRepository.findLikedPostIds(currentUserId, postIds));
 
         return posts.stream()
                 .map(post -> new PostSummaryDto(
@@ -337,7 +346,6 @@ public class PostService {
     }
 
     public List<PostSummaryDto> getPostsByUserIdWithExtras(Long userId, Long currentUserId) {
-        final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
-        return toSummaryDtos(postRepository.findByAuthorIdWithAuthor(userId), currentUser);
+        return toSummaryDtos(postRepository.findByAuthorIdWithAuthor(userId), currentUserId);
     }
 }

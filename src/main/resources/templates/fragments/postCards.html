@@ -3,7 +3,8 @@
 <body>
 <!--
   피드의 게시글 카드 목록.
-  첫 페이지(main.html)와 무한 스크롤로 불러오는 다음 페이지가 같은 마크업을 쓴다.
+  첫 묶음(main.html)과 무한 스크롤로 불러오는 다음 묶음이 같은 마크업을 쓴다.
+  다음 묶음을 받을 때 마지막 카드의 data-created-at, data-post-id를 기준으로 넘긴다.
 -->
 <th:block th:fragment="cards">
   <!-- 무한 스크롤이 다음 페이지 존재 여부를 읽어가는 표시 (화면에는 보이지 않음) -->
@@ -16,6 +17,7 @@
   </div>
 
   <div th:each="post : ${posts}" class="post-summary"
+       th:attr="data-post-id=${post.id}, data-created-at=${post.createdAt}"
        th:onclick="'openPostModal(' + ${post.id} + ')'"
        style="cursor:pointer;">
 

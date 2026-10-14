@@ -61,14 +61,13 @@
   initPostCards(document);
 
   // 무한 스크롤과 탭 전환.
-  // 둘 다 /feed 조각을 받아 카드를 채우는 일이라 한 클로저에서 같은 상태(page, hasNext, tab)를 다룬다.
+  // 둘 다 /feed 조각을 받아 카드를 채우는 일이라 한 클로저에서 같은 상태(hasNext, tab)를 다룬다.
   (function () {
     const container = document.getElementById('feedContainer');
     const sentinel = document.getElementById('feedSentinel');
     const loading = document.getElementById('feedLoading');
     if (!container || !sentinel) return;
 
-    let page = 0;
     let hasNext = container.getAttribute('data-has-next') === 'true';
     let tab = container.getAttribute('data-tab') || 'all';
     const tag = container.getAttribute('data-tag') || '';
@@ -78,9 +77,14 @@
     // 이게 없으면 이전 탭의 다음 페이지나 먼저 누른 탭의 응답이 늦게 도착해 새 탭에 섞인다.
     let seq = 0;
 
-    async function fetchFeed(pageNo) {
+    // lastCard가 없으면 첫 묶음, 있으면 그 카드의 (작성 시각, id)보다 먼저 쓴 글부터 받는다.
+    // 페이지 번호로 받으면 보는 사이 새 글이 올라왔을 때 밀려서 본 글이 다시 나온다.
+    async function fetchFeed(lastCard) {
       const tagParam = tag ? '&tag=' + encodeURIComponent(tag) : '';
-      const response = await fetch(`/feed?tab=${tab}${tagParam}&page=${pageNo}`, { credentials: 'include' });
+      const cursor = lastCard
+        ? `&beforeAt=${encodeURIComponent(lastCard.dataset.createdAt)}&beforeId=${lastCard.dataset.postId}`
+        : '';
+      const response = await fetch(`/feed?tab=${tab}${tagParam}${cursor}`, { credentials: 'include' });
       if (!response.ok) throw new Error('failed to load feed page');
       const temp = document.createElement('div');
       temp.innerHTML = await response.text();
@@ -94,7 +98,8 @@
       const mySeq = seq;
 
       try {
-        const temp = await fetchFeed(page + 1);
+        const shown = container.querySelectorAll('.post-summary');
+        const temp = await fetchFeed(shown[shown.length - 1]);
         if (mySeq !== seq) return;
 
         const cards = [...temp.querySelectorAll('.post-summary')];
@@ -107,7 +112,6 @@
         initPostCards(temp);
         cards.forEach(card => container.appendChild(card));
 
-        page += 1;
         const meta = temp.querySelector('.feed-page-meta');
         hasNext = meta ? meta.getAttribute('data-has-next') === 'true' : false;
       } catch (err) {
@@ -128,7 +132,6 @@
       seq += 1;
       const mySeq = seq;
       tab = nextTab;
-      page = 0;
       hasNext = false;
       isLoading = true;
       loading.style.display = 'block';
@@ -144,7 +147,7 @@
       if (window.starfieldRebase) window.starfieldRebase();
 
       try {
-        const temp = await fetchFeed(0);
+        const temp = await fetchFeed(null);
         if (mySeq !== seq) return;
 
         initPostCards(temp);

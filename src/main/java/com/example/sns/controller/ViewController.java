@@ -42,9 +42,6 @@ public class ViewController {
     private final FollowService followService;
     private final ReportService reportService;
 
-    /** 피드 한 페이지에 보여줄 게시글 수 */
-    private static final int FEED_PAGE_SIZE = 10;
-
     @GetMapping("/signup")
     public String signupPage() {
         return "signup";
@@ -68,6 +65,34 @@ public class ViewController {
                            @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
                            @RequestParam(value = "tag", required = false) String tag,
                            @AuthenticationPrincipal MyUserDetails user) {
+        addFeed(model, tab, tag, null, null, user);
+        return "main";
+    }
+
+    /**
+     * 게시글 카드만 HTML 조각으로 반환.
+     * 무한 스크롤의 다음 묶음과, 탭 전환 시 첫 묶음 교체에 같이 쓴다.
+     * 탭 전환이 페이지 전체를 다시 불러오면 배경 별자리까지 새로 뽑히기 때문에 피드만 바꾼다.
+     * 다음 묶음은 받은 마지막 글의 작성 시각과 id를 넘겨 받는다.
+     */
+    @GetMapping("/feed")
+    public String feedPage(Model model,
+                           @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
+                           @RequestParam(value = "tag", required = false) String tag,
+                           @RequestParam(required = false)
+                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeAt,
+                           @RequestParam(required = false) Long beforeId,
+                           @AuthenticationPrincipal MyUserDetails user) {
+        addFeed(model, tab, tag, beforeAt, beforeId, user);
+        return "fragments/postCards :: cards";
+    }
+
+    /**
+     * 탭과 태그를 보고 피드를 골라 모델에 담는다.
+     * 첫 화면과 이어 받는 묶음이 같은 규칙으로 골라야 해서 한 곳에 둔다.
+     */
+    private void addFeed(Model model, String tab, String tag, LocalDateTime beforeAt, Long beforeId,
+                         MyUserDetails user) {
         Long currentUserId = user != null ? user.getUserId() : null;
 
         // 비로그인 상태에서는 팔로잉 탭을 볼 수 없으므로 전체 탭으로 되돌린다
@@ -76,53 +101,19 @@ public class ViewController {
 
         FeedPageDto feed;
         if (tagFeed) {
-            feed = postService.getFeedPageByTag(tag, currentUserId, 0, FEED_PAGE_SIZE);
+            feed = postService.getFeedPageByTag(tag, currentUserId, beforeAt, beforeId);
         } else if (followingTab) {
-            feed = postService.getFollowingFeedPage(currentUserId, 0, FEED_PAGE_SIZE);
+            feed = postService.getFollowingFeedPage(currentUserId, beforeAt, beforeId);
         } else {
-            feed = postService.getFeedPage(currentUserId, 0, FEED_PAGE_SIZE);
+            feed = postService.getFeedPage(currentUserId, beforeAt, beforeId);
         }
 
         model.addAttribute("posts", feed.getPosts());
         model.addAttribute("hasNext", feed.isHasNext());
         model.addAttribute("tab", followingTab ? "following" : "all");
         model.addAttribute("tag", tagFeed ? tag.trim().toLowerCase() : null);
-        model.addAttribute("firstPage", true);
-        return "main";
-    }
-
-    /**
-     * 게시글 카드만 HTML 조각으로 반환.
-     * 무한 스크롤의 다음 페이지와, 탭 전환 시 첫 페이지(page=0) 교체에 같이 쓴다.
-     * 탭 전환이 페이지 전체를 다시 불러오면 배경 별자리까지 새로 뽑히기 때문에 피드만 바꾼다.
-     */
-    @GetMapping("/feed")
-    public String feedPage(Model model,
-                           @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
-                           @RequestParam(value = "tag", required = false) String tag,
-                           @RequestParam(value = "page", defaultValue = "0") int page,
-                           @AuthenticationPrincipal MyUserDetails user) {
-        Long currentUserId = user != null ? user.getUserId() : null;
-
-        boolean followingTab = "following".equals(tab) && currentUserId != null;
-        boolean tagFeed = tag != null && !tag.isBlank();
-
-        FeedPageDto feed;
-        if (tagFeed) {
-            feed = postService.getFeedPageByTag(tag, currentUserId, page, FEED_PAGE_SIZE);
-        } else if (followingTab) {
-            feed = postService.getFollowingFeedPage(currentUserId, page, FEED_PAGE_SIZE);
-        } else {
-            feed = postService.getFeedPage(currentUserId, page, FEED_PAGE_SIZE);
-        }
-
-        model.addAttribute("posts", feed.getPosts());
-        model.addAttribute("hasNext", feed.isHasNext());
-        model.addAttribute("tab", followingTab ? "following" : "all");
-        model.addAttribute("tag", tagFeed ? tag.trim().toLowerCase() : null);
-        // 빈 안내문은 첫 페이지에만. 다음 페이지가 비어 있는 것은 끝에 닿은 것이지 팔로우가 없는 게 아니다.
-        model.addAttribute("firstPage", page == 0);
-        return "fragments/postCards :: cards";
+        // 빈 안내문은 첫 묶음에만. 다음 묶음이 비어 있는 것은 끝에 닿은 것이지 팔로우가 없는 게 아니다.
+        model.addAttribute("firstPage", beforeAt == null);
     }
 
     @GetMapping("/posts/{id}/modal")

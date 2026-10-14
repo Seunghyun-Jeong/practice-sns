@@ -7,11 +7,13 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,7 +23,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/*
+ * 피드는 최신순으로 (작성 시각, id)를 기준 삼아 "이 다음부터" 끊어 읽는다.
+ * 전체 피드는 작성 시각 순서로, 팔로잉 피드는 작성자 안에서 작성 시각 순서로 읽으므로 둘 다 둔다.
+ */
 @Entity
+@Table(indexes = {
+        @Index(name = "idx_post_created", columnList = "createdAt, id"),
+        @Index(name = "idx_post_user_created", columnList = "user_id, createdAt, id")
+})
 @Getter
 @Setter
 @NoArgsConstructor

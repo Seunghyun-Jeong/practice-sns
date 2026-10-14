@@ -179,9 +179,13 @@ class FollowApiTest {
     }
 
     @Test
-    @DisplayName("다음 페이지가 비어 있는 것은 끝에 닿은 것이라 안내문을 싣지 않는다")
-    void 팔로잉_조각_다음페이지는_안내문없음() throws Exception {
-        mockMvc.perform(get("/feed").param("tab", "following").param("page", "1").cookie(myCookie))
+    @DisplayName("다음 묶음이 비어 있는 것은 끝에 닿은 것이라 안내문을 싣지 않는다")
+    void 팔로잉_조각_다음묶음은_안내문없음() throws Exception {
+        // 다음 묶음 요청은 받은 마지막 글의 작성 시각과 id를 함께 보낸다
+        mockMvc.perform(get("/feed").param("tab", "following")
+                        .param("beforeAt", LocalDateTime.now().toString())
+                        .param("beforeId", "1")
+                        .cookie(myCookie))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("아직 팔로우한 사람이 없습니다"))));
     }
@@ -189,7 +193,7 @@ class FollowApiTest {
     @Test
     @DisplayName("전체 탭 조각에는 팔로잉 안내문이 실리지 않는다")
     void 전체_조각은_안내문없음() throws Exception {
-        mockMvc.perform(get("/feed").param("tab", "all").param("page", "0").cookie(myCookie))
+        mockMvc.perform(get("/feed").param("tab", "all").cookie(myCookie))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("아직 팔로우한 사람이 없습니다"))));
     }
