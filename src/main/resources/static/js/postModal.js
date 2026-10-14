@@ -178,7 +178,7 @@
   }
 
   function closePostModal() {
-    if (commentObserver) commentObserver.disconnect();
+    if (commentEnd) commentEnd.stop();
     const modal = document.getElementById('postDetailModal');
     if (modal) modal.style.display = 'none';
     document.body.style.overflow = 'auto';
@@ -392,25 +392,25 @@
   }
 
   // 원 댓글 다음 묶음. 목록 끝의 표시(sentinel)가 보이면 불러온다
-  let commentObserver = null;
+  let commentEnd = null;
   let commentsHasNext = false;
   let commentsLoading = false;
 
   function watchCommentEnd() {
-    if (commentObserver) commentObserver.disconnect();
+    if (commentEnd) commentEnd.stop();
+    commentEnd = null;
     const list = document.querySelector('#modalContent .comment-list');
     const sentinel = document.querySelector('#modalContent .comment-sentinel');
     if (!list || !sentinel) return;
 
     commentsHasNext = hasNextIn(list);
     commentsLoading = false;
-    commentObserver = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) loadMoreComments(list, sentinel);
-    }, { root: document.querySelector('#modalContent .pd-body'), rootMargin: '200px' });
-    commentObserver.observe(sentinel);
+    commentEnd = watchListEnd(sentinel, () => loadMoreComments(list),
+        { root: document.querySelector('#modalContent .pd-body') });
+    commentEnd.check();
   }
 
-  async function loadMoreComments(list, sentinel) {
+  async function loadMoreComments(list) {
     if (commentsLoading || !commentsHasNext) return;
     const threads = list.querySelectorAll(':scope > .comment-thread');
     const last = threads[threads.length - 1];
@@ -432,12 +432,7 @@
     } finally {
       commentsLoading = false;
     }
-
-    // 새로 붙인 묶음이 짧아 끝이 여전히 보이면 옵저버가 다시 알려주지 않으므로 다시 걸어 둔다
-    if (commentsHasNext && commentObserver && list.isConnected) {
-      commentObserver.unobserve(sentinel);
-      commentObserver.observe(sentinel);
-    }
+    if (commentEnd && list.isConnected) commentEnd.check();
   }
 
   // 답글 버튼: 접혀 있으면 "답글 n개 보기", 펼쳤는데 덜 받았으면 "답글 n개 더 보기", 다 받았으면 "답글 숨기기"

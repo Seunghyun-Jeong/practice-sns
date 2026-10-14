@@ -117,6 +117,7 @@
         if (mySeq === seq) {
           isLoading = false;
           loading.style.display = 'none';
+          feedEnd.check();   // 붙인 페이지가 짧아 끝이 여전히 보이면 이어서 채운다
         }
       }
     }
@@ -157,7 +158,7 @@
         if (mySeq === seq) {
           isLoading = false;
           loading.style.display = 'none';
-          checkNearBottom();   // 새 첫 페이지가 짧으면 바로 다음 페이지를 채운다
+          feedEnd.check();   // 새 첫 페이지가 짧으면 바로 다음 페이지를 채운다
         }
       }
     }
@@ -175,23 +176,8 @@
       switchTab(wanted, false);
     });
 
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) loadNextPage();
-    }, { rootMargin: '200px' });
-
-    observer.observe(sentinel);
-
-    // 폴백: 스크롤이 바닥 근처에 닿으면 불러온다.
-    // (렌더링이 지연되는 환경에서 옵저버 콜백이 오지 않는 경우 대비)
-    function checkNearBottom() {
-      if (!hasNext || isLoading) return;
-      const remaining = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
-      if (remaining < 300) loadNextPage();
-    }
-
-    window.addEventListener('scroll', checkNearBottom, { passive: true });
-    window.addEventListener('resize', checkNearBottom);
-    checkNearBottom();   // 첫 화면이 짧아 스크롤이 없을 때도 채운다
+    const feedEnd = watchListEnd(sentinel, loadNextPage);
+    feedEnd.check();   // 첫 화면이 짧아 스크롤이 없을 때도 채운다
   })();
 
 </script>
