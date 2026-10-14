@@ -30,7 +30,8 @@ public class CommentService {
     private final NotificationService notificationService;
     private final MentionService mentionService;
 
-    public void addComment(Long postId, CommentDto dto, String username) {
+    /** 댓글을 저장하고 새 댓글의 id를 돌려준다. 화면은 이 id로 방금 쓴 댓글만 받아 목록에 붙인다 */
+    public Long addComment(Long postId, CommentDto dto, String username) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다."));
         User user = userRepository.findByUsername(username)
@@ -57,6 +58,7 @@ public class CommentService {
         if (!mentioned.contains(post.getAuthor())) {
             notificationService.notify(post.getAuthor(), user, Notification.Type.COMMENT, post, comment);
         }
+        return comment.getId();
     }
 
     /**

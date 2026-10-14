@@ -1,6 +1,7 @@
 package com.example.sns.service;
 
 import com.example.sns.dto.CommentDto;
+import com.example.sns.dto.CommentPageDto;
 import com.example.sns.dto.FeedPageDto;
 import com.example.sns.dto.MentionDto;
 import com.example.sns.dto.PostDetailDto;
@@ -21,10 +22,8 @@ import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.util.TextContent;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +37,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class PostService {
+    /** 게시글 상세에서 댓글을 한 번에 불러오는 개수 (원 댓글, 답글 모두) */
+    private static final int COMMENT_PAGE_SIZE = 20;
+
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
@@ -167,9 +169,8 @@ public class PostService {
 
         final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
 
-        // post.getComments()로 읽으면 댓글 작성자가 한 명씩 따로 조회되므로 작성자까지 한 번에 가져온다
-        List<Comment> comments = commentRepository.findByPostIdWithAuthor(postId);
-        List<CommentDto> commentDtos = buildCommentTree(comments, currentUser);
+        // 댓글은 전부 읽지 않고 원 댓글 첫 묶음만 담는다. 나머지는 스크롤하면서 getRootComments로 이어 받는다
+        CommentPageDto firstComments = getRootComments(postId, currentUserId, null, null);
 
         boolean postLikedByCurrentUser = false;
         if (currentUser != null) {
@@ -188,56 +189,78 @@ public class PostService {
                 post.getCreatedAt().toString(),
                 post.getUpdatedAt() != null ? post.getUpdatedAt().toString() : null,
                 likeCount,
-                comments.size(),      // 답글도 댓글 수에 포함한다
-                commentDtos,
+                commentRepository.countByPostId(postId),   // 답글도 댓글 수에 포함한다
+                firstComments.getComments(),
+                firstComments.isHasNext(),
                 postLikedByCurrentUser,
                 postAuthorSuspended
         );
     }
 
     /**
-     * 원 댓글 아래에 답글을 붙여서 돌려준다.
-     *
-     * 좋아요 수와 내가 눌렀는지 여부는 댓글마다 조회하지 않고 두 번의 쿼리로 모아서 가져온다.
-     * 예전에 피드에서 게시글마다 조회하다가 쿼리가 59번 나갔던 것과 같은 모양인데,
-     * 답글이 생기면서 댓글 수가 늘어난 만큼 이쪽도 그대로 두면 더 커진다.
+     * 원 댓글 한 묶음 (최신순). beforeAt, beforeId가 없으면 첫 묶음이고,
+     * 있으면 그 댓글보다 먼저 쓴 것부터 이어서 준다.
      */
-    private List<CommentDto> buildCommentTree(List<Comment> comments, User currentUser) {
+    public CommentPageDto getRootComments(Long postId, Long currentUserId, LocalDateTime beforeAt, Long beforeId) {
+        Slice<Comment> slice = beforeAt == null
+                ? commentRepository.findRootComments(postId, commentPage())
+                : commentRepository.findRootCommentsBefore(postId, beforeAt, beforeId, commentPage());
+        return new CommentPageDto(toCommentDtos(slice.getContent(), currentUserId), slice.hasNext());
+    }
+
+    /**
+     * 한 원 댓글의 답글 한 묶음 (오래된 순). afterAt, afterId가 없으면 첫 묶음이고,
+     * 있으면 그 답글보다 나중에 쓴 것부터 이어서 준다.
+     */
+    public CommentPageDto getReplies(Long postId, Long parentId, Long currentUserId,
+                                     LocalDateTime afterAt, Long afterId) {
+        Slice<Comment> slice = afterAt == null
+                ? commentRepository.findReplies(postId, parentId, commentPage())
+                : commentRepository.findRepliesAfter(postId, parentId, afterAt, afterId, commentPage());
+        return new CommentPageDto(toCommentDtos(slice.getContent(), currentUserId), slice.hasNext());
+    }
+
+    /** 댓글 하나. 방금 쓴 댓글을 모달을 다시 열지 않고 목록에 붙일 때 쓴다 */
+    public CommentDto getComment(Long postId, Long commentId, Long currentUserId) {
+        Comment comment = commentRepository.findById(commentId)
+                .filter(c -> c.getPost().getId().equals(postId))
+                .orElseThrow(() -> new NotFoundException("댓글을 찾을 수 없습니다."));
+        return toCommentDtos(List.of(comment), currentUserId).get(0);
+    }
+
+    private PageRequest commentPage() {
+        return PageRequest.of(0, COMMENT_PAGE_SIZE);
+    }
+
+    /**
+     * 댓글 묶음을 화면에 줄 형태로 바꾼다.
+     *
+     * 좋아요 수, 내가 눌렀는지 여부, 답글 수, 멘션 대상은 댓글마다 조회하지 않고 묶음의 id로 한 번씩만 조회한다.
+     * 예전에 피드에서 게시글마다 조회하다가 쿼리가 59번 나갔던 것과 같은 모양이 되지 않게 하기 위해서다.
+     */
+    private List<CommentDto> toCommentDtos(List<Comment> comments, Long currentUserId) {
         if (comments.isEmpty()) {
             return List.of();
         }
 
         List<Long> commentIds = comments.stream().map(Comment::getId).toList();
         Map<Long, Long> likeCounts = toCountMap(commentLikeRepository.countByCommentIds(commentIds));
-        Set<Long> likedByMe = currentUser == null
+        Set<Long> likedByMe = currentUserId == null
                 ? Set.of()
-                : new HashSet<>(commentLikeRepository.findLikedCommentIds(currentUser.getId(), commentIds));
+                : new HashSet<>(commentLikeRepository.findLikedCommentIds(currentUserId, commentIds));
+
+        // 답글 수는 원 댓글에만 있다. 답글 묶음이면 조회하지 않는다
+        List<Long> rootIds = comments.stream().filter(c -> !c.isReply()).map(Comment::getId).toList();
+        Map<Long, Long> replyCounts = rootIds.isEmpty()
+                ? Map.of()
+                : toCountMap(commentRepository.countRepliesByParentIds(rootIds));
 
         // 멘션도 댓글마다 조회하면 같은 문제가 반복되므로, 모든 댓글의 @아이디를 모아 한 번에 찾는다
         Map<String, MentionDto> mentionsByName = resolveMentions(comments);
 
-        Map<Long, CommentDto> dtoById = new LinkedHashMap<>();
-        for (Comment comment : comments) {
-            dtoById.put(comment.getId(), toCommentDto(comment, likeCounts, likedByMe, mentionsByName));
-        }
-
-        List<CommentDto> roots = new ArrayList<>();
-        for (Comment comment : comments) {
-            CommentDto dto = dtoById.get(comment.getId());
-            if (!comment.isReply()) {
-                roots.add(dto);
-                continue;
-            }
-
-            CommentDto parentDto = dtoById.get(comment.getParent().getId());
-            if (parentDto != null) {
-                parentDto.getReplies().add(dto);
-            } else {
-                // 부모가 목록에 없는 경우는 없지만, 있더라도 답글이 사라지지는 않게 둔다
-                roots.add(dto);
-            }
-        }
-        return roots;
+        return comments.stream()
+                .map(comment -> toCommentDto(comment, likeCounts, likedByMe, replyCounts, mentionsByName))
+                .toList();
     }
 
     /** 댓글 전체에 적힌 @아이디를 한 번에 조회해 아이디로 찾을 수 있게 만든다 */
@@ -259,7 +282,7 @@ public class PostService {
     }
 
     private CommentDto toCommentDto(Comment comment, Map<Long, Long> likeCounts, Set<Long> likedByMe,
-                                    Map<String, MentionDto> mentionsByName) {
+                                    Map<Long, Long> replyCounts, Map<String, MentionDto> mentionsByName) {
         boolean suspended = comment.getAuthor().isSuspended();
 
         CommentDto dto = new CommentDto();
@@ -274,6 +297,7 @@ public class PostService {
         dto.setLikedByCurrentUser(likedByMe.contains(comment.getId()));
         dto.setSuspended(suspended);
         dto.setParentId(comment.isReply() ? comment.getParent().getId() : null);
+        dto.setReplyCount(replyCounts.getOrDefault(comment.getId(), 0L));
 
         // 정지된 사람의 댓글은 내용을 가리므로 멘션도 내려주지 않는다.
         // 없는 아이디를 적었으면 여기서 걸러져 링크가 생기지 않는다.

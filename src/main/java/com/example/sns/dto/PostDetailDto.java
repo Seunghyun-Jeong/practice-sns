@@ -16,8 +16,10 @@ public class PostDetailDto {
     private String createdAt;
     private String updatedAt;
     private long likeCount;
-    private int commentCount;
+    private long commentCount;
+    /** 원 댓글 첫 묶음. 나머지는 스크롤하면서 이어서 불러온다 */
     private List<CommentDto> comments;
+    private boolean hasMoreComments;
     private boolean likedByCurrentUser;
     private boolean suspended;
 }

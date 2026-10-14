@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -140,8 +141,15 @@ class ReplyMentionApiTest {
                 .toList();
     }
 
+    /** 이 게시글의 댓글 전체 (답글 포함, 쓴 순서) */
+    private List<Comment> commentsOfPost() {
+        return commentRepository.findAll(Sort.by("id")).stream()
+                .filter(c -> c.getPost().getId().equals(post.getId()))
+                .toList();
+    }
+
     private Comment latestComment() {
-        List<Comment> all = commentRepository.findByPostIdWithAuthor(post.getId());
+        List<Comment> all = commentsOfPost();
         return all.get(all.size() - 1);
     }
 
@@ -245,14 +253,14 @@ class ReplyMentionApiTest {
     @DisplayName("원 댓글을 지우면 답글도 함께 사라진다")
     void 원_댓글을_지우면_답글도_사라진다() throws Exception {
         writeComment(replier, "@commenter 답글입니다", rootComment.getId());
-        assertThat(commentRepository.findByPostIdWithAuthor(post.getId())).hasSize(2);
+        assertThat(commentsOfPost()).hasSize(2);
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .delete("/api/posts/{postId}/comments/{id}", post.getId(), rootComment.getId())
                         .cookie(cookieOf(commenter)))
                 .andExpect(status().isOk());
 
-        assertThat(commentRepository.findByPostIdWithAuthor(post.getId())).isEmpty();
+        assertThat(commentsOfPost()).isEmpty();
     }
 
     @Test

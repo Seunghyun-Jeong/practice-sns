@@ -7,7 +7,7 @@
 <div th:fragment="commentRow(comment, postId, currentUserId, currentUserRole, isReply)"
      class="comment"
      th:classappend="${isReply} ? 'comment-reply' : ''"
-     th:attr="data-comment-id=${comment.id}, data-author=${comment.author}, data-parent-id=${comment.parentId}">
+     th:attr="data-comment-id=${comment.id}, data-author=${comment.author}, data-parent-id=${comment.parentId}, data-created-at=${comment.createdAt}">
 
     <div th:if="${comment.suspended}" class="comment-suspended"
          style="color:#8e8e8e; font-style:italic; padding:8px 0;">

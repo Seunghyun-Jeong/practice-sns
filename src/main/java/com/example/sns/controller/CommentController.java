@@ -25,8 +25,8 @@ public class CommentController {
     @PostMapping
     public ResponseEntity<?> addComment(@PathVariable Long postId, @RequestBody CommentDto dto,
                                         @AuthenticationPrincipal MyUserDetails user) {
-        commentService.addComment(postId, dto, user.getUsername());
-        return ResponseEntity.ok(Map.of("message", "댓글이 등록되었습니다."));
+        Long commentId = commentService.addComment(postId, dto, user.getUsername());
+        return ResponseEntity.ok(Map.of("message", "댓글이 등록되었습니다.", "id", commentId));
     }
 
     @PutMapping("/{id}")

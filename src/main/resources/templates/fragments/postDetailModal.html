@@ -60,26 +60,11 @@
                     </div>
                 </div>
 
-                <!-- 댓글 -->
-                <div class="comment-list">
-                    <div th:each="comment : ${post.comments}" class="comment-thread">
-
-                        <!-- 원 댓글 -->
-                        <div th:replace="~{fragments/commentRow :: commentRow(${comment}, ${post.id}, ${currentUserId}, ${currentUserRole}, false)}"></div>
-
-                        <!--
-                          답글 (한 단만 들어간다).
-                          반복과 조각 불러오기를 같은 태그에 두면 안 된다. th:replace 가 th:each 보다
-                          먼저 처리되어서, 반복 변수가 아직 없는 채로 조각이 불려간다.
-                        -->
-                        <div class="comment-replies" th:if="${!comment.replies.isEmpty()}">
-                            <div th:each="reply : ${comment.replies}">
-                                <div th:replace="~{fragments/commentRow :: commentRow(${reply}, ${post.id}, ${currentUserId}, ${currentUserRole}, true)}"></div>
-                            </div>
-                        </div>
-
-                    </div>
+                <!-- 댓글: 원 댓글 첫 묶음만 그리고, 나머지는 끝의 표시(sentinel)가 보이면 이어서 불러온다 -->
+                <div class="comment-list" th:attr="data-post-id=${post.id}">
+                    <th:block th:replace="~{fragments/commentThreads :: threadPage}"></th:block>
                 </div>
+                <div class="comment-sentinel"></div>
             </div>
 
             <!-- 하단 액션바: (하트) N (말풍선) N -->

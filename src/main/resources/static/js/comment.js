@@ -43,6 +43,13 @@
     }
   }
 
+  /** 댓글을 올린 뒤 답글 표시를 지운다. 입력창은 올린 쪽에서 비운다 */
+  window.clearReplyTarget = function () {
+    const { parentId, target } = els();
+    if (parentId) parentId.value = '';
+    if (target) target.style.visibility = 'hidden';
+  };
+
   /**
    * 지금 쓰는 댓글이 답글이면 원 댓글 id, 아니면 null.
    * 멘션을 지웠더라도 답글이라는 사실은 그대로 둔다. 그래야 답을 받은 사람에게 알림이 간다.

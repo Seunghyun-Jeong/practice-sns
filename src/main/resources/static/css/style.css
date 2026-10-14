@@ -2610,6 +2610,36 @@ body > h2,
     height: 24px;
 }
 
+/*
+ * 답글 보기 / 더 보기 / 숨기기. 답글 목록 아래 같은 자리에 있고 글자만 바뀐다.
+ * display 를 정하지 않는다. 답글이 없는 댓글은 hidden 으로 감추는데, display 를 주면 hidden 이 무시된다.
+ */
+.reply-toggle-btn {
+    margin: 2px 0 6px 42px;
+    padding: 2px 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8e8e8e;
+    cursor: pointer;
+}
+
+.reply-toggle-btn::before {
+    content: "";
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    margin-right: 8px;
+    vertical-align: middle;
+    background-color: #c7c7c7;
+}
+
+.reply-toggle-btn:hover {
+    color: #262626;
+}
+
 /* 멘션 링크. 해시태그와 같은 무게로 두어 한 문장 안에서 튀지 않게 한다 */
 .mention-link {
     color: #00376b;

@@ -1,6 +1,7 @@
 package com.example.sns.controller;
 
 import com.example.sns.config.MyUserDetails;
+import com.example.sns.dto.CommentPageDto;
 import com.example.sns.dto.FeedPageDto;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostSummaryDto;
@@ -15,8 +16,10 @@ import com.example.sns.service.FollowService;
 import com.example.sns.service.PostService;
 import com.example.sns.service.ReportService;
 import com.example.sns.service.UserService;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -125,15 +128,65 @@ public class ViewController {
     @GetMapping("/posts/{id}/modal")
     public String postDetailModal(@PathVariable Long id, Model model,
                                   @AuthenticationPrincipal MyUserDetails user) {
-        Long currentUserId = user != null ? user.getUserId() : null;
-        String currentUserRole = user != null ? user.getRole() : "USER";
+        Long currentUserId = addCommentViewer(model, id, user);
 
         PostDetailDto post = postService.getPostDetail(id, currentUserId);
         model.addAttribute("post", post);
-        model.addAttribute("currentUserId", currentUserId);
-        model.addAttribute("currentUserRole", currentUserRole);
+        // 댓글 첫 묶음은 이어 받는 묶음과 같은 조각(commentThreads :: threadPage)으로 그린다
+        model.addAttribute("comments", post.getComments());
+        model.addAttribute("hasNext", post.isHasMoreComments());
 
         return "fragments/postDetailModal :: modalContent";
+    }
+
+    /** 게시글 상세의 원 댓글 다음 묶음. 모달의 댓글 목록 끝이 보이면 불러온다 */
+    @GetMapping("/posts/{postId}/comments")
+    public String commentThreads(@PathVariable Long postId,
+                                 @RequestParam(required = false)
+                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeAt,
+                                 @RequestParam(required = false) Long beforeId,
+                                 Model model, @AuthenticationPrincipal MyUserDetails user) {
+        Long currentUserId = addCommentViewer(model, postId, user);
+        addCommentPage(model, postService.getRootComments(postId, currentUserId, beforeAt, beforeId));
+        return "fragments/commentThreads :: threadPage";
+    }
+
+    /** 한 원 댓글의 답글 한 묶음. 답글 보기를 누르면 불러온다 */
+    @GetMapping("/posts/{postId}/comments/{parentId}/replies")
+    public String commentReplies(@PathVariable Long postId, @PathVariable Long parentId,
+                                 @RequestParam(required = false)
+                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime afterAt,
+                                 @RequestParam(required = false) Long afterId,
+                                 Model model, @AuthenticationPrincipal MyUserDetails user) {
+        Long currentUserId = addCommentViewer(model, postId, user);
+        addCommentPage(model, postService.getReplies(postId, parentId, currentUserId, afterAt, afterId));
+        return "fragments/commentThreads :: replyPage";
+    }
+
+    /** 방금 쓴 댓글 하나. 모달을 다시 열지 않고 목록에 붙인다 */
+    @GetMapping("/posts/{postId}/comments/{commentId}")
+    public String newComment(@PathVariable Long postId, @PathVariable Long commentId,
+                             Model model, @AuthenticationPrincipal MyUserDetails user) {
+        Long currentUserId = addCommentViewer(model, postId, user);
+        model.addAttribute("comment", postService.getComment(postId, commentId, currentUserId));
+        return "fragments/commentThreads :: newComment";
+    }
+
+    /**
+     * 댓글 조각이 공통으로 읽는 값(게시글, 보는 사람, 권한)을 모델에 담는다.
+     * 수정, 삭제 버튼을 보일지가 이 값으로 정해지므로 모달과 이어 받는 묶음이 같아야 한다.
+     */
+    private Long addCommentViewer(Model model, Long postId, MyUserDetails user) {
+        Long currentUserId = user != null ? user.getUserId() : null;
+        model.addAttribute("postId", postId);
+        model.addAttribute("currentUserId", currentUserId);
+        model.addAttribute("currentUserRole", user != null ? user.getRole() : "USER");
+        return currentUserId;
+    }
+
+    private void addCommentPage(Model model, CommentPageDto page) {
+        model.addAttribute("comments", page.getComments());
+        model.addAttribute("hasNext", page.isHasNext());
     }
 
     @GetMapping("/profile/{userId}")

@@ -7,9 +7,11 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +19,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/*
+ * 댓글은 게시글 상세에서 묶음 단위로 끊어 읽는다. 원 댓글은 게시글 안에서 최신순으로,
+ * 답글은 원 댓글 안에서 오래된 순으로 (작성 시각, id)를 기준 삼아 "이 다음부터" 읽으므로
+ * 그 순서 그대로 인덱스를 둔다.
+ */
 @Entity
+@Table(indexes = {
+        @Index(name = "idx_comment_post_parent_created", columnList = "post_id, parent_id, createdAt, id"),
+        @Index(name = "idx_comment_parent_created", columnList = "parent_id, createdAt, id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
