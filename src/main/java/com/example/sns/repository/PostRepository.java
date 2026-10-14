@@ -5,6 +5,7 @@ import com.example.sns.entity.User;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -42,6 +43,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Slice<Post> findFeedByTag(@Param("tag") String tag,
                               @Param("now") LocalDateTime now,
                               Pageable pageable);
+
+    /** 게시글 상세 (작성자 fetch join) */
+    @Query("SELECT p FROM Post p JOIN FETCH p.author WHERE p.id = :postId")
+    Optional<Post> findByIdWithAuthor(@Param("postId") Long postId);
 
     /** 프로필 피드 (작성자 fetch join) */
     @Query("SELECT p FROM Post p JOIN FETCH p.author a "

@@ -141,7 +141,7 @@ class ReplyMentionApiTest {
     }
 
     private Comment latestComment() {
-        List<Comment> all = commentRepository.findByPostIdOrderByCreatedAtAsc(post.getId());
+        List<Comment> all = commentRepository.findByPostIdWithAuthor(post.getId());
         return all.get(all.size() - 1);
     }
 
@@ -245,14 +245,14 @@ class ReplyMentionApiTest {
     @DisplayName("원 댓글을 지우면 답글도 함께 사라진다")
     void 원_댓글을_지우면_답글도_사라진다() throws Exception {
         writeComment(replier, "@commenter 답글입니다", rootComment.getId());
-        assertThat(commentRepository.findByPostIdOrderByCreatedAtAsc(post.getId())).hasSize(2);
+        assertThat(commentRepository.findByPostIdWithAuthor(post.getId())).hasSize(2);
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .delete("/api/posts/{postId}/comments/{id}", post.getId(), rootComment.getId())
                         .cookie(cookieOf(commenter)))
                 .andExpect(status().isOk());
 
-        assertThat(commentRepository.findByPostIdOrderByCreatedAtAsc(post.getId())).isEmpty();
+        assertThat(commentRepository.findByPostIdWithAuthor(post.getId())).isEmpty();
     }
 
     @Test

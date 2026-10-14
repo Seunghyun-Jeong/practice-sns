@@ -160,14 +160,15 @@ public class PostService {
     }
 
     public PostDetailDto getPostDetail(Long postId, Long currentUserId) {
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다."));
 
         long likeCount = postLikeRepository.countByPost(post);
 
         final User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
 
-        List<Comment> comments = post.getComments();
+        // post.getComments()로 읽으면 댓글 작성자가 한 명씩 따로 조회되므로 작성자까지 한 번에 가져온다
+        List<Comment> comments = commentRepository.findByPostIdWithAuthor(postId);
         List<CommentDto> commentDtos = buildCommentTree(comments, currentUser);
 
         boolean postLikedByCurrentUser = false;
