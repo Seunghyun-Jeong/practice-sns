@@ -37,7 +37,7 @@
 
             <!-- 게시글 / 팔로워 / 팔로잉 수 -->
             <div class="profile-stats" th:unless="${profileSuspended}">
-                <span><b th:text="${#lists.size(myPosts)}">0</b> 게시물</span>
+                <span><b th:text="${postCount}">0</b> 게시물</span>
                 <span class="stat-link" id="openFollowers"><b id="followerCount" th:text="${followerCount}">0</b> 팔로워</span>
                 <span class="stat-link" id="openFollowing"><b id="followingCount" th:text="${followingCount}">0</b> 팔로잉</span>
             </div>
@@ -83,11 +83,14 @@
         이용이 정지된 유저입니다.
     </div>
 
-    <div th:unless="${profileSuspended}" class="profile-posts">
+    <!-- 첫 묶음만 그리고, 아래 빈 칸(sentinel)이 보이면 다음 묶음을 이어 받는다 -->
+    <div th:unless="${profileSuspended}" class="profile-posts" id="profilePosts"
+         th:attr="data-has-next=${hasNext}, data-author=${profileUserId}">
         <th:block th:each="post : ${myPosts}">
             <div th:replace="~{fragments/postCards :: card(${post})}"></div>
         </th:block>
     </div>
+    <div id="profilePostsSentinel"></div>
 </div>
 
 <div id="profileImageModal" class="img-modal" style="display: none;">
@@ -165,9 +168,21 @@
 </body>
 
 <script src="/js/postCards.js"></script>
+<script src="/js/feedList.js"></script>
 <script src="/js/postModal.js"></script>
 <script>
     initPostCards(document);
+
+    // 게시글은 피드와 같은 방식으로 끝에 닿으면 이어 받는다. 정지된 사람의 프로필에는 목록이 없다
+    (function () {
+        const container = document.getElementById('profilePosts');
+        if (!container) return;
+        createFeedList({
+            container,
+            sentinel: document.getElementById('profilePostsSentinel'),
+            params: () => `author=${container.dataset.author}`
+        });
+    })();
 
     document.addEventListener('DOMContentLoaded', () => {
         initFollowButton();

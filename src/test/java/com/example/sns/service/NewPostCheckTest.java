@@ -69,9 +69,9 @@ class NewPostCheckTest {
     @DisplayName("맨 위 글 뒤로 새 글이 없으면 없다고 답한다")
     void 새_글이_없으면_없다() {
         flush();
-        assertThat(hasNew(FeedQuery.of("all", null, me.getId()))).isFalse();
-        assertThat(hasNew(FeedQuery.of("following", null, me.getId()))).isFalse();
-        assertThat(hasNew(FeedQuery.of(null, "spring", me.getId()))).isFalse();
+        assertThat(hasNew(FeedQuery.of("all", null, null, me.getId()))).isFalse();
+        assertThat(hasNew(FeedQuery.of("following", null, null, me.getId()))).isFalse();
+        assertThat(hasNew(FeedQuery.of(null, "spring", null, me.getId()))).isFalse();
     }
 
     @Test
@@ -81,11 +81,11 @@ class NewPostCheckTest {
         suspended.setSuspendedUntil(LocalDateTime.now().plusDays(1));
         createPost(suspended, "정지된 사람의 새 글", LocalDateTime.now());
         flush();
-        assertThat(hasNew(FeedQuery.of("all", null, me.getId()))).isFalse();
+        assertThat(hasNew(FeedQuery.of("all", null, null, me.getId()))).isFalse();
 
         createPost(stranger, "새 글", LocalDateTime.now());
         flush();
-        assertThat(hasNew(FeedQuery.of("all", null, me.getId()))).isTrue();
+        assertThat(hasNew(FeedQuery.of("all", null, null, me.getId()))).isTrue();
     }
 
     @Test
@@ -93,11 +93,11 @@ class NewPostCheckTest {
     void 팔로잉_피드_새_글() {
         createPost(stranger, "모르는 사람의 새 글", LocalDateTime.now());
         flush();
-        assertThat(hasNew(FeedQuery.of("following", null, me.getId()))).isFalse();
+        assertThat(hasNew(FeedQuery.of("following", null, null, me.getId()))).isFalse();
 
         createPost(followed, "팔로우한 사람의 새 글", LocalDateTime.now());
         flush();
-        assertThat(hasNew(FeedQuery.of("following", null, me.getId()))).isTrue();
+        assertThat(hasNew(FeedQuery.of("following", null, null, me.getId()))).isTrue();
     }
 
     @Test
@@ -105,19 +105,19 @@ class NewPostCheckTest {
     void 해시태그_피드_새_글() {
         createPost(stranger, "태그 없는 새 글", LocalDateTime.now());
         flush();
-        assertThat(hasNew(FeedQuery.of(null, "spring", me.getId()))).isFalse();
+        assertThat(hasNew(FeedQuery.of(null, "spring", null, me.getId()))).isFalse();
 
         hashtagService.syncTags(createPost(stranger, "#spring 새 글", LocalDateTime.now()));
         flush();
-        assertThat(hasNew(FeedQuery.of(null, "spring", me.getId()))).isTrue();
+        assertThat(hasNew(FeedQuery.of(null, "spring", null, me.getId()))).isTrue();
     }
 
     @Test
     @DisplayName("화면이 비어 있으면 보여줄 글이 하나라도 있는지를 본다")
     void 빈_화면이면_글이_있는지_본다() {
         flush();
-        assertThat(postService.hasNewPosts(FeedQuery.of("following", null, me.getId()), null, null)).isTrue();
-        assertThat(postService.hasNewPosts(FeedQuery.of(null, "kotlin", me.getId()), null, null)).isFalse();
+        assertThat(postService.hasNewPosts(FeedQuery.of("following", null, null, me.getId()), null, null)).isTrue();
+        assertThat(postService.hasNewPosts(FeedQuery.of(null, "kotlin", null, me.getId()), null, null)).isFalse();
     }
 
     private boolean hasNew(FeedQuery query) {

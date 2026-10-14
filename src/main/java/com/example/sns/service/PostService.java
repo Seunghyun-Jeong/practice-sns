@@ -40,6 +40,9 @@ public class PostService {
     /** 피드에서 한 번에 불러오는 게시글 수 */
     private static final int FEED_PAGE_SIZE = 10;
 
+    /** 프로필에서 한 번에 불러오는 게시글 수. 한 줄에 3장씩 놓이므로 4줄이 꽉 차게 한다 */
+    private static final int PROFILE_PAGE_SIZE = 12;
+
     /** 게시글 상세에서 댓글을 한 번에 불러오는 개수 (원 댓글, 답글 모두) */
     private static final int COMMENT_PAGE_SIZE = 20;
 
@@ -92,17 +95,21 @@ public class PostService {
      */
     public FeedPageDto getFeed(FeedQuery query, LocalDateTime beforeAt, Long beforeId) {
         LocalDateTime now = LocalDateTime.now();
+        PageRequest page = PageRequest.of(0, query.kind() == FeedQuery.Kind.AUTHOR ? PROFILE_PAGE_SIZE : FEED_PAGE_SIZE);
         Slice<Post> slice = switch (query.kind()) {
             case ALL -> beforeAt == null
-                    ? postRepository.findFeed(now, feedPage())
-                    : postRepository.findFeedBefore(now, beforeAt, beforeId, feedPage());
+                    ? postRepository.findFeed(now, page)
+                    : postRepository.findFeedBefore(now, beforeAt, beforeId, page);
             // 내가 팔로우한 사람들의 글과 내 글. 팔로우한 사람이 없으면 내 글만 나온다
             case FOLLOWING -> beforeAt == null
-                    ? postRepository.findFollowingFeed(query.userId(), now, feedPage())
-                    : postRepository.findFollowingFeedBefore(query.userId(), now, beforeAt, beforeId, feedPage());
+                    ? postRepository.findFollowingFeed(query.userId(), now, page)
+                    : postRepository.findFollowingFeedBefore(query.userId(), now, beforeAt, beforeId, page);
             case TAG -> beforeAt == null
-                    ? postRepository.findFeedByTag(query.tag(), now, feedPage())
-                    : postRepository.findFeedByTagBefore(query.tag(), now, beforeAt, beforeId, feedPage());
+                    ? postRepository.findFeedByTag(query.tag(), now, page)
+                    : postRepository.findFeedByTagBefore(query.tag(), now, beforeAt, beforeId, page);
+            case AUTHOR -> beforeAt == null
+                    ? postRepository.findAuthorFeed(query.authorId(), now, page)
+                    : postRepository.findAuthorFeedBefore(query.authorId(), now, beforeAt, beforeId, page);
         };
         return new FeedPageDto(toSummaryDtos(slice.getContent(), query.userId()), slice.hasNext());
     }
@@ -125,6 +132,8 @@ public class PostService {
             case TAG -> afterAt == null
                     ? postRepository.findFeedByTag(query.tag(), now, onePost()).hasContent()
                     : !postRepository.findFeedByTagAfter(query.tag(), now, afterAt, afterId, onePost()).isEmpty();
+            // 새 글 확인은 메인 피드에만 있다. 프로필 조건으로 묻는 경로는 없다
+            case AUTHOR -> throw new IllegalArgumentException("프로필은 새 글 확인을 하지 않습니다.");
         };
     }
 
@@ -137,10 +146,6 @@ public class PostService {
 
     private PageRequest onePost() {
         return PageRequest.of(0, 1);
-    }
-
-    private PageRequest feedPage() {
-        return PageRequest.of(0, FEED_PAGE_SIZE);
     }
 
     /**
@@ -362,6 +367,12 @@ public class PostService {
         hashtagService.syncTags(post);   // 본문이 바뀌었으니 태그도 다시 계산
     }
 
+    /** 프로필의 게시물 수 */
+    public long countPosts(Long userId) {
+        return postRepository.countByAuthor_Id(userId);
+    }
+
+    /** 한 사람의 글 전부. 관리자 화면(사용자별 작성 글)만 쓴다. 프로필은 getFeed로 끊어 읽는다 */
     public List<PostSummaryDto> getPostsByUserIdWithExtras(Long userId, Long currentUserId) {
         return toSummaryDtos(postRepository.findByAuthorIdWithAuthor(userId), currentUserId);
     }

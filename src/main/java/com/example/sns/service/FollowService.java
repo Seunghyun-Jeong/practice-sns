@@ -64,18 +64,20 @@ public class FollowService {
         return true;
     }
 
+    /*
+     * 수와 팔로우 여부는 사람을 엔티티로 읽지 않고 id로 바로 센다.
+     * 사람이 있는지는 부르는 쪽이 이미 확인했다(프로필은 프로필 조회, 팔로우 토글은 토글 처리).
+     * 따로 물어보는 API는 requireUser로 먼저 확인한다.
+     */
+
     /** 나를 팔로우하는 사람 수 */
     public long countFollowers(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
-        return followRepository.countByFollowing(user);
+        return followRepository.countByFollowing_Id(userId);
     }
 
     /** 내가 팔로우하는 사람 수 */
     public long countFollowing(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
-        return followRepository.countByFollower(user);
+        return followRepository.countByFollower_Id(userId);
     }
 
     /**
@@ -101,8 +103,8 @@ public class FollowService {
         return new FollowPageDto(slice.getContent(), slice.hasNext());
     }
 
-    /** 없는 사람의 목록은 빈 목록이 아니라 404로 알린다. 엔티티는 필요 없으므로 있는지만 본다 */
-    private void requireUser(Long userId) {
+    /** 없는 사람의 목록이나 수는 빈 값이 아니라 404로 알린다. 엔티티는 필요 없으므로 있는지만 본다 */
+    public void requireUser(Long userId) {
         if (!userRepository.existsById(userId)) {
             throw new NotFoundException("유저를 찾을 수 없습니다.");
         }
@@ -117,11 +119,6 @@ public class FollowService {
         if (currentUserId == null || currentUserId.equals(targetUserId)) {
             return false;
         }
-        Optional<User> follower = userRepository.findById(currentUserId);
-        Optional<User> target = userRepository.findById(targetUserId);
-        if (follower.isEmpty() || target.isEmpty()) {
-            return false;
-        }
-        return followRepository.existsByFollowerAndFollowing(follower.get(), target.get());
+        return followRepository.existsByFollower_IdAndFollowing_Id(currentUserId, targetUserId);
     }
 }

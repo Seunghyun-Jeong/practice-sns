@@ -13,13 +13,13 @@ import org.springframework.data.repository.query.Param;
 
 public interface FollowRepository extends JpaRepository<Follow, Long> {
     Optional<Follow> findByFollowerAndFollowing(User follower, User following);
-    boolean existsByFollowerAndFollowing(User follower, User following);
+    boolean existsByFollower_IdAndFollowing_Id(Long followerId, Long followingId);
 
     /** 내가 팔로우하는 수 */
-    long countByFollower(User follower);
+    long countByFollower_Id(Long followerId);
 
     /** 나를 팔로우하는 수 */
-    long countByFollowing(User following);
+    long countByFollowing_Id(Long followingId);
 
 
     /*

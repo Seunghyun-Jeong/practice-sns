@@ -38,6 +38,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     String FOLLOWING_AUTHORS = "(a.id = :userId OR a.id IN "
             + "(SELECT f.following.id FROM Follow f WHERE f.follower.id = :userId)) ";
 
+    /** 한 사람이 쓴 글 (프로필) */
+    String AUTHORED = "a.id = :authorId ";
+
     /** 해시태그가 달린 글 */
     String TAGGED = "p.id IN (SELECT ph.post.id FROM PostHashtag ph WHERE ph.hashtag.name = :tag) ";
 
@@ -83,6 +86,25 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                                     @Param("beforeAt") LocalDateTime beforeAt,
                                     @Param("beforeId") Long beforeId,
                                     Pageable pageable);
+
+    /** 프로필 첫 묶음 */
+    @Query("SELECT p FROM Post p JOIN FETCH p.author a WHERE " + AUTHORED
+            + "AND " + VISIBLE_AUTHOR + NEWEST_FIRST)
+    Slice<Post> findAuthorFeed(@Param("authorId") Long authorId,
+                               @Param("now") LocalDateTime now,
+                               Pageable pageable);
+
+    /** 프로필 다음 묶음 */
+    @Query("SELECT p FROM Post p JOIN FETCH p.author a WHERE " + AUTHORED
+            + "AND " + VISIBLE_AUTHOR + BEFORE_CURSOR + NEWEST_FIRST)
+    Slice<Post> findAuthorFeedBefore(@Param("authorId") Long authorId,
+                                     @Param("now") LocalDateTime now,
+                                     @Param("beforeAt") LocalDateTime beforeAt,
+                                     @Param("beforeId") Long beforeId,
+                                     Pageable pageable);
+
+    /** 프로필의 게시물 수. 목록을 끊어 읽으므로 목록 길이로는 셀 수 없다 */
+    long countByAuthor_Id(Long authorId);
 
     /*
      * 새 글 확인. 있는지만 알면 되므로 개수를 세지 않고 한 행(Pageable 1개)만 찾으면 멈춘다.

@@ -149,9 +149,9 @@ class FeedPageTest {
         createPost(writer, "태그 없음", base.plusSeconds(20));
         flushAndClear();
 
-        FeedPageDto first = postService.getFeed(FeedQuery.of(null, "spring", null), null, null);
+        FeedPageDto first = postService.getFeed(FeedQuery.of(null, "spring", null, null), null, null);
         PostSummaryDto last = lastOf(first);
-        FeedPageDto second = postService.getFeed(FeedQuery.of(null, "spring", null),
+        FeedPageDto second = postService.getFeed(FeedQuery.of(null, "spring", null, null),
                 LocalDateTime.parse(last.getCreatedAt()), last.getId());
 
         assertThat(first.getPosts()).hasSize(10);
@@ -176,11 +176,11 @@ class FeedPageTest {
     }
 
     private FeedQuery all() {
-        return FeedQuery.of("all", null, null);
+        return FeedQuery.of("all", null, null, null);
     }
 
     private FeedQuery following(User user) {
-        return FeedQuery.of("following", null, user.getId());
+        return FeedQuery.of("following", null, null, user.getId());
     }
 
     private PostSummaryDto lastOf(FeedPageDto page) {

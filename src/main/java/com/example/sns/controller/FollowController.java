@@ -56,6 +56,7 @@ public class FollowController {
     public ResponseEntity<?> getFollowInfo(@PathVariable Long userId,
                                            @AuthenticationPrincipal MyUserDetails user) {
         Long currentUserId = user != null ? user.getUserId() : null;
+        followService.requireUser(userId);
 
         return ResponseEntity.ok(Map.of(
                 "followerCount", followService.countFollowers(userId),

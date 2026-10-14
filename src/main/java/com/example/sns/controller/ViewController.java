@@ -5,7 +5,6 @@ import com.example.sns.dto.CommentPageDto;
 import com.example.sns.dto.FeedPageDto;
 import com.example.sns.dto.FeedQuery;
 import com.example.sns.dto.PostDetailDto;
-import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.ReportDetailDto;
 import com.example.sns.dto.UserProfileDto;
 import com.example.sns.entity.Report;
@@ -66,7 +65,7 @@ public class ViewController {
                            @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
                            @RequestParam(value = "tag", required = false) String tag,
                            @AuthenticationPrincipal MyUserDetails user) {
-        addFeed(model, tab, tag, null, null, user);
+        addFeed(model, tab, tag, null, null, null, user);
         return "main";
     }
 
@@ -74,17 +73,18 @@ public class ViewController {
      * 게시글 카드만 HTML 조각으로 반환.
      * 무한 스크롤의 다음 묶음과, 탭 전환 시 첫 묶음 교체에 같이 쓴다.
      * 탭 전환이 페이지 전체를 다시 불러오면 배경 별자리까지 새로 뽑히기 때문에 피드만 바꾼다.
-     * 다음 묶음은 받은 마지막 글의 작성 시각과 id를 넘겨 받는다.
+     * 다음 묶음은 받은 마지막 글의 작성 시각과 id를 넘겨 받는다. 프로필은 author로 그 사람의 글을 받는다.
      */
     @GetMapping("/feed")
     public String feedPage(Model model,
                            @RequestParam(value = "tab", required = false, defaultValue = "all") String tab,
                            @RequestParam(value = "tag", required = false) String tag,
+                           @RequestParam(value = "author", required = false) Long author,
                            @RequestParam(required = false)
                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeAt,
                            @RequestParam(required = false) Long beforeId,
                            @AuthenticationPrincipal MyUserDetails user) {
-        addFeed(model, tab, tag, beforeAt, beforeId, user);
+        addFeed(model, tab, tag, author, beforeAt, beforeId, user);
         return "fragments/postCards :: cards";
     }
 
@@ -92,9 +92,9 @@ public class ViewController {
      * 탭과 태그로 고른 피드를 모델에 담는다.
      * 첫 화면과 이어 받는 묶음이 같은 규칙으로 골라야 해서 한 곳에 두고, 고르는 규칙은 FeedQuery가 정한다.
      */
-    private void addFeed(Model model, String tab, String tag, LocalDateTime beforeAt, Long beforeId,
+    private void addFeed(Model model, String tab, String tag, Long author, LocalDateTime beforeAt, Long beforeId,
                          MyUserDetails user) {
-        FeedQuery query = FeedQuery.of(tab, tag, user != null ? user.getUserId() : null);
+        FeedQuery query = FeedQuery.of(tab, tag, author, user != null ? user.getUserId() : null);
         FeedPageDto feed = postService.getFeed(query, beforeAt, beforeId);
 
         model.addAttribute("posts", feed.getPosts());
@@ -177,11 +177,14 @@ public class ViewController {
         Long currentUserId = user != null ? user.getUserId() : null;
         String currentUserRole = user != null ? user.getRole() : "USER";
 
-        List<PostSummaryDto> posts = postService.getPostsByUserIdWithExtras(userId, currentUserId);
+        // 게시글은 첫 묶음만 그리고, 나머지는 끝에 닿으면 /feed?author= 로 이어 받는다
+        FeedPageDto posts = postService.getFeed(FeedQuery.of(null, null, userId, currentUserId), null, null);
 
         model.addAttribute("profileUsername", profile.getUsername());
         model.addAttribute("profileImageUrl", profile.getProfileImageUrl());
-        model.addAttribute("myPosts", posts);
+        model.addAttribute("myPosts", posts.getPosts());
+        model.addAttribute("hasNext", posts.isHasNext());
+        model.addAttribute("postCount", postService.countPosts(userId));
         model.addAttribute("profileSuspended", profile.isSuspended());
         model.addAttribute("currentUserRole", currentUserRole);
         model.addAttribute("profileUserId", userId);

@@ -31,7 +31,7 @@ public class FeedController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime afterAt,
             @RequestParam(required = false) Long afterId,
             @AuthenticationPrincipal MyUserDetails user) {
-        FeedQuery query = FeedQuery.of(tab, tag, user != null ? user.getUserId() : null);
+        FeedQuery query = FeedQuery.of(tab, tag, null, user != null ? user.getUserId() : null);
         return ResponseEntity.ok(Map.of("hasNew", postService.hasNewPosts(query, afterAt, afterId)));
     }
 }
