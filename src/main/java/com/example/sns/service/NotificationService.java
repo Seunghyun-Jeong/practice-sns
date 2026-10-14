@@ -76,10 +76,10 @@ public class NotificationService {
         });
     }
 
-    /** 접속 중인 유저에게 갱신된 알림 배지 수를 밀어준다 */
+    /** 접속 중인 유저에게 갱신된 알림 배지 수를 밀어준다. 접속하지 않았으면 세지도 않는다 */
     private void pushBadge(User recipient) {
         pushSocketHandler.pushToUser(recipient.getId(),
-                Map.of("type", "noti-badge", "count", notificationRepository.countByRecipientAndIsReadFalse(recipient)));
+                () -> Map.of("type", "noti-badge", "count", notificationRepository.countByRecipientAndIsReadFalse(recipient)));
     }
 
     private Optional<Notification> findExisting(User recipient, User actor, Notification.Type type, Post post) {

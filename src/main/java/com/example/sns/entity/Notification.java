@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -24,7 +25,12 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "notification")
+@Table(name = "notification", indexes = {
+        // 안 읽은 알림 수: 받는 사람의 안 읽은 알림만 인덱스 안에서 센다 (페이지를 열 때마다 실행)
+        @Index(name = "idx_notification_recipient_read", columnList = "recipient_id, isRead"),
+        // 최근 알림 목록: 받는 사람 안에서 최신순으로 앞에서부터 읽는다
+        @Index(name = "idx_notification_recipient_created", columnList = "recipient_id, createdAt")
+})
 public class Notification {
 
     public enum Type {

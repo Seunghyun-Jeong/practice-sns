@@ -24,7 +24,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Table(name = "chat_message", indexes = {
-        @Index(name = "idx_chat_message_room_created", columnList = "room_id, createdAt, id")
+        @Index(name = "idx_chat_message_room_created", columnList = "room_id, createdAt, id"),
+        // 안 읽은 DM 수: 방마다 안 읽은 메시지만 인덱스 안에서 센다 (보낸 사람까지 들어 있어 행을 열지 않는다)
+        @Index(name = "idx_chat_message_room_read", columnList = "room_id, isRead, sender_id")
 })
 public class ChatMessage {
     public static final int MAX_CONTENT_LENGTH = 1000;

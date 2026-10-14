@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -118,8 +119,13 @@ public class PushSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    /** 접속 중이면 밀어주고, 아니면 조용히 넘어간다 (데이터는 DB에 있으니 다음 접속 때 보인다) */
-    public void pushToUser(Long userId, Object payload) {
+    /**
+     * 접속 중이면 밀어주고, 아니면 조용히 넘어간다 (데이터는 DB에 있으니 다음 접속 때 보인다).
+     *
+     * 보낼 내용은 만드는 방법(payload)으로 받아서 접속 중일 때만 만든다. 배지 숫자처럼 만드는 데
+     * 쿼리가 드는 내용을 값으로 받으면, 받을 사람이 없어도 호출하기 전에 이미 계산돼 버린다.
+     */
+    public void pushToUser(Long userId, Supplier<?> payload) {
         Set<WebSocketSession> userSessions = sessions.get(userId);
         if (userSessions == null || userSessions.isEmpty()) {
             return;
@@ -127,7 +133,7 @@ public class PushSocketHandler extends TextWebSocketHandler {
 
         String json;
         try {
-            json = objectMapper.writeValueAsString(payload);
+            json = objectMapper.writeValueAsString(payload.get());
         } catch (IOException e) {
             return;
         }
