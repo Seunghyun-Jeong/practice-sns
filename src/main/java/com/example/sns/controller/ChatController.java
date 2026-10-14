@@ -3,8 +3,10 @@ package com.example.sns.controller;
 import com.example.sns.config.MyUserDetails;
 import com.example.sns.dto.ChatSendRequest;
 import com.example.sns.service.ChatService;
+import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -43,12 +45,14 @@ public class ChatController {
         return ResponseEntity.ok(Map.of("roomId", chatService.openRoom(user.getUserId(), userId)));
     }
 
-    /** 방의 메시지 목록 (최신순 페이징) */
+    /** 방의 메시지 한 묶음 (최신순). 이전 묶음은 화면 맨 위 메시지의 createdAt, id를 넘겨 받는다 */
     @GetMapping("/{roomId}/messages")
     public ResponseEntity<?> getMessages(@PathVariable Long roomId,
-                                         @RequestParam(defaultValue = "0") int page,
+                                         @RequestParam(required = false)
+                                         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime beforeAt,
+                                         @RequestParam(required = false) Long beforeId,
                                          @AuthenticationPrincipal MyUserDetails user) {
-        return ResponseEntity.ok(chatService.getMessages(user.getUserId(), roomId, page, MESSAGE_PAGE_SIZE));
+        return ResponseEntity.ok(chatService.getMessages(user.getUserId(), roomId, beforeAt, beforeId, MESSAGE_PAGE_SIZE));
     }
 
     /** 메시지 전송 */

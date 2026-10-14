@@ -200,8 +200,8 @@
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('chatSendBtn');
 
-  let oldestPage = 0;      // 지금까지 불러온 가장 오래된 페이지
-  let hasPrev = false;     // 이전 페이지가 더 있는지
+  let oldest = null;       // 화면 맨 위(가장 오래된) 메시지. "이전 메시지 보기"는 이것보다 먼저 보낸 것부터 받는다
+  let hasPrev = false;     // 이전 묶음이 더 있는지
   let lastMessageId = 0;   // 폴링 보완용: 마지막으로 그린 메시지 id
 
   // 화면에 그려둔 메시지의 상태 스냅샷 (id -> 내용과 플래그).
@@ -260,8 +260,13 @@
     if (nearBottom) scrollToBottom();
   }
 
-  async function fetchPage(page) {
-    const res = await fetch(`/api/chats/${roomId}/messages?page=${page}`, { credentials: 'include' });
+  // before가 없으면 최신 묶음, 있으면 그 메시지보다 먼저 보낸 것부터 받는다.
+  // 페이지 번호로 받으면 방을 연 뒤 오간 메시지만큼 밀려서 이미 보이는 메시지가 다시 붙는다.
+  async function fetchMessages(before) {
+    const cursor = before
+      ? `?beforeAt=${encodeURIComponent(before.createdAt)}&beforeId=${before.id}`
+      : '';
+    const res = await fetch(`/api/chats/${roomId}/messages${cursor}`, { credentials: 'include' });
     if (!res.ok) throw new Error();
     return res.json();
   }
@@ -296,13 +301,14 @@
     markRead();
   };
 
-  // 첫 로드: 최신 페이지를 시간순으로 그린다 (API는 최신순이라 뒤집는다)
+  // 첫 로드: 최신 묶음을 시간순으로 그린다 (API는 최신순이라 뒤집는다)
   async function initMessages() {
     try {
-      const data = await fetchPage(0);
+      const data = await fetchMessages(null);
       const asc = data.messages.slice().reverse();
       loadPrevBtn.insertAdjacentHTML('afterend', asc.map(messageHtml).join(''));
       asc.forEach(remember);
+      if (asc.length > 0) oldest = asc[0];
       hasPrev = data.hasNext;
       loadPrevBtn.style.display = hasPrev ? 'block' : 'none';
       if (asc.length > 0) lastMessageId = asc[asc.length - 1].id;
@@ -313,12 +319,12 @@
     }
   }
 
-  // 위의 "이전 메시지 보기": 다음 페이지를 위쪽에 붙인다
+  // 위의 "이전 메시지 보기": 맨 위 메시지보다 먼저 보낸 묶음을 위쪽에 붙인다
   loadPrevBtn.addEventListener('click', async () => {
     try {
-      const data = await fetchPage(oldestPage + 1);
-      oldestPage += 1;
+      const data = await fetchMessages(oldest);
       const asc = data.messages.slice().reverse();
+      if (asc.length > 0) oldest = asc[0];
       const prevHeight = messagesEl.scrollHeight;
       loadPrevBtn.insertAdjacentHTML('afterend', asc.map(messageHtml).join(''));
       asc.forEach(remember);
@@ -336,7 +342,7 @@
    */
   async function resyncMessages() {
     try {
-      const data = await fetchPage(0);
+      const data = await fetchMessages(null);
       const asc = data.messages.slice().reverse();
 
       const fresh = [];

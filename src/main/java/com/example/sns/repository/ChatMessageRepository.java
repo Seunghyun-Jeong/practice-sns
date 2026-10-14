@@ -3,6 +3,7 @@ package com.example.sns.repository;
 import com.example.sns.entity.ChatMessage;
 import com.example.sns.entity.ChatRoom;
 import com.example.sns.entity.User;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
@@ -14,8 +15,20 @@ import org.springframework.data.repository.query.Param;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
-    /** 방의 메시지를 최신순으로 (무한 스크롤용) */
+    /** 방의 최신 메시지 묶음 (처음 열 때와 다시 맞출 때) */
     Slice<ChatMessage> findByRoomOrderByCreatedAtDescIdDesc(ChatRoom room, Pageable pageable);
+
+    /**
+     * 화면 맨 위 메시지보다 먼저 보낸 메시지 묶음 ("이전 메시지 보기").
+     * 페이지 번호로 읽으면 방을 연 뒤 오간 메시지만큼 밀려서, 이미 보이는 메시지가 다시 붙는다.
+     */
+    @Query("SELECT m FROM ChatMessage m WHERE m.room = :room "
+            + "AND (m.createdAt < :beforeAt OR (m.createdAt = :beforeAt AND m.id < :beforeId)) "
+            + "ORDER BY m.createdAt DESC, m.id DESC")
+    Slice<ChatMessage> findByRoomBefore(@Param("room") ChatRoom room,
+                                        @Param("beforeAt") LocalDateTime beforeAt,
+                                        @Param("beforeId") Long beforeId,
+                                        Pageable pageable);
 
     /**
      * 방 목록용: 각 방의 마지막 메시지를 쿼리 한 번에 가져온다.

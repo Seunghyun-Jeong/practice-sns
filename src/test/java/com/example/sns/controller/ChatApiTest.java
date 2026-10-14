@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.sns.entity.User;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.util.JwtUtil;
+import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -90,6 +91,30 @@ class ChatApiTest {
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"id\":(\\d+)").matcher(body);
         m.find();
         return Long.valueOf(m.group(1));
+    }
+
+    @Test
+    @DisplayName("이전 메시지는 받은 묶음의 가장 오래된 메시지를 넘겨 이어서 받는다")
+    void 이전_메시지를_이어서_받는다() throws Exception {
+        Long roomId = openRoom();
+        for (int i = 0; i < 31; i++) {
+            send(roomId, myCookie, "m" + i);
+        }
+
+        String latest = mockMvc.perform(get("/api/chats/{roomId}/messages", roomId).cookie(myCookie))
+                .andExpect(jsonPath("$.messages.length()").value(30))
+                .andExpect(jsonPath("$.hasNext").value(true))
+                .andReturn().getResponse().getContentAsString();
+
+        // 화면이 하는 그대로, 응답에서 가장 오래된 메시지(마지막)의 값을 넘긴다
+        mockMvc.perform(get("/api/chats/{roomId}/messages", roomId)
+                        .param("beforeAt", JsonPath.<String>read(latest, "$.messages[29].createdAt"))
+                        .param("beforeId", String.valueOf(JsonPath.<Integer>read(latest, "$.messages[29].id")))
+                        .cookie(myCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages.length()").value(1))
+                .andExpect(jsonPath("$.messages[0].content").value("m0"))
+                .andExpect(jsonPath("$.hasNext").value(false));
     }
 
     @Test

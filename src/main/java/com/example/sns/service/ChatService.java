@@ -13,6 +13,7 @@ import com.example.sns.repository.ChatMessageRepository;
 import com.example.sns.repository.ChatRoomRepository;
 import com.example.sns.repository.UserRepository;
 import com.example.sns.util.TextContent;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,18 +117,22 @@ public class ChatService {
         );
     }
 
-    /** 방의 메시지 한 페이지 (최신순). 참여자만 볼 수 있다 */
-    public ChatMessagePageDto getMessages(Long myId, Long roomId, int page, int size) {
+    /**
+     * 방의 메시지 한 묶음 (최신순). 참여자만 볼 수 있다.
+     * beforeAt, beforeId가 없으면 최신 묶음이고, 있으면 그 메시지보다 먼저 보낸 것부터 준다.
+     */
+    public ChatMessagePageDto getMessages(Long myId, Long roomId, LocalDateTime beforeAt, Long beforeId, int size) {
         ChatRoom room = findRoomOf(myId, roomId);
 
-        Slice<ChatMessage> slice =
-                chatMessageRepository.findByRoomOrderByCreatedAtDescIdDesc(room, PageRequest.of(page, size));
+        Slice<ChatMessage> slice = beforeAt == null
+                ? chatMessageRepository.findByRoomOrderByCreatedAtDescIdDesc(room, PageRequest.of(0, size))
+                : chatMessageRepository.findByRoomBefore(room, beforeAt, beforeId, PageRequest.of(0, size));
 
         List<ChatMessageDto> messages = slice.getContent().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
 
-        return new ChatMessagePageDto(messages, page, slice.hasNext());
+        return new ChatMessagePageDto(messages, slice.hasNext());
     }
 
     /** 메시지 전송. 참여자만 보낼 수 있고, 정지된 상대에게는 보낼 수 없다 */

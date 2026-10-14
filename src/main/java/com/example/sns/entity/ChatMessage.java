@@ -6,6 +6,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -14,12 +15,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** 채팅 메시지. */
+/**
+ * 채팅 메시지.
+ * 대화방에서는 최신순으로 (보낸 시각, id)를 기준 삼아 "이 앞부터" 끊어 읽으므로 그 순서 그대로 인덱스를 둔다.
+ */
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "chat_message")
+@Table(name = "chat_message", indexes = {
+        @Index(name = "idx_chat_message_room_created", columnList = "room_id, createdAt, id")
+})
 public class ChatMessage {
     public static final int MAX_CONTENT_LENGTH = 1000;
 
