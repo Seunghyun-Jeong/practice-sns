@@ -2,6 +2,7 @@ package com.example.sns.controller;
 
 import com.example.sns.config.MyUserDetails;
 import com.example.sns.dto.ChatSendRequest;
+import com.example.sns.service.BadgeService;
 import com.example.sns.service.ChatService;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/chats")
 public class ChatController {
     private final ChatService chatService;
+    private final BadgeService badgeService;
 
     /** 방 한 페이지에 불러올 메시지 수 */
     private static final int MESSAGE_PAGE_SIZE = 30;
@@ -86,9 +88,12 @@ public class ChatController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
-    /** 헤더 배지용: 안 읽은 메시지 전체 수 */
+    /**
+     * 안 읽은 메시지 전체 수 (헤더 배지).
+     * 페이지를 열 때는 헤더가 숫자를 같이 그리므로, 실시간 연결이 다시 이어졌을 때 놓친 숫자를 맞추는 데 쓴다.
+     */
     @GetMapping("/unread-count")
     public ResponseEntity<?> getUnreadCount(@AuthenticationPrincipal MyUserDetails user) {
-        return ResponseEntity.ok(Map.of("count", chatService.getUnreadCount(user.getUserId())));
+        return ResponseEntity.ok(Map.of("count", badgeService.unreadChats(user.getUserId())));
     }
 }

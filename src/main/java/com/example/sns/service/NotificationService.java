@@ -1,16 +1,12 @@
 package com.example.sns.service;
 
-import com.example.sns.config.PushSocketHandler;
 import com.example.sns.dto.NotificationDto;
 import com.example.sns.entity.Comment;
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
-import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.NotificationRepository;
-import com.example.sns.repository.UserRepository;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class NotificationService {
     private final NotificationRepository notificationRepository;
-    private final UserRepository userRepository;
-    private final PushSocketHandler pushSocketHandler;
+    private final BadgeService badgeService;
 
     /** 드롭다운에 보여줄 최근 알림 개수 */
     private static final int RECENT_SIZE = 20;
@@ -61,7 +56,7 @@ public class NotificationService {
         notificationRepository.save(notification);
 
         // 받는 사람이 접속 중이면 종 아이콘 배지가 바로 갱신되도록 밀어준다
-        pushBadge(recipient);
+        badgeService.pushNotificationBadge(recipient.getId());
     }
 
     /** 행동을 취소했을 때 (좋아요 취소, 언팔로우) 알림도 지운다 */
@@ -72,14 +67,8 @@ public class NotificationService {
         }
         findExisting(recipient, actor, type, post).ifPresent(n -> {
             notificationRepository.delete(n);
-            pushBadge(recipient);   // 취소로 줄어든 배지도 바로 반영
+            badgeService.pushNotificationBadge(recipient.getId());   // 취소로 줄어든 배지도 바로 반영
         });
-    }
-
-    /** 접속 중인 유저에게 갱신된 알림 배지 수를 밀어준다. 접속하지 않았으면 세지도 않는다 */
-    private void pushBadge(User recipient) {
-        pushSocketHandler.pushToUser(recipient.getId(),
-                () -> Map.of("type", "noti-badge", "count", notificationRepository.countByRecipientAndIsReadFalse(recipient)));
     }
 
     private Optional<Notification> findExisting(User recipient, User actor, Notification.Type type, Post post) {
@@ -90,26 +79,15 @@ public class NotificationService {
     }
 
     public List<NotificationDto> getRecent(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
-
-        return notificationRepository.findRecent(user, PageRequest.of(0, RECENT_SIZE)).stream()
+        return notificationRepository.findRecent(userId, PageRequest.of(0, RECENT_SIZE)).stream()
                 .filter(n -> !n.getActor().isSuspended())   // 정지된 유저의 알림은 가린다
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
-    public long getUnreadCount(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
-        return notificationRepository.countByRecipientAndIsReadFalse(user);
-    }
-
     @Transactional
     public void markAllAsRead(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("유저를 찾을 수 없습니다."));
-        notificationRepository.markAllAsRead(user);
+        notificationRepository.markAllAsRead(userId);
     }
 
     private NotificationDto toDto(Notification n) {

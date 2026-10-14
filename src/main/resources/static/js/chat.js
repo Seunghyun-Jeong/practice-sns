@@ -31,6 +31,7 @@
     }
   }
 
+  // 실시간 연결이 다시 이어졌을 때와 대화방에서 읽음 처리한 뒤에 부른다
   async function loadChatBadge() {
     if (!badge) return;
     try {
@@ -85,6 +86,8 @@
       // 재연결이라면 끊겨 있던 동안의 변경(수정·삭제·읽음)을 놓쳤을 수 있어 따라잡는다.
       if (hasConnectedBefore) {
         loadChatBadge();
+        // 알림 배지는 notification.js 담당이라 문서 이벤트로 알린다
+        document.dispatchEvent(new Event('socket-reconnected'));
         if (handleResync) handleResync();
       }
       hasConnectedBefore = true;
@@ -128,7 +131,8 @@
   }
 
   if (badge) {
-    loadChatBadge();
+    // 첫 숫자는 헤더가 페이지를 그릴 때 넣어 두었다
+    setBadgeCount(Number(badge.dataset.count) || 0);
     connectSocket();
   }
 

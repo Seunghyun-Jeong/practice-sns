@@ -58,7 +58,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     /** 헤더 배지용: 내가 안 읽은 메시지 전체 수 */
     @Query("SELECT COUNT(m) FROM ChatMessage m "
-            + "WHERE (m.room.user1 = :me OR m.room.user2 = :me) "
-            + "AND m.sender <> :me AND m.isRead = false")
-    long countTotalUnread(@Param("me") User me);
+            + "WHERE (m.room.user1.id = :meId OR m.room.user2.id = :meId) "
+            + "AND m.sender.id <> :meId AND m.isRead = false")
+    long countTotalUnread(@Param("meId") Long meId);
 }

@@ -31,6 +31,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final PushSocketHandler pushSocketHandler;
+    private final BadgeService badgeService;
 
     /** 메시지 최대 길이 (컬럼 길이와 맞춘다) */
 
@@ -157,8 +158,7 @@ public class ChatService {
         ChatMessageDto dto = toDto(message);
         User partner = room.getPartnerOf(myId);
         pushSocketHandler.pushToUser(partner.getId(), () -> Map.of("type", "chat-message", "message", dto));
-        pushSocketHandler.pushToUser(partner.getId(),
-                () -> Map.of("type", "chat-badge", "count", chatMessageRepository.countTotalUnread(partner)));
+        badgeService.pushChatBadge(partner.getId());
 
         return dto;
     }
@@ -230,8 +230,7 @@ public class ChatService {
         User me = findUser(myId);
         int updated = chatMessageRepository.markAllAsRead(room, me);
         // 다른 탭에 떠 있는 내 배지도 함께 줄어들도록 밀어준다
-        pushSocketHandler.pushToUser(myId,
-                () -> Map.of("type", "chat-badge", "count", chatMessageRepository.countTotalUnread(me)));
+        badgeService.pushChatBadge(myId);
         // 실제로 읽은 게 있으면, 보낸 사람 화면의 읽음 표시가 바로 켜지도록 알린다
         if (updated > 0) {
             pushSocketHandler.pushToUser(room.getPartnerOf(myId).getId(),
@@ -240,10 +239,6 @@ public class ChatService {
     }
 
     /** 헤더 배지용: 내가 안 읽은 메시지 전체 수 */
-    public long getUnreadCount(Long myId) {
-        return chatMessageRepository.countTotalUnread(findUser(myId));
-    }
-
     /** 방을 찾고, 내가 참여자가 아니면 거부한다 */
     private ChatRoom findRoomOf(Long myId, Long roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)

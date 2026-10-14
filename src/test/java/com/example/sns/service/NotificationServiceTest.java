@@ -6,12 +6,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.example.sns.config.PushSocketHandler;
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
 import com.example.sns.repository.NotificationRepository;
-import com.example.sns.repository.UserRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,10 +30,7 @@ class NotificationServiceTest {
     private NotificationRepository notificationRepository;
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private PushSocketHandler pushSocketHandler;
+    private BadgeService badgeService;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -97,14 +92,14 @@ class NotificationServiceTest {
     }
 
     @Test
-    @DisplayName("알림이 만들어지면 받는 사람에게 배지 수를 밀어준다")
+    @DisplayName("알림이 만들어지면 받는 사람의 배지를 갱신한다")
     void 알림이_생기면_배지를_밀어준다() {
         when(notificationRepository.findByRecipientAndActorAndTypeAndPost(author, actor, Notification.Type.POST_LIKE, post))
                 .thenReturn(List.of());
 
         notificationService.notify(author, actor, Notification.Type.POST_LIKE, post);
 
-        verify(pushSocketHandler).pushToUser(org.mockito.ArgumentMatchers.eq(1L), any());
+        verify(badgeService).pushNotificationBadge(1L);
     }
 
     @Test

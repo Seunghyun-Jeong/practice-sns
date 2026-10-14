@@ -40,6 +40,9 @@ class ChatServiceTest {
     @Mock
     private PushSocketHandler pushSocketHandler;
 
+    @Mock
+    private BadgeService badgeService;
+
     @InjectMocks
     private ChatService chatService;
 

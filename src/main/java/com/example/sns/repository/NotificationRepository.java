@@ -18,12 +18,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             + "JOIN FETCH n.actor "
             + "LEFT JOIN FETCH n.post "
             + "LEFT JOIN FETCH n.comment "
-            + "WHERE n.recipient = :recipient "
+            + "WHERE n.recipient.id = :recipientId "
             + "ORDER BY n.createdAt DESC")
-    List<Notification> findRecent(@Param("recipient") User recipient, Pageable pageable);
+    List<Notification> findRecent(@Param("recipientId") Long recipientId, Pageable pageable);
 
     /** 안 읽은 알림 수 */
-    long countByRecipientAndIsReadFalse(User recipient);
+    long countByRecipient_IdAndIsReadFalse(Long recipientId);
 
     /**
      * 같은 알림이 중복으로 쌓이지 않게 확인 (좋아요 취소 후 재클릭 등).
@@ -38,6 +38,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Notification n SET n.isRead = true "
-            + "WHERE n.recipient = :recipient AND n.isRead = false")
-    int markAllAsRead(@Param("recipient") User recipient);
+            + "WHERE n.recipient.id = :recipientId AND n.isRead = false")
+    int markAllAsRead(@Param("recipientId") Long recipientId);
 }

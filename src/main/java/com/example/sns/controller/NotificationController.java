@@ -1,6 +1,7 @@
 package com.example.sns.controller;
 
 import com.example.sns.config.MyUserDetails;
+import com.example.sns.service.BadgeService;
 import com.example.sns.service.NotificationService;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/notifications")
 public class NotificationController {
     private final NotificationService notificationService;
+    private final BadgeService badgeService;
 
     /** 최근 알림 목록 */
     @GetMapping
@@ -26,16 +28,16 @@ public class NotificationController {
     /**
      * 안 읽은 알림 수 (헤더 배지).
      *
-     * 로그인하지 않은 사람에게는 0을 준다. 예전에는 유저를 못 찾는 예외까지 여기서 잡아
-     * 0으로 바꿔 보냈는데, 그러면 탈퇴한 계정의 토큰으로 들어와도 화면이 정상으로 보였다.
-     * 그런 요청은 404로 나가고 종 아이콘은 그대로 두는 편이 상태를 덜 속인다.
+     * 페이지를 열 때는 헤더가 숫자를 같이 그리므로 이 주소를 부르지 않는다.
+     * 실시간 연결이 끊겼다 다시 이어졌을 때, 그 사이 놓친 숫자를 맞추는 데 쓴다.
+     * 로그인하지 않은 사람에게는 0을 준다. 탈퇴한 계정의 토큰은 인증 필터에서 걸러져 여기까지 로그인한 채로 오지 않는다.
      */
     @GetMapping("/unread-count")
     public ResponseEntity<?> getUnreadCount(@AuthenticationPrincipal MyUserDetails user) {
         if (user == null) {
             return ResponseEntity.ok(Map.of("count", 0));
         }
-        return ResponseEntity.ok(Map.of("count", notificationService.getUnreadCount(user.getUserId())));
+        return ResponseEntity.ok(Map.of("count", badgeService.unreadNotifications(user.getUserId())));
     }
 
     /** 전체 읽음 처리 */

@@ -5,6 +5,7 @@
   const list = document.getElementById('notiList');
   if (!btn || !dropdown || !list) return;   // 비로그인 상태에는 알림 영역이 없다
 
+  // 실시간 연결이 끊겼다 다시 이어졌을 때만 부른다. 그 사이 놓친 숫자를 맞춘다
   async function loadUnreadCount() {
     try {
       const res = await fetch('/api/notifications/unread-count', { credentials: 'include' });
@@ -131,6 +132,8 @@
   document.addEventListener('noti-badge', (e) => {
     setBadge(e.detail.count);
   });
+  document.addEventListener('socket-reconnected', loadUnreadCount);
 
-  loadUnreadCount();
+  // 첫 숫자는 헤더가 페이지를 그릴 때 넣어 두었다
+  setBadge(Number(badge.dataset.count) || 0);
 })();
