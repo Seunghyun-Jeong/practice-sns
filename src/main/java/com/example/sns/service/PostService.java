@@ -2,7 +2,9 @@ package com.example.sns.service;
 
 import com.example.sns.dto.CommentDto;
 import com.example.sns.dto.CommentPageDto;
+import com.example.sns.dto.FeedCursor;
 import com.example.sns.dto.FeedPageDto;
+import com.example.sns.dto.FeedQuery;
 import com.example.sns.dto.MentionDto;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostResponse;
@@ -49,8 +51,9 @@ public class PostService {
     private final FileStorageService fileStorageService;
     private final HashtagService hashtagService;
     private final MentionService mentionService;
+    private final LatestFeedPost latestFeedPost;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FileStorageService fileStorageService, HashtagService hashtagService, MentionService mentionService) {
+    public PostService(PostRepository postRepository, UserRepository userRepository, PostLikeRepository postLikeRepository, CommentLikeRepository commentLikeRepository, CommentRepository commentRepository, FileStorageService fileStorageService, HashtagService hashtagService, MentionService mentionService, LatestFeedPost latestFeedPost) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.postLikeRepository = postLikeRepository;
@@ -59,6 +62,7 @@ public class PostService {
         this.fileStorageService = fileStorageService;
         this.hashtagService = hashtagService;
         this.mentionService = mentionService;
+        this.latestFeedPost = latestFeedPost;
     }
 
     @Transactional
@@ -78,52 +82,65 @@ public class PostService {
 
         Post saved = postRepository.save(post);
         hashtagService.syncTags(saved);   // 본문의 #태그를 뽑아 연결
+        latestFeedPost.evict();            // 새 글 확인이 기억해 둔 옛 값으로 답하지 않게
         return new PostResponse(saved.getId(), saved.getContent(), saved.getImageUrl(), user.getUsername(), saved.getCreatedAt());
     }
 
     /**
-     * 전체 피드 한 묶음. beforeAt, beforeId가 없으면 첫 묶음이고,
+     * 피드 한 묶음. beforeAt, beforeId가 없으면 첫 묶음이고,
      * 있으면 그 글보다 먼저 쓴 글부터 이어서 준다.
      */
-    public FeedPageDto getFeedPage(Long currentUserId, LocalDateTime beforeAt, Long beforeId) {
+    public FeedPageDto getFeed(FeedQuery query, LocalDateTime beforeAt, Long beforeId) {
         LocalDateTime now = LocalDateTime.now();
-        Slice<Post> slice = beforeAt == null
-                ? postRepository.findFeed(now, feedPage())
-                : postRepository.findFeedBefore(now, beforeAt, beforeId, feedPage());
-        return toFeedPage(slice, currentUserId);
+        Slice<Post> slice = switch (query.kind()) {
+            case ALL -> beforeAt == null
+                    ? postRepository.findFeed(now, feedPage())
+                    : postRepository.findFeedBefore(now, beforeAt, beforeId, feedPage());
+            // 내가 팔로우한 사람들의 글과 내 글. 팔로우한 사람이 없으면 내 글만 나온다
+            case FOLLOWING -> beforeAt == null
+                    ? postRepository.findFollowingFeed(query.userId(), now, feedPage())
+                    : postRepository.findFollowingFeedBefore(query.userId(), now, beforeAt, beforeId, feedPage());
+            case TAG -> beforeAt == null
+                    ? postRepository.findFeedByTag(query.tag(), now, feedPage())
+                    : postRepository.findFeedByTagBefore(query.tag(), now, beforeAt, beforeId, feedPage());
+        };
+        return new FeedPageDto(toSummaryDtos(slice.getContent(), query.userId()), slice.hasNext());
     }
 
     /**
-     * 내가 팔로우한 사람들의 게시글 한 묶음 (본인 글 포함).
-     * 팔로우한 사람이 없으면 본인 글만 나온다.
+     * 화면 맨 위 글(afterAt, afterId)보다 나중에 쓴 글이 이 피드에 있는지.
+     * 화면이 비어 있으면(afterAt 없음) 보여줄 글이 하나라도 있는지를 본다.
+     * 전체 피드는 누구에게나 답이 같아서 가장 최근 글을 잠깐 기억해 두고 비교만 한다.
      */
-    public FeedPageDto getFollowingFeedPage(Long currentUserId, LocalDateTime beforeAt, Long beforeId) {
-        if (currentUserId == null) {
-            return new FeedPageDto(List.of(), false);
-        }
+    public boolean hasNewPosts(FeedQuery query, LocalDateTime afterAt, Long afterId) {
         LocalDateTime now = LocalDateTime.now();
-        Slice<Post> slice = beforeAt == null
-                ? postRepository.findFollowingFeed(currentUserId, now, feedPage())
-                : postRepository.findFollowingFeedBefore(currentUserId, now, beforeAt, beforeId, feedPage());
-        return toFeedPage(slice, currentUserId);
+        return switch (query.kind()) {
+            case ALL -> {
+                FeedCursor latest = latestFeedPost.get(this::loadLatestFeedPost);
+                yield latest != null && latest.isAfter(afterAt, afterId);
+            }
+            case FOLLOWING -> afterAt == null
+                    ? postRepository.findFollowingFeed(query.userId(), now, onePost()).hasContent()
+                    : !postRepository.findFollowingFeedAfter(query.userId(), now, afterAt, afterId, onePost()).isEmpty();
+            case TAG -> afterAt == null
+                    ? postRepository.findFeedByTag(query.tag(), now, onePost()).hasContent()
+                    : !postRepository.findFeedByTagAfter(query.tag(), now, afterAt, afterId, onePost()).isEmpty();
+        };
     }
 
-    /** 특정 해시태그가 달린 게시글 한 묶음 */
-    public FeedPageDto getFeedPageByTag(String tag, Long currentUserId, LocalDateTime beforeAt, Long beforeId) {
-        String normalized = tag == null ? "" : tag.trim().toLowerCase();
-        LocalDateTime now = LocalDateTime.now();
-        Slice<Post> slice = beforeAt == null
-                ? postRepository.findFeedByTag(normalized, now, feedPage())
-                : postRepository.findFeedByTagBefore(normalized, now, beforeAt, beforeId, feedPage());
-        return toFeedPage(slice, currentUserId);
+    private FeedCursor loadLatestFeedPost() {
+        return postRepository.findFeed(LocalDateTime.now(), onePost()).getContent().stream()
+                .findFirst()
+                .map(post -> new FeedCursor(post.getCreatedAt(), post.getId()))
+                .orElse(null);
+    }
+
+    private PageRequest onePost() {
+        return PageRequest.of(0, 1);
     }
 
     private PageRequest feedPage() {
         return PageRequest.of(0, FEED_PAGE_SIZE);
-    }
-
-    private FeedPageDto toFeedPage(Slice<Post> slice, Long currentUserId) {
-        return new FeedPageDto(toSummaryDtos(slice.getContent(), currentUserId), slice.hasNext());
     }
 
     /**

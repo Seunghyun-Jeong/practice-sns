@@ -3,6 +3,7 @@ package com.example.sns.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.sns.dto.FeedPageDto;
+import com.example.sns.dto.FeedQuery;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.entity.Follow;
 import com.example.sns.entity.Post;
@@ -76,11 +77,11 @@ class FeedPageTest {
         }
         flushAndClear();
 
-        FeedPageDto first = postService.getFeedPage(null, null, null);
+        FeedPageDto first = postService.getFeed(all(), null, null);
         createPost(writer, "new while reading", LocalDateTime.now());
         flushAndClear();
         PostSummaryDto last = lastOf(first);
-        FeedPageDto second = postService.getFeedPage(null, LocalDateTime.parse(last.getCreatedAt()), last.getId());
+        FeedPageDto second = postService.getFeed(all(), LocalDateTime.parse(last.getCreatedAt()), last.getId());
 
         assertThat(first.getPosts()).extracting(PostSummaryDto::getContent).endsWith("old 15");
         assertThat(second.getPosts()).extracting(PostSummaryDto::getContent).startsWith("old 14");
@@ -98,11 +99,11 @@ class FeedPageTest {
         flushAndClear();
 
         List<Long> received = new ArrayList<>();
-        FeedPageDto page = postService.getFeedPage(null, null, null);
+        FeedPageDto page = postService.getFeed(all(), null, null);
         received.addAll(ids(page));
         while (page.isHasNext()) {
             PostSummaryDto last = lastOf(page);
-            page = postService.getFeedPage(null, LocalDateTime.parse(last.getCreatedAt()), last.getId());
+            page = postService.getFeed(all(), LocalDateTime.parse(last.getCreatedAt()), last.getId());
             received.addAll(ids(page));
         }
 
@@ -122,7 +123,7 @@ class FeedPageTest {
         createPost(stranger, "stranger", now.plusSeconds(2));
         flushAndClear();
 
-        FeedPageDto page = postService.getFollowingFeedPage(me.getId(), null, null);
+        FeedPageDto page = postService.getFeed(following(me), null, null);
 
         assertThat(page.getPosts()).extracting(PostSummaryDto::getContent).containsExactly("followed", "mine");
     }
@@ -148,9 +149,9 @@ class FeedPageTest {
         createPost(writer, "태그 없음", base.plusSeconds(20));
         flushAndClear();
 
-        FeedPageDto first = postService.getFeedPageByTag("spring", null, null, null);
+        FeedPageDto first = postService.getFeed(FeedQuery.of(null, "spring", null), null, null);
         PostSummaryDto last = lastOf(first);
-        FeedPageDto second = postService.getFeedPageByTag("spring", null,
+        FeedPageDto second = postService.getFeed(FeedQuery.of(null, "spring", null),
                 LocalDateTime.parse(last.getCreatedAt()), last.getId());
 
         assertThat(first.getPosts()).hasSize(10);
@@ -170,8 +171,16 @@ class FeedPageTest {
 
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         statistics.clear();
-        postService.getFollowingFeedPage(me.getId(), null, null);
+        postService.getFeed(following(me), null, null);
         return statistics.getPrepareStatementCount();
+    }
+
+    private FeedQuery all() {
+        return FeedQuery.of("all", null, null);
+    }
+
+    private FeedQuery following(User user) {
+        return FeedQuery.of("following", null, user.getId());
     }
 
     private PostSummaryDto lastOf(FeedPageDto page) {

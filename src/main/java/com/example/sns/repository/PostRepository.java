@@ -28,6 +28,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /** 이미 보여준 마지막 글보다 먼저 쓴 글 */
     String BEFORE_CURSOR = "AND (p.createdAt < :beforeAt OR (p.createdAt = :beforeAt AND p.id < :beforeId)) ";
 
+    /** 화면 맨 위 글보다 나중에 쓴 글 (새 글 확인용) */
+    String AFTER_CURSOR = "AND (p.createdAt > :afterAt OR (p.createdAt = :afterAt AND p.id > :afterId)) ";
+
     /** 최신순. 작성 시각이 같으면 id로 순서를 하나로 정한다 */
     String NEWEST_FIRST = "ORDER BY p.createdAt DESC, p.id DESC";
 
@@ -80,6 +83,29 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                                     @Param("beforeAt") LocalDateTime beforeAt,
                                     @Param("beforeId") Long beforeId,
                                     Pageable pageable);
+
+    /*
+     * 새 글 확인. 있는지만 알면 되므로 개수를 세지 않고 한 행(Pageable 1개)만 찾으면 멈춘다.
+     * 전체 피드는 가장 최근 글을 기억해 두고 비교하므로 여기 없다(LatestFeedPost).
+     */
+
+    /** 팔로잉 피드에 화면 맨 위 글보다 나중에 쓴 글이 있는지 */
+    @Query("SELECT p.id FROM Post p JOIN p.author a WHERE " + FOLLOWING_AUTHORS
+            + "AND " + VISIBLE_AUTHOR + AFTER_CURSOR)
+    List<Long> findFollowingFeedAfter(@Param("userId") Long userId,
+                                      @Param("now") LocalDateTime now,
+                                      @Param("afterAt") LocalDateTime afterAt,
+                                      @Param("afterId") Long afterId,
+                                      Pageable pageable);
+
+    /** 해시태그 피드에 화면 맨 위 글보다 나중에 쓴 글이 있는지 */
+    @Query("SELECT p.id FROM Post p JOIN p.author a WHERE " + TAGGED
+            + "AND " + VISIBLE_AUTHOR + AFTER_CURSOR)
+    List<Long> findFeedByTagAfter(@Param("tag") String tag,
+                                  @Param("now") LocalDateTime now,
+                                  @Param("afterAt") LocalDateTime afterAt,
+                                  @Param("afterId") Long afterId,
+                                  Pageable pageable);
 
     /** 게시글 상세 (작성자 fetch join) */
     @Query("SELECT p FROM Post p JOIN FETCH p.author WHERE p.id = :postId")

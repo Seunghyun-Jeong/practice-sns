@@ -3,6 +3,7 @@ package com.example.sns.controller;
 import com.example.sns.config.MyUserDetails;
 import com.example.sns.dto.CommentPageDto;
 import com.example.sns.dto.FeedPageDto;
+import com.example.sns.dto.FeedQuery;
 import com.example.sns.dto.PostDetailDto;
 import com.example.sns.dto.PostSummaryDto;
 import com.example.sns.dto.ReportDetailDto;
@@ -88,30 +89,18 @@ public class ViewController {
     }
 
     /**
-     * 탭과 태그를 보고 피드를 골라 모델에 담는다.
-     * 첫 화면과 이어 받는 묶음이 같은 규칙으로 골라야 해서 한 곳에 둔다.
+     * 탭과 태그로 고른 피드를 모델에 담는다.
+     * 첫 화면과 이어 받는 묶음이 같은 규칙으로 골라야 해서 한 곳에 두고, 고르는 규칙은 FeedQuery가 정한다.
      */
     private void addFeed(Model model, String tab, String tag, LocalDateTime beforeAt, Long beforeId,
                          MyUserDetails user) {
-        Long currentUserId = user != null ? user.getUserId() : null;
-
-        // 비로그인 상태에서는 팔로잉 탭을 볼 수 없으므로 전체 탭으로 되돌린다
-        boolean followingTab = "following".equals(tab) && currentUserId != null;
-        boolean tagFeed = tag != null && !tag.isBlank();
-
-        FeedPageDto feed;
-        if (tagFeed) {
-            feed = postService.getFeedPageByTag(tag, currentUserId, beforeAt, beforeId);
-        } else if (followingTab) {
-            feed = postService.getFollowingFeedPage(currentUserId, beforeAt, beforeId);
-        } else {
-            feed = postService.getFeedPage(currentUserId, beforeAt, beforeId);
-        }
+        FeedQuery query = FeedQuery.of(tab, tag, user != null ? user.getUserId() : null);
+        FeedPageDto feed = postService.getFeed(query, beforeAt, beforeId);
 
         model.addAttribute("posts", feed.getPosts());
         model.addAttribute("hasNext", feed.isHasNext());
-        model.addAttribute("tab", followingTab ? "following" : "all");
-        model.addAttribute("tag", tagFeed ? tag.trim().toLowerCase() : null);
+        model.addAttribute("tab", query.tabName());
+        model.addAttribute("tag", query.tag());
         // 빈 안내문은 첫 묶음에만. 다음 묶음이 비어 있는 것은 끝에 닿은 것이지 팔로우가 없는 게 아니다.
         model.addAttribute("firstPage", beforeAt == null);
     }

@@ -1385,6 +1385,31 @@ button {
     border-bottom: none;
 }
 
+/*
+ * 새 게시물 버튼. 피드 위쪽 가운데에 떠 있어서 나타나고 사라져도 카드가 밀리지 않는다.
+ * display 를 정하지 않는다. 새 글이 없을 때는 hidden 으로 감추는데, display 를 주면 hidden 이 무시된다.
+ */
+.new-posts-btn {
+    position: fixed;
+    top: 84px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: #1a1d26;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+.new-posts-btn:hover {
+    background: #252a36;
+}
+
 .feed-tab {
     padding: 8px 22px;
     font-size: 14px;

@@ -2,6 +2,7 @@ package com.example.sns.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.sns.entity.Post;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 피드 화면 테스트.
  *
  * 첫 화면이 그린 마지막 카드의 data-created-at, data-post-id를 그대로 넘겨 다음 묶음을 받는다.
+ * 새 글 확인은 반대로 맨 위 카드의 값을 넘긴다.
  * 화면이 하는 그대로 HTML에서 값을 꺼내 요청해서, 카드에 심은 값과 서버가 읽는 형식이 맞는지 본다.
  */
 @SpringBootTest
@@ -47,20 +49,10 @@ class FeedViewTest {
     @Test
     @DisplayName("첫 화면 마지막 카드의 값을 넘기면 다음 묶음을 받는다")
     void 마지막_카드_다음부터_받는다() throws Exception {
-        User writer = new User();
-        writer.setUsername("writer");
-        writer.setPassword("password");
-        writer.setRole(User.Role.USER);
-        writer = userRepository.save(writer);
-
+        User writer = createWriter();
         LocalDateTime base = LocalDateTime.now();
         for (int i = 0; i < 12; i++) {
-            Post post = new Post();
-            post.setAuthor(writer);
-            post.setContent("post " + i);
-            post.setImageUrl("/uploads/test.png");
-            post.setCreatedAt(base.plusSeconds(i));
-            postRepository.save(post);
+            savePost(writer, "post " + i, base.plusSeconds(i));
         }
 
         String main = mockMvc.perform(get("/"))
@@ -86,6 +78,45 @@ class FeedViewTest {
         assertThat(cards).isEqualTo(10);
         assertThat(CARD.matcher(next).results().count()).isEqualTo(2);
         assertThat(next).contains("data-has-next=\"false\"");
+    }
+
+    @Test
+    @DisplayName("맨 위 카드의 값으로 새 글을 물으면, 그 뒤에 올라온 글이 있을 때만 있다고 답한다")
+    void 맨_위_카드로_새_글을_묻는다() throws Exception {
+        User writer = createWriter();
+        savePost(writer, "기존 글", LocalDateTime.now().minusMinutes(1));
+
+        String main = mockMvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        Matcher card = CARD.matcher(main);
+        assertThat(card.find()).isTrue();
+        String topId = valueOf(POST_ID, card.group());
+        String topAt = valueOf(CREATED_AT, card.group());
+
+        mockMvc.perform(get("/api/feed/new").param("afterAt", topAt).param("afterId", topId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasNew").value(false));
+
+        savePost(writer, "새 글", LocalDateTime.now());
+
+        mockMvc.perform(get("/api/feed/new").param("afterAt", topAt).param("afterId", topId))
+                .andExpect(jsonPath("$.hasNew").value(true));
+    }
+
+    private User createWriter() {
+        User writer = new User();
+        writer.setUsername("writer");
+        writer.setPassword("password");
+        writer.setRole(User.Role.USER);
+        return userRepository.save(writer);
+    }
+
+    private void savePost(User writer, String content, LocalDateTime createdAt) {
+        Post post = new Post();
+        post.setAuthor(writer);
+        post.setContent(content);
+        post.setImageUrl("/uploads/test.png");
+        post.setCreatedAt(createdAt);
+        postRepository.save(post);
     }
 
     private String valueOf(Pattern attribute, String tag) {
