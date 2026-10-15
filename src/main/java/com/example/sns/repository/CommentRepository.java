@@ -1,5 +1,6 @@
 package com.example.sns.repository;
 
+import com.example.sns.dto.AdminCommentDto;
 import com.example.sns.entity.Comment;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -61,7 +62,18 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     /** 이 댓글에 달린 답글 (원 댓글을 지울 때 함께 지운다) */
     List<Comment> findByParentId(Long parentId);
-    List<Comment> findByAuthor_IdOrderByCreatedAtDesc(Long userId);
+
+    /**
+     * 한 사람이 쓴 댓글 전부와 댓글이 달린 글, 그 글의 작성자 (관리자 화면).
+     * 화면에 보여주기만 하므로 엔티티로 읽지 않고 필요한 칸만 한 번에 받는다.
+     * 엔티티로 읽으면 댓글마다 글과 글쓴이를 따로 읽어 쿼리가 1 + 글 수 + 글쓴이 수만큼 나간다.
+     */
+    @Query("SELECT new com.example.sns.dto.AdminCommentDto("
+            + "c.id, c.content, c.createdAt, p.id, p.content, a.username) "
+            + "FROM Comment c JOIN c.post p JOIN p.author a "
+            + "WHERE c.author.id = :userId "
+            + "ORDER BY c.createdAt DESC, c.id DESC")
+    List<AdminCommentDto> findAdminCommentsByAuthor(@Param("userId") Long userId);
 
     /** 여러 게시글의 댓글 수를 한 번에 조회 → [postId, count] */
     @Query("SELECT c.post.id, COUNT(c) FROM Comment c "

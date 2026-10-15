@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -116,16 +115,7 @@ public class CommentService {
     }
 
     public List<AdminCommentDto> getCommentsByUser(Long userId) {
-        return commentRepository.findByAuthor_IdOrderByCreatedAtDesc(userId).stream()
-                .map(comment -> new AdminCommentDto(
-                        comment.getId(),
-                        comment.getContent(),
-                        comment.getCreatedAt().toString(),
-                        comment.getPost().getId(),
-                        comment.getPost().getContent(),
-                        comment.getPost().getAuthor().getUsername()
-                ))
-                .collect(Collectors.toList());
+        return commentRepository.findAdminCommentsByAuthor(userId);
     }
 
     public void deleteComment(Long commentId, String username, String role) {
