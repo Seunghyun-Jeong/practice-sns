@@ -76,25 +76,24 @@ public class RefreshTokenService {
     }
 
     /**
-     * 인증이 끝난 뒤 토큰을 회전시킨다.
+     * 인증이 끝난 뒤 토큰을 회전시킨다. 토큰은 findUsable로 이미 확인한 것을 받는다.
      * 유예 시간에 걸려 통과한 옛 토큰이라면 회전시키지 않고 비어 있는 값을 준다
      * (그 경우 클라이언트는 이미 새 토큰을 받아갔으므로 다시 내려줄 것이 없다).
+     *
+     * 원문을 받아 여기서 다시 읽지 않는다. 확인한 뒤 그사이 다른 요청이 회전시켰더라도
+     * 아래의 교체 표시 쿼리가 "아직 교체되지 않은 경우에만" 찍으므로 그 요청은 여기서 걸러진다.
+     * 다시 읽어도 판정은 같고 쿼리만 하나 늘어난다.
      */
     @Transactional
-    public Optional<String> rotate(String rawToken) {
-        Optional<RefreshToken> found = findUsable(rawToken);
-        if (found.isEmpty() || !found.get().isCurrent()) {
+    public Optional<String> rotate(RefreshToken token) {
+        if (!token.isCurrent()) {
             return Optional.empty();
         }
 
-        // 아래 갱신 쿼리가 영속성 컨텍스트를 비우므로 필요한 값을 먼저 꺼내 둔다
-        User owner = found.get().getUser();
-        LocalDateTime expiresAt = found.get().getExpiresAt();
-        String familyId = found.get().getFamilyId();
         LocalDateTime now = LocalDateTime.now();
 
         // 여기까지 "현역"으로 읽고 온 요청이 여럿일 수 있다. 실제로 표시를 찍은 하나만 이어간다.
-        if (refreshTokenRepository.claimForRotation(hash(rawToken), now) == 0) {
+        if (refreshTokenRepository.claimForRotation(token.getTokenHash(), now) == 0) {
             return Optional.empty();
         }
 
@@ -104,17 +103,22 @@ public class RefreshTokenService {
         // 회전할 때마다 수명을 늘리면 토큰이 새어나갔을 때 공격자가 무한히 연장할 수 있다.
         refreshTokenRepository.save(RefreshToken.builder()
                 .tokenHash(hash(rotated))
-                .user(owner)
-                .familyId(familyId)     // 같은 로그인에서 이어진 것이므로 묶음을 그대로 물려받는다
-                .expiresAt(expiresAt)
+                .user(token.getUser())
+                .familyId(token.getFamilyId())     // 같은 로그인에서 이어진 것이므로 묶음을 그대로 물려받는다
+                .expiresAt(token.getExpiresAt())
                 .createdAt(now)
                 .build());
 
         return Optional.of(rotated);
     }
 
-    /** 없거나 만료됐거나 유예까지 지난 옛 토큰이면 비어 있는 값 */
-    private Optional<RefreshToken> findUsable(String rawToken) {
+    /**
+     * 아직 쓸 수 있는 토큰을 주인과 함께 돌려준다. 없거나 만료됐거나 유예까지 지난 옛 토큰이면 비어 있는 값.
+     * 자동 갱신은 이것 하나로 주인 확인과 회전을 같이 한다. 주인도 이 조회에서 함께 읽은 것이라
+     * 정지 여부는 지금 DB의 값이다.
+     */
+    @Transactional(readOnly = true)
+    public Optional<RefreshToken> findUsable(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {
             return Optional.empty();
         }

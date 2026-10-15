@@ -112,10 +112,9 @@ class RefreshTokenServiceTest {
     @DisplayName("회전시키면 새 토큰이 나온다")
     void 회전시키면_새_토큰이_나온다() {
         issueOnce();
-        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(stored));
         when(refreshTokenRepository.claimForRotation(anyString(), any())).thenReturn(1);
 
-        Optional<String> rotated = refreshTokenService.rotate(raw);
+        Optional<String> rotated = refreshTokenService.rotate(stored);
 
         assertThat(rotated).isPresent();
         assertThat(rotated.get()).isNotEqualTo(raw);
@@ -125,11 +124,10 @@ class RefreshTokenServiceTest {
     @DisplayName("동시에 들어와 회전을 놓친 요청은 새 토큰을 만들지 않는다")
     void 회전을_놓치면_토큰을_만들지_않는다() {
         issueOnce();
-        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(stored));
         // 다른 요청이 먼저 교체 표시를 찍은 상황
         when(refreshTokenRepository.claimForRotation(anyString(), any())).thenReturn(0);
 
-        assertThat(refreshTokenService.rotate(raw)).isEmpty();
+        assertThat(refreshTokenService.rotate(stored)).isEmpty();
         // 쓰이지도 않을 토큰이 DB에 쌓이면 안 된다
         allSaved(1);
     }
@@ -138,10 +136,9 @@ class RefreshTokenServiceTest {
     @DisplayName("회전된 토큰의 만료 시각은 처음 것을 그대로 이어받는다")
     void 회전해도_수명은_늘지_않는다() {
         issueOnce();
-        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(stored));
         when(refreshTokenRepository.claimForRotation(anyString(), any())).thenReturn(1);
 
-        refreshTokenService.rotate(raw);
+        refreshTokenService.rotate(stored);
 
         // 저장은 두 번 — 처음 발급과 회전
         RefreshToken rotated = allSaved(2).get(1);
@@ -164,10 +161,9 @@ class RefreshTokenServiceTest {
     void 유예_안의_옛_토큰은_재회전하지_않는다() {
         issueOnce();
         stored.markReplaced(LocalDateTime.now().minusSeconds(5));
-        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(stored));
 
         // 클라이언트는 이미 새 토큰을 받아갔으므로 다시 내려줄 것이 없다
-        assertThat(refreshTokenService.rotate(raw)).isEmpty();
+        assertThat(refreshTokenService.rotate(stored)).isEmpty();
         allSaved(1);
     }
 
@@ -178,8 +174,7 @@ class RefreshTokenServiceTest {
         stored.markReplaced(LocalDateTime.now().minusMinutes(5));
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(stored));
 
-        assertThat(refreshTokenService.findOwner(raw)).isEmpty();
-        assertThat(refreshTokenService.rotate(raw)).isEmpty();
+        assertThat(refreshTokenService.findUsable(raw)).isEmpty();
     }
 
     @Test
@@ -194,8 +189,7 @@ class RefreshTokenServiceTest {
                 .build();
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(expired));
 
-        assertThat(refreshTokenService.findOwner(raw)).isEmpty();
-        assertThat(refreshTokenService.rotate(raw)).isEmpty();
+        assertThat(refreshTokenService.findUsable(raw)).isEmpty();
         assertThat(expired.getReplacedAt()).isNull();
     }
 
@@ -232,10 +226,9 @@ class RefreshTokenServiceTest {
     @DisplayName("회전된 토큰은 같은 묶음을 물려받는다")
     void 회전해도_묶음은_같다() {
         issueOnce();
-        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(stored));
         when(refreshTokenRepository.claimForRotation(anyString(), any())).thenReturn(1);
 
-        refreshTokenService.rotate(raw);
+        refreshTokenService.rotate(stored);
 
         assertThat(allSaved(2).get(1).getFamilyId()).isEqualTo(stored.getFamilyId());
     }
