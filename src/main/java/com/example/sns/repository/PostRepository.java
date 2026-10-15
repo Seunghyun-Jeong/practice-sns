@@ -11,9 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
-    List<Post> findAllByOrderByCreatedAtDesc();
-    List<Post> findAllByAuthor_IdOrderByCreatedAtDesc(Long userId);
-
     /*
      * 피드 세 종류(전체, 팔로잉, 해시태그)는 모두 최신순으로 한 번에 정해진 수만큼 끊어 읽는다.
      * 다음 묶음은 페이지 번호(OFFSET)가 아니라 이미 보여준 마지막 글의 (작성 시각, id)보다 먼저 쓴 글부터 읽는다.
