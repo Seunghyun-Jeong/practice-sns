@@ -7,6 +7,7 @@ import com.example.sns.entity.Comment;
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
+import com.example.sns.event.NotificationEvent;
 import com.example.sns.exception.ForbiddenException;
 import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.CommentRepository;
@@ -18,7 +19,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,10 +29,14 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
     private final MentionService mentionService;
 
-    /** 댓글을 저장하고 새 댓글의 id를 돌려준다. 화면은 이 id로 방금 쓴 댓글만 받아 목록에 붙인다 */
+    /**
+     * 댓글을 저장하고 새 댓글의 id를 돌려준다. 화면은 이 id로 방금 쓴 댓글만 받아 목록에 붙인다.
+     * 알림 이벤트가 커밋 뒤에 처리되도록 트랜잭션으로 묶는다.
+     */
+    @Transactional
     public Long addComment(Long postId, CommentDto dto, String username) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException("게시글을 찾을 수 없습니다."));
@@ -49,13 +56,13 @@ public class CommentService {
 
         Set<User> mentioned = collectMentionTargets(comment, parent, user);
         for (User target : mentioned) {
-            notificationService.notify(target, user, Notification.Type.MENTION, post, comment);
+            eventPublisher.publishEvent(NotificationEvent.created(target, user, Notification.Type.MENTION, post, comment));
         }
 
         // 게시글 작성자에게 알림 (어떤 댓글인지도 함께 남긴다).
         // 이미 멘션으로 알림을 받는 사람이면 같은 댓글로 두 번 알리지 않는다.
         if (!mentioned.contains(post.getAuthor())) {
-            notificationService.notify(post.getAuthor(), user, Notification.Type.COMMENT, post, comment);
+            eventPublisher.publishEvent(NotificationEvent.created(post.getAuthor(), user, Notification.Type.COMMENT, post, comment));
         }
         return comment.getId();
     }

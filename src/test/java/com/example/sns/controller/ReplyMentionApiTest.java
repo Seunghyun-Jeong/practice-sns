@@ -12,6 +12,8 @@ import com.example.sns.repository.CommentRepository;
 import com.example.sns.repository.NotificationRepository;
 import com.example.sns.repository.PostRepository;
 import com.example.sns.repository.UserRepository;
+import com.example.sns.service.NotificationService;
+import com.example.sns.support.RecordedNotifications;
 import com.example.sns.util.JwtUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
@@ -25,6 +27,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +41,14 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@RecordApplicationEvents
 class ReplyMentionApiTest {
+
+    @Autowired
+    private ApplicationEvents events;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -118,6 +129,7 @@ class ReplyMentionApiTest {
                         .content(body))
                 .andExpect(status().isOk());
 
+        RecordedNotifications.apply(events, notificationService);
         endRequest();
     }
 

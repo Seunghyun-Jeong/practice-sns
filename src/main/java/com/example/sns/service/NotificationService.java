@@ -5,7 +5,11 @@ import com.example.sns.entity.Comment;
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
+import com.example.sns.event.NotificationEvent;
+import com.example.sns.repository.CommentRepository;
 import com.example.sns.repository.NotificationRepository;
+import com.example.sns.repository.PostRepository;
+import com.example.sns.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -19,23 +23,44 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final BadgeService badgeService;
+    private final UserRepository userRepository;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
 
     /** 드롭다운에 보여줄 최근 알림 개수 */
     private static final int RECENT_SIZE = 20;
+
+    /**
+     * 알림 이벤트를 반영한다. 알림을 만들고 지우는 입구는 이것 하나다.
+     * 지금은 커밋 뒤 리스너가 부르고, Kafka를 붙이면 소비자가 같은 메서드를 부른다.
+     *
+     * id로 프록시만 만들고 엔티티를 읽지 않는다. 알림 저장과 중복 확인에는 id만 있으면 된다.
+     */
+    @Transactional
+    public void apply(NotificationEvent event) {
+        User recipient = event.recipientId() != null ? userRepository.getReferenceById(event.recipientId()) : null;
+        User actor = event.actorId() != null ? userRepository.getReferenceById(event.actorId()) : null;
+        Post post = event.postId() != null ? postRepository.getReferenceById(event.postId()) : null;
+        Comment comment = event.commentId() != null ? commentRepository.getReferenceById(event.commentId()) : null;
+
+        if (event.action() == NotificationEvent.Action.CANCEL) {
+            cancel(recipient, actor, event.type(), post);
+        } else {
+            notify(recipient, actor, event.type(), post, comment);
+        }
+    }
 
     /**
      * 알림을 만든다.
      * 본인이 자기 글에 한 행동은 알림을 만들지 않고,
      * 같은 알림이 이미 있으면 다시 만들지 않는다.
      */
-    @Transactional
-    public void notify(User recipient, User actor, Notification.Type type, Post post) {
+    void notify(User recipient, User actor, Notification.Type type, Post post) {
         notify(recipient, actor, type, post, null);
     }
 
     /** 댓글 알림처럼 어떤 댓글인지까지 함께 남겨야 하는 경우 */
-    @Transactional
-    public void notify(User recipient, User actor, Notification.Type type, Post post, Comment comment) {
+    void notify(User recipient, User actor, Notification.Type type, Post post, Comment comment) {
         if (recipient == null || actor == null) {
             return;
         }
@@ -60,8 +85,7 @@ public class NotificationService {
     }
 
     /** 행동을 취소했을 때 (좋아요 취소, 언팔로우) 알림도 지운다 */
-    @Transactional
-    public void cancel(User recipient, User actor, Notification.Type type, Post post) {
+    void cancel(User recipient, User actor, Notification.Type type, Post post) {
         if (recipient == null || actor == null || recipient.getId().equals(actor.getId())) {
             return;
         }

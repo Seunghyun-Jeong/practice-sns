@@ -12,6 +12,8 @@ import com.example.sns.entity.Follow;
 import com.example.sns.entity.User;
 import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.UserRepository;
+import com.example.sns.service.NotificationService;
+import com.example.sns.support.RecordedNotifications;
 import com.example.sns.util.JwtUtil;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
@@ -23,6 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +37,14 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@RecordApplicationEvents
 class FollowApiTest {
+
+    @Autowired
+    private ApplicationEvents events;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -152,10 +163,12 @@ class FollowApiTest {
         Cookie otherCookie = createCookie(other);
 
         mockMvc.perform(post("/api/users/{id}/follow", other.getId()).cookie(myCookie));
+        RecordedNotifications.apply(events, notificationService);
         mockMvc.perform(get("/api/notifications/unread-count").cookie(otherCookie))
                 .andExpect(jsonPath("$.count").value(1));
 
         mockMvc.perform(post("/api/users/{id}/follow", other.getId()).cookie(myCookie));
+        RecordedNotifications.apply(events, notificationService);
         mockMvc.perform(get("/api/notifications/unread-count").cookie(otherCookie))
                 .andExpect(jsonPath("$.count").value(0));
     }

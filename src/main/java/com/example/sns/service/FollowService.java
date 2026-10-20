@@ -5,12 +5,14 @@ import com.example.sns.dto.FollowUserDto;
 import com.example.sns.entity.Follow;
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.User;
+import com.example.sns.event.NotificationEvent;
 import com.example.sns.exception.NotFoundException;
 import com.example.sns.repository.FollowRepository;
 import com.example.sns.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -24,7 +26,7 @@ public class FollowService {
 
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 팔로우 토글. 이미 팔로우 중이면 취소한다.
@@ -50,7 +52,7 @@ public class FollowService {
         Optional<Follow> existing = followRepository.findByFollowerAndFollowing(follower, target);
         if (existing.isPresent()) {
             followRepository.delete(existing.get());
-            notificationService.cancel(target, follower, Notification.Type.FOLLOW, null);
+            eventPublisher.publishEvent(NotificationEvent.cancelled(target, follower, Notification.Type.FOLLOW, null));
             return false;
         }
 
@@ -60,7 +62,7 @@ public class FollowService {
         followRepository.save(follow);
 
         // 팔로우 당한 사람에게 알림
-        notificationService.notify(target, follower, Notification.Type.FOLLOW, null);
+        eventPublisher.publishEvent(NotificationEvent.created(target, follower, Notification.Type.FOLLOW, null));
         return true;
     }
 
