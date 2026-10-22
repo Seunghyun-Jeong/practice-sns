@@ -1,31 +1,38 @@
 package com.example.sns.event;
 
-import com.example.sns.service.NotificationService;
+import com.example.sns.entity.NotificationOutbox;
+import com.example.sns.repository.NotificationOutboxRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * 좋아요, 댓글, 팔로우가 커밋된 뒤에 알림을 처리한다.
+ * 좋아요, 댓글, 팔로우가 발행한 알림 이벤트를 같은 트랜잭션에서 Outbox에 적는다.
+ * 알림 반영은 여기서 하지 않고 NotificationOutboxRelay가 나중에 한다.
  *
- * 커밋 뒤에 도는 이유: 알림 저장이나 푸시가 실패해도 좋아요는 남아야 하고,
- * 롤백된 좋아요의 알림이 나가면 안 되기 때문이다.
- * 이 시점에는 원래 트랜잭션이 끝나 있어서 저장하려면 새 트랜잭션(REQUIRES_NEW)이 필요하다.
- * 여기서 난 예외는 Spring이 로그만 남기고 삼키므로 요청은 성공으로 끝난다.
+ * 같은 트랜잭션이어야 하는 이유: 좋아요와 Outbox 줄이 함께 커밋되거나 함께 롤백돼야
+ * "좋아요는 남았는데 알림은 영영 안 온다"가 생기지 않는다.
+ * @EventListener는 발행한 자리에서 바로, 같은 트랜잭션으로 실행된다.
  *
- * 한계: 커밋과 이 리스너 사이에 서버가 죽으면 알림이 사라진다. 다음 단계에서
- * 이벤트를 같은 트랜잭션 안에서 Outbox 테이블에 저장해 이 구멍을 막는다.
+ * MANDATORY: 트랜잭션 밖에서 발행하면 묶을 트랜잭션이 없다. 그때는 조용히 따로 저장하지 않고
+ * 예외로 드러낸다. @TransactionalEventListener(BEFORE_COMMIT)를 쓰지 않은 이유도 같다.
+ * 그쪽은 트랜잭션이 없으면 리스너가 불리지 않아 이벤트가 소리 없이 사라진다.
+ *
+ * Outbox 저장이 실패하면 좋아요도 롤백된다. 같은 DB에 한 줄 넣는 일이라 이게 실패할 상황이면
+ * 좋아요 저장도 성하지 않다고 본다.
  */
 @Component
 @RequiredArgsConstructor
 public class NotificationEventListener {
-    private final NotificationService notificationService;
+    private final NotificationOutboxRepository outboxRepository;
+    private final NotificationEventJson eventJson;
 
-    @TransactionalEventListener
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @EventListener
+    @Transactional(propagation = Propagation.MANDATORY)
     public void on(NotificationEvent event) {
-        notificationService.apply(event);
+        outboxRepository.save(new NotificationOutbox(
+                event.eventId(), event.recipientId(), eventJson.write(event), event.occurredAt()));
     }
 }
