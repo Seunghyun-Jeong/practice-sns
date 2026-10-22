@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * NotificationEvent를 글자로 적고 다시 읽는 곳. 쓰는 쪽(Outbox 저장)과 읽는 쪽(릴레이)이
- * 같은 모양을 써야 하므로 한 곳에 둔다. 다음 단계에서 Kafka로 보낼 때도 이걸 쓴다.
+ * NotificationEvent를 글자로 적고 다시 읽는 곳. 쓰는 쪽(Outbox 저장)과 읽는 쪽(Kafka 소비자)이
+ * 같은 모양을 써야 하므로 한 곳에 둔다. 릴레이는 Outbox의 JSON을 그대로 Kafka 메시지 값으로 보낸다.
  *
  * Spring Boot가 만든 ObjectMapper를 쓴다. LocalDateTime을 ISO 문자열로 적는 설정이 이미 들어 있다.
  */

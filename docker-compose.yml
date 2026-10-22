@@ -1,0 +1,44 @@
+# 개발용 Kafka 브로커 하나. KRaft 모드라 ZooKeeper 없이 뜬다. 실행: docker compose up -d
+# 복제본이 하나뿐이라 운영 구성과 다르다(운영은 브로커 3대, 복제 3, min.insync.replicas 2).
+#
+# 토픽은 앱이 아니라 여기(운영에서는 인프라 설정)가 만든다. 브로커의 자동 생성은 끈다.
+# 켜 두면 앱이 Kafka보다 먼저 떠서 토픽을 못 만든 경우, 첫 메시지를 받은 브로커가 기본값(파티션 1개)으로
+# 조용히 토픽을 만든다(실제로 겪음). 끄면 토픽이 없을 때 릴레이가 경고를 남기고 Outbox에 줄이 쌓여 드러난다.
+services:
+  kafka:
+    image: apache/kafka:3.8.1
+    ports:
+      - "9092:9092"
+    # 이 이미지는 환경 변수를 하나라도 주면 기본 설정 파일을 안 쓰므로 KRaft 설정을 전부 적는다
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+      interval: 2s
+      timeout: 10s
+      retries: 30
+
+  # 브로커가 준비되면 토픽을 만들고 끝난다. 이미 있으면 그대로 둔다.
+  # 파티션 3개: 파티션 수가 소비자를 나눠 돌릴 수 있는 최대 수다. 서버 2~3대를 생각해 잡았다.
+  # 나중에 늘릴 수는 있지만, 늘리면 키가 들어가는 파티션이 바뀌어 그 순간 쌓여 있던 이벤트의 순서가 섞일 수 있다.
+  # kafka 컨테이너의 네트워크를 같이 써서 localhost:9092로 붙는다(브로커가 localhost로 광고하므로).
+  kafka-init:
+    image: apache/kafka:3.8.1
+    network_mode: "service:kafka"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092",
+                 "--create", "--if-not-exists", "--topic", "notification-events",
+                 "--partitions", "3", "--replication-factor", "1"]

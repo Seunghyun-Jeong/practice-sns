@@ -15,8 +15,8 @@ public interface NotificationOutboxRepository extends JpaRepository<Notification
     List<NotificationOutbox> findPending(Limit limit);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE NotificationOutbox o SET o.processedAt = :now WHERE o.id = :id")
-    void markProcessed(@Param("id") Long id, @Param("now") LocalDateTime now);
+    @Query("UPDATE NotificationOutbox o SET o.processedAt = :now WHERE o.id IN :ids")
+    void markProcessed(@Param("ids") List<Long> ids, @Param("now") LocalDateTime now);
 
     /** 실패로 확정된 줄은 원인을 보려고 남기고, 처리된 줄만 지운다 */
     @Query("SELECT o.id FROM NotificationOutbox o WHERE o.processedAt < :cutoff ORDER BY o.id")

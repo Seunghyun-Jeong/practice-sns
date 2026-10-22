@@ -2,8 +2,16 @@ package com.example.sns.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+
 
 import com.example.sns.entity.Notification;
 import com.example.sns.entity.NotificationOutbox;
@@ -11,6 +19,7 @@ import com.example.sns.entity.Post;
 import com.example.sns.entity.User;
 import com.example.sns.event.NotificationEvent;
 import com.example.sns.event.NotificationOutboxRelay;
+import com.example.sns.event.NotificationTopic;
 import com.example.sns.repository.NotificationOutboxRepository;
 import com.example.sns.repository.NotificationRepository;
 import com.example.sns.repository.PostLikeRepository;
@@ -21,9 +30,13 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.core.SimpleLock;
+import org.apache.kafka.common.errors.RecordTooLargeException;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,18 +45,34 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.kafka.KafkaException;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * 알림 이벤트가 같은 트랜잭션에서 Outbox에 적히고, 릴레이가 나중에 순서대로 반영하는지 확인한다.
+ * 알림 이벤트가 같은 트랜잭션에서 Outbox에 적히고, 릴레이가 Kafka로 보내 소비자가 순서대로 반영하는지 확인한다.
  *
  * 커밋이 있어야 Outbox 줄이 보이므로 이 테스트는 트랜잭션으로 감싸지 않는다.
  * 대신 만든 데이터를 끝나고 직접 지운다. 스케줄러는 테스트 설정에서 꺼 두고 릴레이를 직접 부른다.
+ *
+ * Kafka는 테스트 안에 띄우는 브로커(@EmbeddedKafka)를 쓴다. Docker 없이 ./gradlew test로 돈다.
+ * 소비자는 따로 돌므로 반영 결과는 await로 기다려서 확인한다. verify(timeout)은 apply가 불린 순간 통과해서
+ * 커밋 전에 읽을 수 있다. 기다리지 않고 끝내면 정리 중에 소비자가 늦게 반영해 지운 사용자를 가리키는 알림이 생길 수 있다.
  */
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.kafka.bootstrap-servers=${spring.embedded.kafka.brokers}",
+        "spring.kafka.listener.auto-startup=true"
+})
+// 토픽은 앱이 만들지 않으므로 docker-compose.yml과 같은 조건(자동 생성 끔, 파티션 3)으로 여기서 만든다
+@EmbeddedKafka(topics = NotificationTopic.NAME, partitions = 3,
+        brokerProperties = "auto.create.topics.enable=false")
 class NotificationOutboxTest {
+
+    private static final Duration CONSUME_TIMEOUT = Duration.ofSeconds(10);
 
     @Autowired
     private PostLikeService postLikeService;
@@ -77,6 +106,11 @@ class NotificationOutboxTest {
 
     @MockitoSpyBean
     private NotificationService notificationService;
+
+    // Spring Boot가 KafkaTemplate<?, ?>로 등록해서 KafkaTemplate<String, String>으로는 감쌀 빈을 못 찾는다
+    @SuppressWarnings("rawtypes")
+    @MockitoSpyBean
+    private KafkaTemplate kafkaTemplate;
 
     private User author;
     private User other;
@@ -112,18 +146,18 @@ class NotificationOutboxTest {
     }
 
     @Test
-    @DisplayName("좋아요가 커밋되면 Outbox에 한 줄이 남고, 알림은 릴레이가 반영한 뒤에 생긴다")
-    void 커밋되면_Outbox에_남고_릴레이가_반영한다() {
+    @DisplayName("좋아요가 커밋되면 Outbox에 한 줄이 남고, 릴레이가 Kafka로 보낸 뒤 소비자가 알림을 만든다")
+    void 커밋되면_Outbox에_남고_Kafka를_거쳐_반영한다() {
         postLikeService.toggleLike(post.getId(), liker.getUsername());
 
         assertThat(outboxRepository.findAll()).hasSize(1);
         assertThat(likeNotifications(author, post)).isEmpty();
 
         assertThat(relay.relayPending()).isEqualTo(1);
+        awaitConsumed(() -> assertThat(likeNotifications(author, post)).hasSize(1));
 
-        assertThat(likeNotifications(author, post)).hasSize(1);
         assertThat(outboxRepository.findAll()).allSatisfy(row -> assertThat(row.getProcessedAt()).isNotNull());
-        assertThat(relay.relayPending()).isZero();   // 처리한 줄은 다시 반영하지 않는다
+        assertThat(relay.relayPending()).isZero();   // Kafka가 받은 줄은 다시 보내지 않는다
     }
 
     @Test
@@ -149,29 +183,33 @@ class NotificationOutboxTest {
     }
 
     @Test
-    @DisplayName("반영이 실패해도 좋아요는 남고, 줄은 다음 차례에 다시 시도된다")
-    void 실패하면_다음_차례에_다시_시도한다() {
-        doThrow(new IllegalStateException("알림 저장 실패")).when(notificationService).apply(Mockito.any());
+    @DisplayName("Kafka가 응답하지 않아도 좋아요는 남고, 줄은 시도 횟수를 늘리지 않은 채 다음 차례에 보내진다")
+    void 브로커_장애는_횟수를_세지_않고_다시_보낸다() {
+        // 브로커가 꺼져 있으면 KafkaTemplate은 실패한 결과를 돌려주지 않고 이렇게 던진다(실제 브로커를 끄고 확인한 모양)
+        doThrow(new KafkaException("Send failed", new TimeoutException("Topic notification-events not present in metadata after 5000 ms.")))
+                .when(kafkaTemplate).send(anyString(), anyString(), anyString());
 
         boolean liked = postLikeService.toggleLike(post.getId(), liker.getUsername());
-        relay.relayPending();
+        for (int i = 0; i < 10; i++) {
+            assertThat(relay.relayPending()).isZero();
+        }
 
         assertThat(liked).isTrue();
         assertThat(postLikeRepository.existsByPostAndUser(post, liker)).isTrue();
         NotificationOutbox row = outboxRepository.findAll().get(0);
         assertThat(row.getProcessedAt()).isNull();
-        assertThat(row.getAttempts()).isEqualTo(1);
+        assertThat(row.getAttempts()).isZero();   // 셌다면 브로커가 잠깐 멈춘 사이에 실패로 확정됐을 것이다
+        assertThat(row.getFailedAt()).isNull();
 
-        Mockito.reset(notificationService);
-        relay.relayPending();
-
-        assertThat(likeNotifications(author, post)).hasSize(1);
+        Mockito.reset(kafkaTemplate);
+        assertThat(relay.relayPending()).isEqualTo(1);
+        awaitConsumed(() -> assertThat(likeNotifications(author, post)).hasSize(1));
     }
 
     @Test
-    @DisplayName("상한만큼 실패한 줄은 실패로 확정하고 더 시도하지 않는다")
-    void 상한을_넘으면_실패로_확정한다() {
-        doThrow(new IllegalStateException("알림 저장 실패")).when(notificationService).apply(Mockito.any());
+    @DisplayName("줄 자체가 문제인 실패는 상한만큼 세고 실패로 확정해 더 보내지 않는다")
+    void 줄_문제는_상한을_넘으면_실패로_확정한다() {
+        doReturn(failed(new RecordTooLargeException("메시지가 너무 큼"))).when(kafkaTemplate).send(anyString(), anyString(), anyString());
         postLikeService.toggleLike(post.getId(), liker.getUsername());
 
         for (int i = 0; i < 10; i++) {
@@ -181,28 +219,36 @@ class NotificationOutboxTest {
         NotificationOutbox row = outboxRepository.findAll().get(0);
         assertThat(row.getAttempts()).isEqualTo(5);
         assertThat(row.getFailedAt()).isNotNull();
-        assertThat(row.getLastError()).contains("알림 저장 실패");
+        assertThat(row.getLastError()).contains("메시지가 너무 큼");
     }
 
     @Test
-    @DisplayName("한 사람의 반영이 실패하면 그 사람의 뒤 줄만 미루고, 다음 차례에 순서대로 반영한다")
-    void 실패한_사람의_뒤_줄만_미룬다() {
-        // author에게 가는 첫 좋아요만 한 번 실패시킨다
-        doThrow(new IllegalStateException("일시 장애")).when(notificationService).apply(argThat(e -> e != null &&
-                e.recipientId().equals(author.getId()) && e.action() == NotificationEvent.Action.CREATE));
+    @DisplayName("한 사람의 전송이 실패하면 그 사람의 뒤 줄은 Kafka에 들어갔어도 다시 보내고, 소비자는 결국 순서대로 반영한다")
+    void 실패한_사람의_뒤_줄은_다시_보낸다() {
+        // author에게 가는 첫 메시지만 응답이 조금 늦게 실패로 온다. 나머지는 실제로 보낸다
+        CompletableFuture<SendResult<String, String>> lateFailure = CompletableFuture.supplyAsync(() -> {
+            throw new TimeoutException("일시 장애");
+        }, CompletableFuture.delayedExecutor(100, TimeUnit.MILLISECONDS));
+        doReturn(lateFailure).doCallRealMethod()
+                .when(kafkaTemplate).send(eq(NotificationTopic.NAME), eq(author.getId().toString()), anyString());
 
-        postLikeService.toggleLike(post.getId(), liker.getUsername());       // author: 좋아요
-        postLikeService.toggleLike(post.getId(), liker.getUsername());       // author: 취소
+        postLikeService.toggleLike(post.getId(), liker.getUsername());       // author: 좋아요 (실패)
+        postLikeService.toggleLike(post.getId(), liker.getUsername());       // author: 취소 (Kafka에 들어감)
         postLikeService.toggleLike(otherPost.getId(), liker.getUsername());  // other: 좋아요
 
-        assertThat(relay.relayPending()).isEqualTo(1);   // other 것만 반영, author의 취소는 미룸
-        assertThat(likeNotifications(other, otherPost)).hasSize(1);
+        assertThat(relay.relayPending()).isEqualTo(1);   // other 것만 처리됨, author의 취소는 들어갔어도 처리됨으로 적지 않음
+        assertThat(outboxRepository.findAll()).filteredOn(row -> row.getProcessedAt() == null).hasSize(2);
 
-        Mockito.reset(notificationService);
-        assertThat(relay.relayPending()).isEqualTo(2);   // author의 좋아요, 취소가 순서대로
+        Mockito.reset(kafkaTemplate);
+        assertThat(relay.relayPending()).isEqualTo(2);   // author의 좋아요, 취소를 순서대로 다시 보냄
 
-        // 취소가 먼저 반영됐다면 좋아요 알림이 남았을 것이다
-        assertThat(likeNotifications(author, post)).isEmpty();
+        // 파티션에는 author의 취소, 좋아요, 취소가 차례로 있다. 소비자가 넷(other 포함)을 모두 집어 들길 기다린다.
+        // 네 번째가 불렸다면 앞의 좋아요는 이미 반영됐으므로, 그 뒤로 알림이 비는 것은 마지막 취소 덕이다
+        verify(notificationService, timeout(CONSUME_TIMEOUT.toMillis()).times(4)).apply(any());
+
+        // 취소를 다시 보내지 않았다면 좋아요 알림이 남아 여기서 시간 초과로 실패한다
+        awaitConsumed(() -> assertThat(likeNotifications(author, post)).isEmpty());
+        awaitConsumed(() -> assertThat(likeNotifications(other, otherPost)).hasSize(1));
     }
 
     @Test
@@ -210,6 +256,7 @@ class NotificationOutboxTest {
     void 처리된_오래된_줄만_지운다() {
         postLikeService.toggleLike(post.getId(), liker.getUsername());
         relay.relayPending();
+        awaitConsumed(() -> assertThat(likeNotifications(author, post)).hasSize(1));
         postLikeService.toggleLike(otherPost.getId(), liker.getUsername());   // 아직 처리 안 됨
 
         int deleted = relay.deleteProcessedBefore(LocalDateTime.now().plusSeconds(1));
@@ -235,6 +282,14 @@ class NotificationOutboxTest {
         Optional<SimpleLock> afterRelease = lockProvider.lock(config);
         assertThat(afterRelease).isPresent();
         afterRelease.get().unlock();
+    }
+
+    private void awaitConsumed(Runnable assertion) {
+        await().atMost(CONSUME_TIMEOUT).untilAsserted(assertion::run);
+    }
+
+    private static CompletableFuture<SendResult<String, String>> failed(Throwable cause) {
+        return CompletableFuture.failedFuture(cause);
     }
 
     private List<Notification> likeNotifications(User recipient, Post target) {

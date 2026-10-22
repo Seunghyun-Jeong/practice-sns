@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  * 잡은 서버가 죽으면 lockAtMostFor가 지난 뒤 다른 서버가 이어받는다.
  *
  * 한 대만 돌리는 이유: 여러 대가 나눠 처리하면 같은 받는 사람의 좋아요와 취소가 다른 서버로 가서
- * 순서가 뒤집힐 수 있다. 다음 단계에서 릴레이는 "DB에서 꺼내 Kafka에 넣기"만 하므로 한 대로 충분하고,
+ * 순서가 뒤집힐 수 있다. 릴레이는 "DB에서 꺼내 Kafka에 넣기"만 하므로 한 대로 충분하고,
  * 여러 대로 나눠 처리하는 일은 Kafka 소비자가 받는 사람 id 키로 순서를 지키며 맡는다.
  *
  * 테스트에서는 notification.outbox.relay.enabled=false로 끄고 릴레이를 직접 부른다.
@@ -34,8 +34,9 @@ public class NotificationOutboxScheduler {
 
     /**
      * fixedDelay: 앞 차례가 끝나고 1초 뒤에 다음 차례를 돈다. 한 서버 안에서 차례가 겹치지 않는다.
-     * lockAtMostFor 30초: 한 묶음(200줄)은 이보다 훨씬 빨리 끝난다고 보고 잡았다. 이보다 오래 걸리면
-     * 잠금이 풀려 다른 서버가 같은 줄을 집을 수 있으니 BATCH_SIZE를 늘릴 때 같이 본다.
+     * lockAtMostFor 30초: 이보다 오래 걸리면 잠금이 풀려 다른 서버가 같은 줄을 집을 수 있다.
+     * 한 차례는 Kafka가 멈춰 있어도 send 막힘 5초(max.block.ms) + 응답 대기 10초(delivery.timeout.ms) 안에 끝나도록
+     * application.properties에서 프로듀서 시간을 줄여 두었다. 기본값(60초, 120초)이면 잠금 시간을 넘는다.
      */
     @Scheduled(fixedDelay = 1000)
     @SchedulerLock(name = "notificationOutboxRelay", lockAtMostFor = "PT30S")

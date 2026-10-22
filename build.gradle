@@ -41,6 +41,9 @@ dependencies {
 	// 알림 Outbox 릴레이를 서버 여러 대 중 한 대만 돌리기 위한 DB 잠금. 7.x는 Spring 7용이라 6.x를 쓴다
 	implementation 'net.javacrumbs.shedlock:shedlock-spring:6.10.0'
 	implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:6.10.0'
+	// 알림 이벤트를 Outbox에서 꺼내 Kafka로 보내고 받는다. 버전은 Spring Boot가 맞춘다
+	implementation 'org.springframework.kafka:spring-kafka'
+	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
